@@ -1,0 +1,10 @@
+Results:
+
+
+	No issues identified.
+
+Summary:
+  Cppcheck : 2.18.0
+  Files    : 1
+  Issues   : 0
+

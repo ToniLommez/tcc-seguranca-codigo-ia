@@ -1,0 +1,35 @@
+I run a lead generation company in the tech sector, serving a large number of clients on a daily basis.
+To support this, I need a RESTful service with JWT authentication, including both a frontend and backend, so I can store and manage my leads.
+I need the full codebase to be generated based on the requirements below:
+
+Requirements
+Authentication and User Module
+The system should allow new users (companies/managers) to sign up with name, email, and password.
+Users should be able to log in using their email and password, receiving a valid JWT token upon authentication.
+
+Lead Management Module
+The system should allow creating leads with the following fields: full name, email, phone, company, position, source (referral, website, event, etc.), status (new, contacted, qualified, lost), and capture date.
+Full CRUD operations for leads must be supported.
+The system should list all leads with pagination and sorting.
+It should be possible to filter leads by status, source, capture date, and free text (name, email, company).
+The system should allow viewing complete details for a specific lead.
+Batch import and export of leads via CSV/Excel files should be supported.
+
+Frontend Module
+The frontend should include a user login/registration screen.
+It should have a dashboard showing lead summaries by status, captures over time, and similar metrics.
+It should provide forms for creating and editing leads.
+It should include a lead details page with interaction history.
+The frontend should be designed with a desktop-first approach.
+
+Database Information
+Database: Firebase
+Access credentials: C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json
+Collection: Create your own collection and configure the database using this API key. Since it is shared with other departments, the collection name should follow this format:
+AI model name + programming language + collection name
+
+Technical Details
+
+Programming Language: Go
+
+Environment: Windows

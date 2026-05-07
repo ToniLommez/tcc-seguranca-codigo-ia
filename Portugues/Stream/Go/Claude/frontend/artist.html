@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StreamMusic — Painel do Artista</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-mark">🎵 StreamMusic <span>Painel do Artista</span></div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-label">Menu</div>
+        <a class="nav-item active" href="#">
+          <span class="icon">📤</span> Upload de Música
+        </a>
+        <a class="nav-item" href="#" onclick="document.getElementById('musicSection').scrollIntoView({behavior:'smooth'});return false;">
+          <span class="icon">🎵</span> Minhas Músicas
+        </a>
+      </nav>
+
+      <div class="sidebar-user">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div>
+            <div class="user-name" id="userName">Carregando…</div>
+            <span class="user-badge badge-artist">ARTISTA</span>
+          </div>
+        </div>
+        <button class="btn btn-danger" id="logoutBtn">Sair</button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="main-content">
+      <div class="content-header">
+        <h2>Gerenciar Músicas</h2>
+      </div>
+
+      <div class="content-body">
+        <!-- Upload form -->
+        <div class="upload-card">
+          <h3>📤 Cadastrar nova música</h3>
+
+          <div class="alert" id="uploadAlert"></div>
+
+          <form id="uploadForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="title">Título da música *</label>
+                <input type="text" id="title" placeholder="Nome da música" required>
+              </div>
+              <div class="form-group">
+                <label for="genre">Gênero *</label>
+                <select id="genre" required>
+                  <option value="">Selecione…</option>
+                  <option>Pop</option>
+                  <option>Rock</option>
+                  <option>MPB</option>
+                  <option>Sertanejo</option>
+                  <option>Funk</option>
+                  <option>Hip-Hop</option>
+                  <option>R&B</option>
+                  <option>Eletrônica</option>
+                  <option>Forró</option>
+                  <option>Gospel</option>
+                  <option>Jazz</option>
+                  <option>Clássico</option>
+                  <option>Metal</option>
+                  <option>Reggae</option>
+                  <option>Outro</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="description">Descrição (opcional)</label>
+              <textarea id="description" placeholder="Conte um pouco sobre essa música…"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Arquivo MP3 *</label>
+              <div class="file-drop-area" id="dropArea">
+                <input type="file" id="fileInput" accept=".mp3,audio/mpeg">
+                <div class="file-drop-icon">🎶</div>
+                <div class="file-drop-text">
+                  Arraste o arquivo aqui ou <strong>clique para selecionar</strong>
+                </div>
+                <div class="file-selected-name" id="fileSelectedName"></div>
+              </div>
+            </div>
+
+            <div class="progress-bar-wrap" id="progressWrap">
+              <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <div class="upload-actions">
+              <button type="submit" class="btn-upload" id="uploadBtn">Enviar música</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Music list -->
+        <div id="musicSection">
+          <div class="section-title">Minhas músicas</div>
+
+          <div class="empty-state" id="emptyState" style="display:none">
+            <div class="empty-icon">🎵</div>
+            <p>Você ainda não cadastrou nenhuma música.</p>
+          </div>
+
+          <table class="music-table" id="musicTableWrap">
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Gênero</th>
+                <th>Descrição</th>
+                <th>Cadastrada em</th>
+              </tr>
+            </thead>
+            <tbody id="musicTableBody">
+              <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:32px">
+                <span class="spinner"></span>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/artist.js"></script>
+</body>
+</html>

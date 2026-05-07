@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Music Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+    <div class="page-shell">
+        <header class="hero">
+            <div class="hero-copy">
+                <span class="eyebrow">Music Streaming Platform</span>
+                <h1>Modern streaming for artists and listeners.</h1>
+                <p>
+                    A fresh desktop-first experience with secure registration, artist-only uploads,
+                    and protected browser playback for regular users.
+                </p>
+            </div>
+            <div class="hero-card">
+                <div class="stat">
+                    <strong>Firebase</strong>
+                    <span>Users and access profiles</span>
+                </div>
+                <div class="stat">
+                    <strong>Local Server</strong>
+                    <span>MP3 storage and streaming</span>
+                </div>
+                <div class="stat">
+                    <strong>JWT</strong>
+                    <span>Protected REST access</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="workspace">
+            <section id="auth-panel" class="panel auth-panel">
+                <div class="panel-header">
+                    <div>
+                        <span class="section-tag">Access</span>
+                        <h2>Register or sign in</h2>
+                    </div>
+                    <div class="tab-switch">
+                        <button id="show-login" class="tab active" type="button">Login</button>
+                        <button id="show-register" class="tab" type="button">Register</button>
+                    </div>
+                </div>
+
+                <div id="alert" class="alert hidden"></div>
+
+                <form id="login-form" class="form-grid">
+                    <label>
+                        <span>Email</span>
+                        <input type="email" name="email" placeholder="name@company.com" required>
+                    </label>
+                    <label>
+                        <span>Password</span>
+                        <input type="password" name="password" placeholder="Your password" required>
+                    </label>
+                    <button class="primary-btn" type="submit">Enter platform</button>
+                </form>
+
+                <form id="register-form" class="form-grid hidden">
+                    <label>
+                        <span>Name</span>
+                        <input type="text" name="name" placeholder="Full name" required>
+                    </label>
+                    <label>
+                        <span>Email</span>
+                        <input type="email" name="email" placeholder="artist@studio.com" required>
+                    </label>
+                    <label>
+                        <span>Password</span>
+                        <input type="password" name="password" placeholder="At least 6 characters" required>
+                    </label>
+                    <label>
+                        <span>User type</span>
+                        <select name="type" required>
+                            <option value="USER">Regular user</option>
+                            <option value="ARTIST">Artist</option>
+                        </select>
+                    </label>
+                    <button class="primary-btn" type="submit">Create account</button>
+                </form>
+            </section>
+
+            <section id="dashboard" class="panel dashboard hidden">
+                <div class="panel-header">
+                    <div>
+                        <span class="section-tag">Dashboard</span>
+                        <h2 id="dashboard-title">Welcome</h2>
+                        <p id="dashboard-subtitle" class="muted"></p>
+                    </div>
+                    <button id="logout-button" class="secondary-btn" type="button">Logout</button>
+                </div>
+
+                <div id="artist-view" class="view hidden">
+                    <div class="two-column">
+                        <form id="upload-form" class="card">
+                            <h3>Upload a new song</h3>
+                            <label>
+                                <span>Title</span>
+                                <input type="text" name="title" placeholder="Song title" required>
+                            </label>
+                            <label>
+                                <span>Genre</span>
+                                <input type="text" name="genre" placeholder="Genre" required>
+                            </label>
+                            <label>
+                                <span>Description</span>
+                                <textarea name="description" rows="4" placeholder="Optional description"></textarea>
+                            </label>
+                            <label>
+                                <span>MP3 file</span>
+                                <input type="file" name="file" accept=".mp3,audio/mpeg" required>
+                            </label>
+                            <button class="primary-btn" type="submit">Register song</button>
+                        </form>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Your songs</h3>
+                                <button id="refresh-artist-songs" class="secondary-btn small" type="button">Refresh</button>
+                            </div>
+                            <div id="artist-song-list" class="song-list compact"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="user-view" class="view hidden">
+                    <div class="card search-card">
+                        <div class="card-header">
+                            <h3>Search catalog</h3>
+                            <button id="refresh-user-songs" class="secondary-btn small" type="button">Refresh</button>
+                        </div>
+                        <form id="search-form" class="search-grid">
+                            <label>
+                                <span>Song name</span>
+                                <input type="text" name="title" placeholder="Search by title">
+                            </label>
+                            <label>
+                                <span>Artist</span>
+                                <input type="text" name="artist" placeholder="Search by artist">
+                            </label>
+                            <label>
+                                <span>Genre</span>
+                                <input type="text" name="genre" placeholder="Search by genre">
+                            </label>
+                            <button class="primary-btn" type="submit">Search</button>
+                        </form>
+                    </div>
+
+                    <div class="player-layout">
+                        <div class="card">
+                            <h3>Catalog</h3>
+                            <div id="user-song-list" class="song-list"></div>
+                        </div>
+                        <div class="card sticky-player">
+                            <h3>Player</h3>
+                            <p id="now-playing" class="muted">Select a song to start playback.</p>
+                            <audio id="audio-player" controls preload="metadata"></audio>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/assets/app.js"></script>
+</body>
+</html>
+

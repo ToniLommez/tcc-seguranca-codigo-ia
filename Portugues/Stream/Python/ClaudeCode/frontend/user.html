@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SoundStream — Ouvir Músicas</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">🎵</span>
+      <h1>SoundStream</h1>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="user-name" id="userName">Carregando...</div>
+      <div class="user-role">🎧 Ouvinte</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Navegar</div>
+      <button class="nav-item active">
+        <span class="nav-icon">🏠</span> Início
+      </button>
+
+      <div class="nav-section-title" style="margin-top:16px">Gêneros</div>
+      <button class="genre-chip active" data-genre="" style="margin:4px 20px;display:block;text-align:left">Todos</button>
+      <button class="genre-chip" data-genre="Pop"       style="margin:4px 20px;display:block;text-align:left">Pop</button>
+      <button class="genre-chip" data-genre="Rock"      style="margin:4px 20px;display:block;text-align:left">Rock</button>
+      <button class="genre-chip" data-genre="Sertanejo" style="margin:4px 20px;display:block;text-align:left">Sertanejo</button>
+      <button class="genre-chip" data-genre="Funk"      style="margin:4px 20px;display:block;text-align:left">Funk</button>
+      <button class="genre-chip" data-genre="MPB"       style="margin:4px 20px;display:block;text-align:left">MPB</button>
+      <button class="genre-chip" data-genre="Hip-Hop"   style="margin:4px 20px;display:block;text-align:left">Hip-Hop</button>
+      <button class="genre-chip" data-genre="Eletrônico" style="margin:4px 20px;display:block;text-align:left">Eletrônico</button>
+      <button class="genre-chip" data-genre="Gospel"    style="margin:4px 20px;display:block;text-align:left">Gospel</button>
+      <button class="genre-chip" data-genre="Forró"     style="margin:4px 20px;display:block;text-align:left">Forró</button>
+      <button class="genre-chip" data-genre="Pagode"    style="margin:4px 20px;display:block;text-align:left">Pagode</button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn btn-secondary btn-full" onclick="logout()">Sair</button>
+    </div>
+  </aside>
+
+  <!-- Área principal -->
+  <main class="main-area" id="mainArea">
+
+    <!-- Barra de busca rápida -->
+    <div class="search-bar">
+      <input type="search" id="quickSearch" placeholder="🔍  Buscar músicas..." style="max-width:360px">
+      <button class="btn btn-secondary btn-sm" id="advSearchBtn">Busca avançada</button>
+    </div>
+
+    <!-- Painel de busca avançada -->
+    <div class="adv-search" id="advPanel">
+      <div class="form-group">
+        <label>Título</label>
+        <input type="text" id="sTitle" placeholder="Nome da música">
+      </div>
+      <div class="form-group">
+        <label>Artista</label>
+        <input type="text" id="sArtist" placeholder="Nome do artista">
+      </div>
+      <div class="form-group">
+        <label>Gênero</label>
+        <input type="text" id="sGenre" placeholder="Ex: Rock">
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end;padding-bottom:1px">
+        <button class="btn btn-primary btn-sm" id="applySearch">Buscar</button>
+        <button class="btn btn-secondary btn-sm" id="clearSearch">Limpar</button>
+      </div>
+    </div>
+
+    <!-- Cabeçalho da listagem -->
+    <div class="main-header">
+      <h2>
+        Músicas
+        <span style="font-size:0.85rem;font-weight:400;color:var(--text-secondary);margin-left:8px">
+          <span id="totalCount">0</span> encontradas
+        </span>
+      </h2>
+    </div>
+
+    <!-- Grid de músicas -->
+    <div class="main-content">
+      <div class="songs-grid" id="songsGrid">
+        <div class="loading-state"><span class="spinner"></span> Carregando músicas...</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Player fixo na base -->
+<div class="player-bar" id="playerBar">
+
+  <!-- Info da música -->
+  <div class="player-info">
+    <div class="player-cover">🎵</div>
+    <div class="player-meta">
+      <div class="player-title" id="playerTitle">—</div>
+      <div class="player-artist" id="playerArtist">—</div>
+    </div>
+  </div>
+
+  <!-- Controles centrais -->
+  <div class="player-controls">
+    <div class="player-buttons">
+      <button class="ctrl-btn" id="prevBtn" title="Anterior">⏮</button>
+      <button class="ctrl-btn play-btn" id="playPauseBtn" title="Reproduzir">▶</button>
+      <button class="ctrl-btn" id="nextBtn" title="Próxima">⏭</button>
+    </div>
+    <div class="progress-row">
+      <span class="time" id="currentTime">0:00</span>
+      <div class="progress-track" id="progressTrack">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <span class="time" id="totalTime">0:00</span>
+    </div>
+  </div>
+
+  <!-- Volume -->
+  <div class="player-volume">
+    <span class="vol-icon" id="volIcon">🔊</span>
+    <input type="range" id="volumeSlider" min="0" max="1" step="0.02" value="0.8">
+  </div>
+
+</div>
+
+<script src="/static/js/auth.js"></script>
+<script src="/static/js/user.js"></script>
+</body>
+</html>

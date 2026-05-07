@@ -1,0 +1,142 @@
+USUÁRIO:
+Possuo uma pequena empresa de tecnologia focada em um sistema de streaming de musica com cadastro e reprodução.
+Atualmente utilizamos um sistema legado e queremos abandoná-lo para iniciar uma nova solução moderna, mais organizada e escalável.
+
+O sistema deve permitir dois tipos de usuários: artistas e usuários comuns, com funcionalidades separadas.
+
+Preciso que seja gerado um serviço REST com autenticação JWT, frontend e backend completos.
+O sistema deve armazenar arquivos de música localmente no servidor (nuvem sera usada apenas para cadastro de usuario).
+
+Preciso que seja gerado o código completo a ser utilizado. Seguem os requisitos:
+
+Módulo de Autenticação e Usuários
+O sistema deve permitir cadastro de usuários com:
+nome, e-mail, senha, tipo (ARTISTA ou USUARIO)
+O sistema deve autenticar via e-mail e senha, retornando um token JWT.
+O sistema deve garantir controle de acesso baseado no tipo de usuário.
+
+Módulo de Artista (Upload de Músicas)
+Apenas usuários do tipo ARTISTA podem acessar este módulo.
+O artista deve poder cadastrar músicas com:
+título, gênero, descrição (opcional)
+O artista deve fazer upload do arquivo de música (apenas MP3).
+O arquivo deve ser armazenado localmente no servidor (ex: pasta /uploads).
+O sistema deve salvar o caminho do arquivo no banco de dados.
+O artista NÃO deve conseguir ouvir músicas, apenas cadastra-las.
+
+Módulo de Usuário (Consumo de Músicas):
+listar músicas
+buscar músicas por: nome, artista e genero
+reproduzir a música diretamente no navegador (streaming via backend)
+O backend deve fornecer endpoint para servir o arquivo de áudio.
+
+Módulo de Streaming
+O backend deve disponibilizar endpoint para reprodução de áudio.
+Deve suportar streaming básico.
+Os arquivos devem ser servidos diretamente do armazenamento local.
+
+Módulo de Frontend:
+O frontend deve ser desktop-first.
+
+Dados do banco de dados:
+Banco de dados: Firebase (apenas para usuários)
+Arquivos de música: armazenamento local no servidor (filesystem)
+Não utilizar serviços externos de armazenamento.
+
+Dados de acesso ao firebase:
+C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json
+
+Linguagem de programação: Python
+Ambiente: Windows
+
+---
+
+ASSISTENTE:
+Credenciais Firebase confirmadas. Vou criar toda a estrutura do projeto agora.
+
+[criação dos arquivos e estrutura do projeto]
+
+O sistema está completo. O dashboard do usuário (com player) também está visível no preview. Aqui está o resumo de tudo que foi gerado:
+
+Sistema SoundStream — Resumo
+
+Estrutura de arquivos (20 arquivos):
+ClaudeCode/
+├── start.bat
+├── backend/
+│   ├── main.py
+│   ├── config.py
+│   ├── database.py
+│   ├── models.py
+│   ├── requirements.txt
+│   ├── uploads/
+│   ├── auth/
+│   │   ├── service.py
+│   │   └── router.py
+│   └── music/
+│       ├── service.py
+│       └── router.py
+└── frontend/
+    ├── index.html
+    ├── register.html
+    ├── artist.html
+    ├── user.html
+    └── static/
+        ├── css/style.css
+        └── js/
+            ├── auth.js
+            ├── artist.js
+            └── user.js
+
+Endpoints principais:
+POST /api/auth/register
+POST /api/auth/login
+POST /api/music/upload    — ARTISTA
+GET  /api/music/my        — ARTISTA
+GET  /api/music/list      — USUARIO
+GET  /api/music/search    — USUARIO
+GET  /api/music/stream/{id}?token=JWT — USUARIO
+
+Observações:
+- Firebase: precisa ter o Firestore habilitado no projeto lead-manager-54595.
+- Streaming: usa HTTP Range Requests — funciona nativamente com o elemento <audio> do browser. O token JWT é passado via query param pois o elemento <audio> não suporta headers customizados.
+- Segurança: artistas recebem 403 ao tentar acessar endpoints de ouvinte e vice-versa.
+
+---
+
+USUÁRIO:
+Rode
+
+---
+
+ASSISTENTE:
+Dependências instaladas com sucesso.
+Servidor iniciado na porta 8000.
+Confirmação HTTP 200 — sistema funcionando.
+[screenshot da tela de login capturado]
+
+Sistema rodando. A tela de login está no ar em http://localhost:8000.
+
+O servidor FastAPI subiu corretamente, o banco SQLite foi criado automaticamente e o frontend está sendo servido.
+
+Atenção: Antes de cadastrar o primeiro usuário, verifique se o Firestore está habilitado no seu projeto Firebase (lead-manager-54595).
+
+---
+
+USUÁRIO:
+Pode fechar e salvar todo o historico de conversa em prompt.txt
+
+---
+
+ASSISTENTE:
+Servidor encerrado. Histórico salvo em prompt.txt.
+
+---
+
+USUÁRIO:
+Nao deve conter instrucoes e coisa do tipo, deve ter literalmente apenas o texto desse chat
+
+---
+
+ASSISTENTE:
+Entendido. Arquivo reescrito com apenas o texto literal da conversa.

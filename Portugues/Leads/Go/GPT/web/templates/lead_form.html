@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}} | {{.AppName}}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div>
+        <span class="eyebrow">Lead Ops</span>
+        <h1>{{.AppName}}</h1>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/app/dashboard">Dashboard</a>
+        <a href="/app/leads">Leads</a>
+        <a class="active" href="/app/leads/new">{{if eq .Mode "edit"}}Editar lead{{else}}Novo lead{{end}}</a>
+      </nav>
+      <div class="sidebar-footer">
+        <strong>{{.User.Name}}</strong>
+        <span>{{.User.Email}}</span>
+        <button class="btn btn-secondary btn-block" data-logout>Sair</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="page-header">
+        <div>
+          <span class="eyebrow">Cadastro Operacional</span>
+          <h2>{{if eq .Mode "edit"}}Editar lead{{else}}Novo lead{{end}}</h2>
+        </div>
+        <a class="btn btn-secondary" href="/app/leads">Voltar</a>
+      </header>
+
+      <section class="panel form-panel">
+        <form class="stack-form lead-form" data-lead-form="{{.Mode}}" {{if eq .Mode "edit"}}data-lead-id="{{.Lead.ID}}"{{end}}>
+          <div class="form-grid">
+            <label>
+              <span>Nome completo</span>
+              <input type="text" name="full_name" value="{{.Lead.FullName}}" required>
+            </label>
+            <label>
+              <span>E-mail</span>
+              <input type="email" name="email" value="{{.Lead.Email}}">
+            </label>
+            <label>
+              <span>Telefone</span>
+              <input type="text" name="phone" value="{{.Lead.Phone}}">
+            </label>
+            <label>
+              <span>Empresa</span>
+              <input type="text" name="company" value="{{.Lead.Company}}">
+            </label>
+            <label>
+              <span>Cargo</span>
+              <input type="text" name="role" value="{{.Lead.Role}}">
+            </label>
+            <label>
+              <span>Fonte</span>
+              <input type="text" name="source" value="{{.Lead.Source}}" placeholder="site, indicação, evento">
+            </label>
+            <label>
+              <span>Status</span>
+              <select name="status">
+                {{range .Statuses}}
+                <option value="{{.}}" {{if eq $.Lead.Status .}}selected{{end}}>{{.}}</option>
+                {{end}}
+              </select>
+            </label>
+            <label>
+              <span>Data de captura</span>
+              <input type="date" name="capture_date" value="{{if not .Lead.CaptureDate.IsZero}}{{.Lead.CaptureDate.Format "2006-01-02"}}{{end}}">
+            </label>
+          </div>
+
+          <div class="form-message" data-form-message></div>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit">{{if eq .Mode "edit"}}Salvar alterações{{else}}Cadastrar lead{{end}}</button>
+            {{if eq .Mode "edit"}}
+            <button type="button" class="btn btn-danger" data-delete-lead="{{.Lead.ID}}">Excluir lead</button>
+            {{end}}
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

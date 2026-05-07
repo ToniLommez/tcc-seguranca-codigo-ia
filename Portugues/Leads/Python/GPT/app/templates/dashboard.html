@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Dashboard</p>
+        <h2 id="welcomeMessage">Visão geral da sua carteira</h2>
+        <p>Monitore rapidamente volume, qualificação e cadência das capturas recentes.</p>
+    </div>
+    <a class="button primary" href="/leads/new">Cadastrar lead</a>
+</section>
+
+<section class="grid metrics-grid">
+    <article class="metric-card">
+        <span>Total de leads</span>
+        <strong id="metricTotal">0</strong>
+    </article>
+    <article class="metric-card highlight">
+        <span>Novos</span>
+        <strong id="metricNovo">0</strong>
+    </article>
+    <article class="metric-card">
+        <span>Em contato</span>
+        <strong id="metricContato">0</strong>
+    </article>
+    <article class="metric-card">
+        <span>Qualificados</span>
+        <strong id="metricQualificado">0</strong>
+    </article>
+    <article class="metric-card danger">
+        <span>Perdidos</span>
+        <strong id="metricPerdido">0</strong>
+    </article>
+</section>
+
+<section class="grid dashboard-grid">
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Últimos 14 dias</p>
+                <h3>Capturas por período</h3>
+            </div>
+        </div>
+        <div id="capturesChart" class="bars-chart"></div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Origens</p>
+                <h3>Fontes mais frequentes</h3>
+            </div>
+        </div>
+        <div id="sourcesList" class="source-list"></div>
+    </article>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <p class="eyebrow">Acesso rápido</p>
+            <h3>Fluxo operacional</h3>
+        </div>
+    </div>
+    <div class="quick-actions">
+        <a class="quick-link" href="/leads">Listar e filtrar leads</a>
+        <a class="quick-link" href="/leads/new">Criar novo lead</a>
+        <a class="quick-link" href="/docs" target="_blank" rel="noreferrer">Ver documentação da API</a>
+    </div>
+</section>
+{% endblock %}

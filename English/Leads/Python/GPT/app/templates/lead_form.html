@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <span class="eyebrow">Lead Record</span>
+        <h2 id="formTitle">Lead form</h2>
+        <p>Create new leads or refine existing records without leaving the workspace.</p>
+    </div>
+    <a class="ghost-button" href="/leads">Back to leads</a>
+</section>
+
+<section class="panel">
+    <form id="leadForm" class="form-grid two-column">
+        <label>
+            <span>Full name</span>
+            <input type="text" name="full_name" required>
+        </label>
+        <label>
+            <span>Email</span>
+            <input type="email" name="email" required>
+        </label>
+        <label>
+            <span>Phone</span>
+            <input type="text" name="phone">
+        </label>
+        <label>
+            <span>Company</span>
+            <input type="text" name="company">
+        </label>
+        <label>
+            <span>Position</span>
+            <input type="text" name="position">
+        </label>
+        <label>
+            <span>Source</span>
+            <input type="text" name="source" placeholder="Website, referral, event" required>
+        </label>
+        <label>
+            <span>Status</span>
+            <select name="status" required>
+                <option value="new">New</option>
+                <option value="contacted">Contacted</option>
+                <option value="qualified">Qualified</option>
+                <option value="lost">Lost</option>
+            </select>
+        </label>
+        <label>
+            <span>Capture date</span>
+            <input type="date" name="capture_date" required>
+        </label>
+        <div class="form-actions">
+            <button class="primary-button" type="submit">Save lead</button>
+            <p class="form-message" id="leadFormMessage"></p>
+        </div>
+    </form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/lead_form.js"></script>
+{% endblock %}

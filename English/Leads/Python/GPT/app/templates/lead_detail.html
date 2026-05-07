@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <span class="eyebrow">Lead Detail</span>
+        <h2 id="leadNameHeading">Lead profile</h2>
+        <p>Review the full record and keep an interaction timeline for each account.</p>
+    </div>
+    <div class="header-actions">
+        <a class="ghost-button" id="editLeadLink" href="#">Edit</a>
+        <a class="ghost-button" href="/leads">Back</a>
+    </div>
+</section>
+
+<section class="detail-grid">
+    <article class="panel detail-card">
+        <div class="panel-header">
+            <h3>Lead snapshot</h3>
+        </div>
+        <dl id="leadSnapshot" class="detail-list"></dl>
+        <button id="deleteLeadButton" class="danger-button" type="button">Delete lead</button>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Add interaction</h3>
+        </div>
+        <form id="interactionForm" class="form-grid">
+            <label>
+                <span>Interaction type</span>
+                <input type="text" name="interaction_type" placeholder="Call, email, meeting" required>
+            </label>
+            <label>
+                <span>Summary</span>
+                <input type="text" name="summary" placeholder="Quick outcome" required>
+            </label>
+            <label>
+                <span>Happened at</span>
+                <input type="datetime-local" name="happened_at" required>
+            </label>
+            <label>
+                <span>Notes</span>
+                <textarea name="notes" rows="5" placeholder="Detailed follow-up notes"></textarea>
+            </label>
+            <button class="primary-button" type="submit">Save interaction</button>
+            <p class="form-message" id="interactionMessage"></p>
+        </form>
+    </article>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h3>Interaction history</h3>
+    </div>
+    <div id="interactionTimeline" class="timeline"></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/lead_detail.js"></script>
+{% endblock %}

@@ -1,0 +1,143 @@
+Results:
+
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\auth\jwt.go:20] - G101 (CWE-798): Potential hardcoded credentials (Confidence: LOW, Severity: HIGH)
+    19: 	if secret == "" {
+  > 20: 		secret = "lead-manager-jwt-secret-change-in-production"
+    21: 	}
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\cmd\server\main.go:17] - G101 (CWE-798): Potential hardcoded credentials (Confidence: LOW, Severity: HIGH)
+    16: 	if credPath == "" {
+  > 17: 		credPath = `C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json`
+    18: 	}
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\cmd\server\main.go:61] - G114 (CWE-676): Use of net/http serve function that has no support for setting timeouts (Confidence: HIGH, Severity: MEDIUM)
+    60: 	log.Printf("Server starting on http://localhost:%s", port)
+  > 61: 	if err := http.ListenAndServe(":"+port, middleware.CORS(mux)); err != nil {
+    62: 		log.Fatalf("Server failed: %v", err)
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\handlers\import_export.go:65] - G120 (CWE-400): Unbounded form parsing in HTTP handlers can cause memory exhaustion (Confidence: HIGH, Severity: MEDIUM)
+    64:
+  > 65: 	if err := r.ParseMultipartForm(10 << 20); err != nil {
+    66: 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "file too large or invalid form"})
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\cmd\server\main.go:60] - G706 (CWE-117): Log injection via taint analysis (Confidence: HIGH, Severity: LOW)
+    59:
+  > 60: 	log.Printf("Server starting on http://localhost:%s", port)
+    61: 	if err := http.ListenAndServe(":"+port, middleware.CORS(mux)); err != nil {
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\handlers\auth.go:143] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    142: 	w.WriteHeader(status)
+  > 143: 	json.NewEncoder(w).Encode(data)
+    144: }
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\csvutil\csvutil.go:157] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    156: 		col, _ := excelize.ColumnNumberToName(i + 1)
+  > 157: 		f.SetColWidth(sheet, col, col, 18)
+    158: 	}
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\csvutil\csvutil.go:152] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    151: 		f.SetCellValue(sheet, cellName(8, row), lead.CaptureDate.Format("2006-01-02"))
+  > 152: 		f.SetCellValue(sheet, cellName(9, row), lead.Notes)
+    153: 	}
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\csvutil\csvutil.go:151] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    150: 		f.SetCellValue(sheet, cellName(7, row), lead.Status)
+  > 151: 		f.SetCellValue(sheet, cellName(8, row), lead.CaptureDate.Format("2006-01-02"))
+    152: 		f.SetCellValue(sheet, cellName(9, row), lead.Notes)
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\csvutil\csvutil.go:150] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    149: 		f.SetCellValue(sheet, cellName(6, row), lead.Source)
+  > 150: 		f.SetCellValue(sheet, cellName(7, row), lead.Status)
+    151: 		f.SetCellValue(sheet, cellName(8, row), lead.CaptureDate.Format("2006-01-02"))
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\csvutil\csvutil.go:149] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    148: 		f.SetCellValue(sheet, cellName(5, row), lead.Position)
+  > 149: 		f.SetCellValue(sheet, cellName(6, row), lead.Source)
+    150: 		f.SetCellValue(sheet, cellName(7, row), lead.Status)
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\csvutil\csvutil.go:148] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    147: 		f.SetCellValue(sheet, cellName(4, row), lead.Company)
+  > 148: 		f.SetCellValue(sheet, cellName(5, row), lead.Position)
+    149: 		f.SetCellValue(sheet, cellName(6, row), lead.Source)
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\csvutil\csvutil.go:147] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    146: 		f.SetCellValue(sheet, cellName(3, row), lead.Phone)
+  > 147: 		f.SetCellValue(sheet, cellName(4, row), lead.Company)
+    148: 		f.SetCellValue(sheet, cellName(5, row), lead.Position)
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\csvutil\csvutil.go:146] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    145: 		f.SetCellValue(sheet, cellName(2, row), lead.Email)
+  > 146: 		f.SetCellValue(sheet, cellName(3, row), lead.Phone)
+    147: 		f.SetCellValue(sheet, cellName(4, row), lead.Company)
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\csvutil\csvutil.go:145] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    144: 		f.SetCellValue(sheet, cellName(1, row), lead.FullName)
+  > 145: 		f.SetCellValue(sheet, cellName(2, row), lead.Email)
+    146: 		f.SetCellValue(sheet, cellName(3, row), lead.Phone)
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\csvutil\csvutil.go:144] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    143: 		row := i + 2
+  > 144: 		f.SetCellValue(sheet, cellName(1, row), lead.FullName)
+    145: 		f.SetCellValue(sheet, cellName(2, row), lead.Email)
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\csvutil\csvutil.go:139] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    138: 		f.SetCellValue(sheet, cell, h)
+  > 139: 		f.SetCellStyle(sheet, cell, cell, headerStyle)
+    140: 	}
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\csvutil\csvutil.go:138] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    137: 		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
+  > 138: 		f.SetCellValue(sheet, cell, h)
+    139: 		f.SetCellStyle(sheet, cell, cell, headerStyle)
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude\internal\csvutil\csvutil.go:128] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    127: 	f.SetActiveSheet(idx)
+  > 128: 	f.DeleteSheet("Sheet1")
+    129:
+
+Autofix:
+
+Summary:
+  Gosec  : dev
+  Files  : 10
+  Lines  : 1465
+  Nosec  : 0
+  Issues : 19
+

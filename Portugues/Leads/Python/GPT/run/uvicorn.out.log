@@ -1,0 +1,21 @@
+INFO:     127.0.0.1:64179 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58080 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58080 - "GET /static/css/app.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:59935 - "GET /static/js/app.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:59935 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:65165 - "POST /api/auth/register HTTP/1.1" 201 Created
+INFO:     127.0.0.1:65165 - "GET /dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65165 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65165 - "GET /api/dashboard/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65165 - "GET /leads/new HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65165 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54799 - "POST /api/leads HTTP/1.1" 201 Created
+INFO:     127.0.0.1:54799 - "GET /leads/VHwEsn81uPHn3YyMn3hn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54799 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54799 - "GET /api/leads/VHwEsn81uPHn3YyMn3hn HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54799 - "GET /dashboard HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54799 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54799 - "GET /api/dashboard/summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54799 - "GET /leads HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54799 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54799 - "GET /api/leads?sort_by=captured_at&sort_direction=desc&page_size=10&page=1 HTTP/1.1" 200 OK

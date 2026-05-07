@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StreamMusic — Cadastro</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
+      </svg>
+      <h1>StreamMusic</h1>
+    </div>
+
+    <h2>Criar conta</h2>
+    <p>Preencha os dados para se cadastrar</p>
+
+    <div id="alertBox"></div>
+
+    <form id="registerForm">
+      <div class="form-group">
+        <label>Nome completo</label>
+        <input type="text" id="name" placeholder="Seu nome" required>
+      </div>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="email" placeholder="seu@email.com" required>
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" id="password" placeholder="Mínimo 6 caracteres" required minlength="6">
+      </div>
+      <div class="form-group">
+        <label>Tipo de conta</label>
+        <select id="type" required>
+          <option value="">Selecione...</option>
+          <option value="USUARIO">Ouvinte (Usuário)</option>
+          <option value="ARTISTA">Artista</option>
+        </select>
+      </div>
+
+      <div id="typeInfo" style="display:none; margin-bottom:16px; padding:12px; background:rgba(124,58,237,.1);
+           border:1px solid rgba(124,58,237,.3); border-radius:8px; font-size:.85rem; color:#a78bfa;"></div>
+
+      <button type="submit" class="btn btn-primary btn-full" id="registerBtn">Criar conta</button>
+    </form>
+
+    <div class="auth-link">
+      Já tem conta? <a href="/index.html">Fazer login</a>
+    </div>
+  </div>
+
+  <script src="/assets/js/api.js"></script>
+  <script>
+    const typeInfo = {
+      USUARIO:  '🎵 Como ouvinte, você poderá explorar e reproduzir músicas dos artistas.',
+      ARTISTA:  '🎤 Como artista, você poderá fazer upload de músicas MP3 para o catálogo.'
+    };
+
+    document.getElementById('type').addEventListener('change', function() {
+      const box = document.getElementById('typeInfo');
+      if (typeInfo[this.value]) {
+        box.textContent = typeInfo[this.value];
+        box.style.display = 'block';
+      } else {
+        box.style.display = 'none';
+      }
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('registerBtn');
+      btn.disabled = true;
+      btn.textContent = 'Cadastrando...';
+
+      const name     = document.getElementById('name').value.trim();
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const type     = document.getElementById('type').value;
+
+      if (!type) {
+        showAlert('alertBox', 'Selecione o tipo de conta.');
+        btn.disabled = false;
+        btn.textContent = 'Criar conta';
+        return;
+      }
+
+      try {
+        await Api.register(name, email, password, type);
+        showAlert('alertBox', 'Conta criada! Redirecionando para o login...', 'success');
+        setTimeout(() => window.location.href = '/index.html', 1500);
+      } catch (err) {
+        showAlert('alertBox', err.message || 'Erro ao criar conta.');
+        btn.disabled = false;
+        btn.textContent = 'Criar conta';
+      }
+    });
+  </script>
+</body>
+</html>

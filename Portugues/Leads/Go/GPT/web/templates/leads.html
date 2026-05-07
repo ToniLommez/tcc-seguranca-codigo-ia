@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}} | {{.AppName}}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div>
+        <span class="eyebrow">Lead Ops</span>
+        <h1>{{.AppName}}</h1>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/app/dashboard">Dashboard</a>
+        <a class="active" href="/app/leads">Leads</a>
+        <a href="/app/leads/new">Novo lead</a>
+      </nav>
+      <div class="sidebar-footer">
+        <strong>{{.User.Name}}</strong>
+        <span>{{.User.Email}}</span>
+        <button class="btn btn-secondary btn-block" data-logout>Sair</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="page-header">
+        <div>
+          <span class="eyebrow">Gestão Completa</span>
+          <h2>Base de Leads</h2>
+        </div>
+        <div class="header-actions">
+          <a class="btn btn-secondary" href="/api/leads/export?format=csv&q={{.Params.Query}}&status={{.Params.Status}}&source={{.Params.Source}}&capture_date_from={{.Params.CaptureDateFrom}}&capture_date_to={{.Params.CaptureDateTo}}&sort_by={{.Params.SortBy}}&sort_direction={{.Params.SortDirection}}">Exportar CSV</a>
+          <a class="btn btn-secondary" href="/api/leads/export?format=xlsx&q={{.Params.Query}}&status={{.Params.Status}}&source={{.Params.Source}}&capture_date_from={{.Params.CaptureDateFrom}}&capture_date_to={{.Params.CaptureDateTo}}&sort_by={{.Params.SortBy}}&sort_direction={{.Params.SortDirection}}">Exportar Excel</a>
+          <a class="btn btn-primary" href="/app/leads/new">Novo lead</a>
+        </div>
+      </header>
+
+      <section class="panel">
+        <form class="filter-grid" method="GET" action="/app/leads">
+          <label>
+            <span>Busca livre</span>
+            <input type="text" name="q" value="{{.Params.Query}}" placeholder="Nome, e-mail ou empresa">
+          </label>
+          <label>
+            <span>Status</span>
+            <select name="status">
+              <option value="">Todos</option>
+              {{range .Statuses}}
+              <option value="{{.}}" {{if eq $.Params.Status .}}selected{{end}}>{{.}}</option>
+              {{end}}
+            </select>
+          </label>
+          <label>
+            <span>Fonte</span>
+            <select name="source">
+              <option value="">Todas</option>
+              {{range .Sources}}
+              <option value="{{.}}" {{if eq $.Params.Source .}}selected{{end}}>{{.}}</option>
+              {{end}}
+            </select>
+          </label>
+          <label>
+            <span>Captura de</span>
+            <input type="date" name="capture_date_from" value="{{.Params.CaptureDateFrom}}">
+          </label>
+          <label>
+            <span>Até</span>
+            <input type="date" name="capture_date_to" value="{{.Params.CaptureDateTo}}">
+          </label>
+          <label>
+            <span>Ordenar por</span>
+            <select name="sort_by">
+              <option value="capture_date" {{if or (eq .Params.SortBy "") (eq .Params.SortBy "capture_date")}}selected{{end}}>Data de captura</option>
+              <option value="full_name" {{if eq .Params.SortBy "full_name"}}selected{{end}}>Nome</option>
+              <option value="company" {{if eq .Params.SortBy "company"}}selected{{end}}>Empresa</option>
+              <option value="status" {{if eq .Params.SortBy "status"}}selected{{end}}>Status</option>
+            </select>
+          </label>
+          <label>
+            <span>Direção</span>
+            <select name="sort_direction">
+              <option value="desc" {{if or (eq .Params.SortDirection "") (eq .Params.SortDirection "desc")}}selected{{end}}>Descendente</option>
+              <option value="asc" {{if eq .Params.SortDirection "asc"}}selected{{end}}>Ascendente</option>
+            </select>
+          </label>
+          <label>
+            <span>Itens por página</span>
+            <select name="page_size">
+              <option value="10" {{if or (eq .Paginated.PageSize 0) (eq .Paginated.PageSize 10)}}selected{{end}}>10</option>
+              <option value="25" {{if eq .Paginated.PageSize 25}}selected{{end}}>25</option>
+              <option value="50" {{if eq .Paginated.PageSize 50}}selected{{end}}>50</option>
+            </select>
+          </label>
+          <div class="filter-actions">
+            <button class="btn btn-primary" type="submit">Aplicar filtros</button>
+            <a class="btn btn-secondary" href="/app/leads">Limpar</a>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header between">
+          <h3>{{.Paginated.TotalItems}} leads encontrados</h3>
+          <form class="inline-form" data-import-form>
+            <input type="file" name="file" accept=".csv,.xlsx,.xls" required>
+            <button class="btn btn-secondary" type="submit">Importar arquivo</button>
+          </form>
+        </div>
+        <div class="form-message" data-form-message></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Empresa</th>
+                <th>Status</th>
+                <th>Fonte</th>
+                <th>Captura</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .Paginated.Items}}
+              <tr>
+                <td>{{.FullName}}</td>
+                <td>{{.Email}}</td>
+                <td>{{.Company}}</td>
+                <td><span class="status-pill {{statusClass .Status}}">{{.Status}}</span></td>
+                <td>{{.Source}}</td>
+                <td>{{formatDate .CaptureDate}}</td>
+                <td class="row-actions">
+                  <a href="/app/leads/{{.ID}}">Detalhes</a>
+                  <a href="/app/leads/{{.ID}}/edit">Editar</a>
+                  <button type="button" class="link-button danger-link" data-delete-lead="{{.ID}}">Excluir</button>
+                </td>
+              </tr>
+              {{else}}
+              <tr><td colspan="7">Nenhum lead encontrado para os filtros aplicados.</td></tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          {{range .PageNumbers}}
+          <a href="/app/leads?page={{.}}&page_size={{$.Paginated.PageSize}}&q={{$.Params.Query}}&status={{$.Params.Status}}&source={{$.Params.Source}}&capture_date_from={{$.Params.CaptureDateFrom}}&capture_date_to={{$.Params.CaptureDateTo}}&sort_by={{$.Params.SortBy}}&sort_direction={{$.Params.SortDirection}}" class="{{if eq $.Paginated.Page .}}active{{end}}">{{.}}</a>
+          {{end}}
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

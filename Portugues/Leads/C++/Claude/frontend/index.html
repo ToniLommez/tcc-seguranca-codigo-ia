@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lead Manager — Login</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body { background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); }
+    .auth-card { border: 1px solid rgba(255,255,255,.08); background: #fff; }
+  </style>
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-container">
+    <div class="card auth-card">
+      <div class="auth-logo">
+        <div class="logo-circle">📊</div>
+        <h1>Lead Manager</h1>
+        <p>Gerencie seus leads com eficiência</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Entrar</button>
+        <button class="auth-tab"        id="tab-register" onclick="switchTab('register')">Cadastrar</button>
+      </div>
+
+      <!-- Alert -->
+      <div id="auth-alert" class="alert alert-danger hidden"></div>
+
+      <!-- Login form -->
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label" for="login-email">E-mail</label>
+          <input id="login-email" type="email" class="form-control"
+                 placeholder="seu@email.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-pass">Senha</label>
+          <input id="login-pass" type="password" class="form-control"
+                 placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%" id="login-btn">
+          Entrar
+        </button>
+      </form>
+
+      <!-- Register form -->
+      <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label class="form-label" for="reg-name">Nome completo</label>
+          <input id="reg-name" type="text" class="form-control"
+                 placeholder="Sua empresa / nome" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-email">E-mail</label>
+          <input id="reg-email" type="email" class="form-control"
+                 placeholder="seu@email.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-pass">Senha</label>
+          <input id="reg-pass" type="password" class="form-control"
+                 placeholder="Mínimo 6 caracteres" required autocomplete="new-password" minlength="6">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-pass2">Confirmar senha</label>
+          <input id="reg-pass2" type="password" class="form-control"
+                 placeholder="Repita a senha" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%" id="reg-btn">
+          Criar conta
+        </button>
+      </form>
+
+      <p class="text-muted text-sm" style="text-align:center; margin-top:20px;">
+        Lead Manager · claude-sonnet-4-6 · C++
+      </p>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  // If already logged in, redirect
+  if (getToken()) window.location.href = '/dashboard';
+
+  function switchTab(tab) {
+    document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+    document.getElementById('register-form').classList.toggle('hidden', tab !== 'register');
+    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+    document.getElementById('auth-alert').classList.add('hidden');
+  }
+
+  function showAuthError(msg) {
+    const el = document.getElementById('auth-alert');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    const btn   = document.getElementById('login-btn');
+    const email = document.getElementById('login-email').value;
+    const pass  = document.getElementById('login-pass').value;
+
+    btn.disabled = true;
+    btn.textContent = 'Entrando...';
+    document.getElementById('auth-alert').classList.add('hidden');
+
+    try {
+      await Auth.login(email, pass);
+      window.location.href = '/dashboard';
+    } catch (err) {
+      showAuthError(err.message);
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+    }
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    const btn   = document.getElementById('reg-btn');
+    const name  = document.getElementById('reg-name').value;
+    const email = document.getElementById('reg-email').value;
+    const pass  = document.getElementById('reg-pass').value;
+    const pass2 = document.getElementById('reg-pass2').value;
+
+    if (pass !== pass2) { showAuthError('As senhas não coincidem'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Criando conta...';
+    document.getElementById('auth-alert').classList.add('hidden');
+
+    try {
+      await Auth.register(name, email, pass);
+      window.location.href = '/dashboard';
+    } catch (err) {
+      showAuthError(err.message);
+      btn.disabled = false;
+      btn.textContent = 'Criar conta';
+    }
+  }
+</script>
+</body>
+</html>

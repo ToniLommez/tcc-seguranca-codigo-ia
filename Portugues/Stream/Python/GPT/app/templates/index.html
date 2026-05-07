@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streaming Platform</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="hero-panel">
+            <div class="brand-badge">Streaming Platform</div>
+            <h1>Plataforma moderna para artistas e ouvintes.</h1>
+            <p>
+                Cadastre artistas, publique faixas em MP3 e ofereca uma experiencia de busca
+                e reproducao organizada para seus usuarios.
+            </p>
+            <div class="hero-highlights">
+                <div>
+                    <strong>Backend</strong>
+                    <span>FastAPI + JWT</span>
+                </div>
+                <div>
+                    <strong>Usuarios</strong>
+                    <span>Firebase / Firestore</span>
+                </div>
+                <div>
+                    <strong>Musicas</strong>
+                    <span>SQLite + Upload local</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="content-panel">
+            <section id="auth-view" class="card auth-card">
+                <div class="tabs">
+                    <button class="tab-button active" data-tab="login">Entrar</button>
+                    <button class="tab-button" data-tab="register">Criar conta</button>
+                </div>
+
+                <form id="login-form" class="tab-content active">
+                    <h2>Acesse sua conta</h2>
+                    <label>
+                        <span>E-mail</span>
+                        <input name="email" type="email" required>
+                    </label>
+                    <label>
+                        <span>Senha</span>
+                        <input name="password" type="password" minlength="6" required>
+                    </label>
+                    <button type="submit" class="primary-button">Entrar</button>
+                </form>
+
+                <form id="register-form" class="tab-content">
+                    <h2>Crie um novo usuario</h2>
+                    <label>
+                        <span>Nome</span>
+                        <input name="name" type="text" required>
+                    </label>
+                    <label>
+                        <span>E-mail</span>
+                        <input name="email" type="email" required>
+                    </label>
+                    <label>
+                        <span>Senha</span>
+                        <input name="password" type="password" minlength="6" required>
+                    </label>
+                    <label>
+                        <span>Tipo de usuario</span>
+                        <select name="user_type" required>
+                            <option value="USUARIO">Usuario comum</option>
+                            <option value="ARTISTA">Artista</option>
+                        </select>
+                    </label>
+                    <button type="submit" class="primary-button">Cadastrar</button>
+                </form>
+            </section>
+
+            <section id="dashboard-view" class="dashboard hidden">
+                <header class="dashboard-header card">
+                    <div>
+                        <p class="eyebrow">Sessao autenticada</p>
+                        <h2 id="welcome-title">Painel</h2>
+                        <p id="welcome-subtitle" class="muted"></p>
+                    </div>
+                    <button id="logout-button" class="secondary-button">Sair</button>
+                </header>
+
+                <section id="artist-dashboard" class="hidden">
+                    <div class="grid-two">
+                        <article class="card">
+                            <h3>Enviar nova musica</h3>
+                            <form id="upload-form" class="stacked-form">
+                                <label>
+                                    <span>Titulo</span>
+                                    <input name="title" type="text" required>
+                                </label>
+                                <label>
+                                    <span>Genero</span>
+                                    <input name="genre" type="text" required>
+                                </label>
+                                <label>
+                                    <span>Descricao</span>
+                                    <textarea name="description" rows="4"></textarea>
+                                </label>
+                                <label>
+                                    <span>Arquivo MP3</span>
+                                    <input name="file" type="file" accept=".mp3,audio/mpeg" required>
+                                </label>
+                                <button type="submit" class="primary-button">Publicar musica</button>
+                            </form>
+                        </article>
+
+                        <article class="card">
+                            <h3>Suas musicas</h3>
+                            <div id="artist-song-list" class="list-container"></div>
+                        </article>
+                    </div>
+                </section>
+
+                <section id="user-dashboard" class="hidden">
+                    <article class="card">
+                        <h3>Buscar musicas</h3>
+                        <form id="search-form" class="search-grid">
+                            <label>
+                                <span>Nome</span>
+                                <input name="name" type="text">
+                            </label>
+                            <label>
+                                <span>Artista</span>
+                                <input name="artist" type="text">
+                            </label>
+                            <label>
+                                <span>Genero</span>
+                                <input name="genre" type="text">
+                            </label>
+                            <button type="submit" class="primary-button">Buscar</button>
+                        </form>
+                    </article>
+
+                    <div class="grid-two">
+                        <article class="card">
+                            <h3>Catalogo</h3>
+                            <div id="catalog-list" class="list-container"></div>
+                        </article>
+
+                        <article class="card">
+                            <h3>Player</h3>
+                            <div id="player-empty" class="empty-state">
+                                Selecione uma musica para iniciar a reproducao.
+                            </div>
+                            <div id="player-panel" class="hidden">
+                                <h4 id="player-title"></h4>
+                                <p id="player-meta" class="muted"></p>
+                                <p id="player-description"></p>
+                                <audio id="audio-player" controls preload="metadata" class="audio-player"></audio>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+            </section>
+        </main>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

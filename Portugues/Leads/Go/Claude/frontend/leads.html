@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lead Manager — Leads</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="/app/js/api.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#080c12; --surf:#0d1420; --surf2:#111827; --border:#1e2d45;
+  --amber:#f59e0b; --amber2:#fbbf24;
+  --text:#e2e8f0; --muted:#64748b; --red:#ef4444; --green:#22c55e;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+}
+html, body { height:100%; }
+body { background:var(--bg); color:var(--text); font-family:var(--sans); display:flex; }
+
+/* Sidebar identical to dashboard */
+.sidebar { width:220px; min-height:100vh; background:var(--surf); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; }
+.sidebar-logo { display:flex; align-items:center; gap:10px; padding:24px 20px; border-bottom:1px solid var(--border); }
+.logo-icon { width:30px; height:30px; background:var(--amber); display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:13px; font-weight:600; color:#000; }
+.logo-text { font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; }
+.nav { padding:16px 0; flex:1; }
+.nav-label { font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); padding:8px 20px 4px; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:10px 20px; color:var(--muted); text-decoration:none; font-size:13px; font-weight:500; transition:all .15s; border-left:2px solid transparent; }
+.nav-item:hover { color:var(--text); background:rgba(255,255,255,.03); }
+.nav-item.active { color:var(--amber); border-left-color:var(--amber); background:rgba(245,158,11,.05); }
+.sidebar-footer { padding:16px 20px; border-top:1px solid var(--border); }
+.user-info { display:flex; align-items:center; gap:10px; }
+.user-avatar { width:30px; height:30px; background:var(--border); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:11px; font-weight:600; color:var(--amber); flex-shrink:0; }
+.user-name { font-size:12px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.user-email { font-size:10px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.btn-logout { background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; margin-left:auto; flex-shrink:0; padding:4px; transition:color .15s; }
+.btn-logout:hover { color:var(--red); }
+
+/* Main */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.topbar { background:var(--surf); border-bottom:1px solid var(--border); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.page-title { font-size:18px; font-weight:600; }
+.topbar-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.btn-sm { padding:7px 14px; font-family:var(--mono); font-size:11px; letter-spacing:1px; text-transform:uppercase; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:all .15s; border:none; }
+.btn-amber { background:var(--amber); color:#000; font-weight:600; }
+.btn-amber:hover { background:var(--amber2); }
+.btn-ghost { background:none; color:var(--muted); border:1px solid var(--border); }
+.btn-ghost:hover { color:var(--text); border-color:var(--text); }
+.btn-red { background:none; color:var(--red); border:1px solid #ef444444; }
+.btn-red:hover { background:#450a0a; }
+
+/* Filters Bar */
+.filters-bar { background:var(--surf); border-bottom:1px solid var(--border); padding:12px 32px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.filter-input, .filter-select {
+  background:var(--bg); border:1px solid var(--border);
+  color:var(--text); padding:7px 12px;
+  font-family:var(--sans); font-size:13px; outline:none;
+  transition:border-color .2s; height:34px;
+}
+.filter-input:focus, .filter-select:focus { border-color:var(--amber); }
+.filter-input::placeholder { color:var(--muted); }
+.filter-select option { background:var(--surf); }
+.filter-search { width:240px; }
+.filter-sep { width:1px; height:24px; background:var(--border); margin:0 4px; }
+.filters-count { font-family:var(--mono); font-size:11px; color:var(--muted); margin-left:auto; }
+
+/* Table */
+.content { flex:1; overflow-y:auto; display:flex; flex-direction:column; }
+.table-wrap { flex:1; padding:0; overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+thead th {
+  position:sticky; top:0; z-index:10;
+  background:var(--surf); border-bottom:1px solid var(--border);
+  font-family:var(--mono); font-size:9px; letter-spacing:1.5px;
+  text-transform:uppercase; color:var(--muted);
+  text-align:left; padding:12px 16px; white-space:nowrap; cursor:pointer;
+  user-select:none;
+}
+thead th:hover { color:var(--text); }
+thead th.sorted { color:var(--amber); }
+tbody td { padding:12px 16px; font-size:13px; border-bottom:1px solid rgba(30,45,69,.4); vertical-align:middle; }
+tbody tr:hover td { background:rgba(245,158,11,.03); }
+tbody tr.selected td { background:rgba(245,158,11,.06); }
+.td-name { font-weight:500; color:var(--text); }
+.td-sub { font-size:11px; color:var(--muted); margin-top:2px; }
+.td-actions { display:flex; gap:6px; }
+.action-btn { background:none; border:none; cursor:pointer; padding:4px 8px; font-size:12px; color:var(--muted); transition:color .15s; font-family:var(--mono); }
+.action-btn:hover { color:var(--text); }
+.action-btn.del:hover { color:var(--red); }
+.empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
+.empty-state .empty-icon { font-size:40px; margin-bottom:12px; }
+.empty-state p { font-size:14px; }
+
+/* Pagination */
+.pagination-bar { background:var(--surf); border-top:1px solid var(--border); padding:12px 32px; display:flex; align-items:center; gap:8px; }
+.page-info { font-family:var(--mono); font-size:11px; color:var(--muted); margin-right:auto; }
+.page-btn { background:none; border:1px solid var(--border); color:var(--muted); padding:4px 12px; cursor:pointer; font-family:var(--mono); font-size:11px; transition:all .15s; }
+.page-btn:hover:not(:disabled) { border-color:var(--amber); color:var(--amber); }
+.page-btn.current { background:var(--amber); color:#000; border-color:var(--amber); font-weight:600; }
+.page-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+/* Modal */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:1000; display:none; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--surf); border:1px solid var(--border); width:560px; max-width:95vw; max-height:90vh; overflow-y:auto; }
+.modal-header { padding:20px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.modal-title { font-size:16px; font-weight:600; }
+.modal-close { background:none; border:none; color:var(--muted); cursor:pointer; font-size:20px; line-height:1; padding:0 4px; }
+.modal-close:hover { color:var(--text); }
+.modal-body { padding:24px; }
+.modal-footer { padding:16px 24px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; }
+.field { margin-bottom:16px; }
+.field label { display:block; font-family:var(--mono); font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.field input, .field select, .field textarea {
+  width:100%; background:var(--bg); border:1px solid var(--border);
+  color:var(--text); padding:10px 12px; font-family:var(--sans); font-size:13px;
+  outline:none; transition:border-color .2s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color:var(--amber); }
+.field select option { background:var(--surf); }
+.field textarea { resize:vertical; min-height:80px; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+/* Import modal */
+.import-zone { border:2px dashed var(--border); padding:32px; text-align:center; cursor:pointer; transition:all .2s; }
+.import-zone:hover, .import-zone.drag { border-color:var(--amber); background:rgba(245,158,11,.04); }
+.import-zone p { color:var(--muted); font-size:13px; margin-top:8px; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">LM</div>
+    <div class="logo-text">Lead Manager</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-label">Principal</div>
+    <a href="dashboard.html" class="nav-item"><span class="nav-icon">▦</span> Dashboard</a>
+    <a href="leads.html" class="nav-item active"><span class="nav-icon">◈</span> Leads</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <div style="overflow:hidden">
+        <div class="user-name" id="user-name">—</div>
+        <div class="user-email" id="user-email">—</div>
+      </div>
+      <button class="btn-logout" onclick="logout()" title="Sair">⏻</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <div class="page-title">Leads</div>
+    <div class="topbar-actions">
+      <button class="btn-sm btn-ghost" onclick="openImport()">⬆ Importar</button>
+      <button class="btn-sm btn-ghost" onclick="api.exportLeads('csv')">⬇ CSV</button>
+      <button class="btn-sm btn-ghost" onclick="api.exportLeads('xlsx')">⬇ Excel</button>
+      <button class="btn-sm btn-amber" onclick="openCreate()">+ Novo Lead</button>
+    </div>
+  </div>
+
+  <div class="filters-bar">
+    <input class="filter-input filter-search" type="text" id="filter-search" placeholder="Buscar por nome, e-mail, empresa..." oninput="debounceFilter()">
+    <select class="filter-select" id="filter-status" onchange="applyFilters()">
+      <option value="">Todos os status</option>
+      <option value="novo">Novo</option>
+      <option value="em_contato">Em Contato</option>
+      <option value="qualificado">Qualificado</option>
+      <option value="perdido">Perdido</option>
+    </select>
+    <select class="filter-select" id="filter-source" onchange="applyFilters()">
+      <option value="">Todas as fontes</option>
+      <option value="indicacao">Indicação</option>
+      <option value="site">Site</option>
+      <option value="evento">Evento</option>
+      <option value="linkedin">LinkedIn</option>
+      <option value="email">E-mail</option>
+      <option value="outro">Outro</option>
+    </select>
+    <div class="filter-sep"></div>
+    <input class="filter-input" type="date" id="filter-from" onchange="applyFilters()" title="Data de captura — início">
+    <span style="color:var(--muted);font-size:11px">até</span>
+    <input class="filter-input" type="date" id="filter-to" onchange="applyFilters()" title="Data de captura — fim">
+    <button class="btn-sm btn-ghost" onclick="clearFilters()" style="height:34px">✕ Limpar</button>
+    <span class="filters-count" id="results-count"></span>
+  </div>
+
+  <div class="content">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="setSort('fullName')">Nome <span id="sort-fullName"></span></th>
+            <th onclick="setSort('company')">Empresa <span id="sort-company"></span></th>
+            <th>Telefone</th>
+            <th>Fonte</th>
+            <th onclick="setSort('status')">Status <span id="sort-status"></span></th>
+            <th onclick="setSort('capturedAt')">Capturado em <span id="sort-capturedAt"></span></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="leads-tbody"></tbody>
+      </table>
+      <div id="empty-state" class="empty-state" style="display:none">
+        <div class="empty-icon">◈</div>
+        <p>Nenhum lead encontrado</p>
+        <p style="margin-top:8px;font-size:12px">Tente ajustar os filtros ou <a href="#" onclick="openCreate();return false" style="color:var(--amber)">adicione um novo lead</a></p>
+      </div>
+    </div>
+    <div class="pagination-bar">
+      <span class="page-info" id="page-info"></span>
+      <button class="page-btn" id="btn-prev" onclick="changePage(-1)">← Anterior</button>
+      <div id="page-btns"></div>
+      <button class="page-btn" id="btn-next" onclick="changePage(1)">Próxima →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div class="modal-overlay" id="lead-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Novo Lead</div>
+      <button class="modal-close" onclick="closeModal('lead-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="lead-id">
+      <div class="form-row">
+        <div class="field">
+          <label>Nome Completo *</label>
+          <input type="text" id="f-fullName" placeholder="Nome do lead">
+        </div>
+        <div class="field">
+          <label>E-mail</label>
+          <input type="email" id="f-email" placeholder="email@empresa.com">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Telefone</label>
+          <input type="text" id="f-phone" placeholder="(11) 99999-9999">
+        </div>
+        <div class="field">
+          <label>Empresa</label>
+          <input type="text" id="f-company" placeholder="Nome da empresa">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Cargo</label>
+          <input type="text" id="f-role" placeholder="CTO, CEO, Dev...">
+        </div>
+        <div class="field">
+          <label>Data de Captura</label>
+          <input type="date" id="f-capturedAt">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Fonte</label>
+          <select id="f-source">
+            <option value="outro">Outro</option>
+            <option value="indicacao">Indicação</option>
+            <option value="site">Site</option>
+            <option value="evento">Evento</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="email">E-mail</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select id="f-status">
+            <option value="novo">Novo</option>
+            <option value="em_contato">Em Contato</option>
+            <option value="qualificado">Qualificado</option>
+            <option value="perdido">Perdido</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Notas</label>
+        <textarea id="f-notes" placeholder="Observações sobre este lead..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" onclick="closeModal('lead-modal')">Cancelar</button>
+      <button class="btn-sm btn-amber" onclick="saveLead()" id="btn-save">Salvar Lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Importar Leads</div>
+      <button class="modal-close" onclick="closeModal('import-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="import-zone" id="import-zone" onclick="document.getElementById('import-file').click()" ondragover="e=>e.preventDefault()" ondrop="handleDrop(event)">
+        <div style="font-size:32px">📤</div>
+        <div style="font-weight:600;margin-top:8px">Clique ou arraste o arquivo aqui</div>
+        <p>Suporte a CSV e Excel (.xlsx, .xls)</p>
+        <p style="margin-top:4px;font-size:11px;color:var(--border)">Colunas esperadas: Nome, E-mail, Telefone, Empresa, Cargo, Fonte, Status, Notas, Data Captura</p>
+      </div>
+      <input type="file" id="import-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleFileSelect(this.files[0])">
+      <div id="import-status" style="margin-top:16px;font-size:13px;display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-ghost" onclick="closeModal('import-modal')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+if (!requireAuth()) void 0;
+injectSharedStyles();
+
+const user = getUser();
+if (user) {
+  document.getElementById('user-avatar').textContent = initials(user.name);
+  document.getElementById('user-name').textContent = user.name;
+  document.getElementById('user-email').textContent = user.email;
+}
+
+let state = { page: 1, pageSize: 20, sortBy: 'createdAt', sortOrder: 'desc', total: 0, totalPages: 1 };
+let filterTimer;
+
+function getFilters() {
+  return {
+    page: state.page,
+    pageSize: state.pageSize,
+    sortBy: state.sortBy,
+    sortOrder: state.sortOrder,
+    search: document.getElementById('filter-search').value.trim(),
+    status: document.getElementById('filter-status').value,
+    source: document.getElementById('filter-source').value,
+    dateFrom: document.getElementById('filter-from').value,
+    dateTo: document.getElementById('filter-to').value,
+  };
+}
+
+function debounceFilter() {
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(() => { state.page = 1; loadLeads(); }, 350);
+}
+
+function applyFilters() { state.page = 1; loadLeads(); }
+
+function clearFilters() {
+  document.getElementById('filter-search').value = '';
+  document.getElementById('filter-status').value = '';
+  document.getElementById('filter-source').value = '';
+  document.getElementById('filter-from').value = '';
+  document.getElementById('filter-to').value = '';
+  applyFilters();
+}
+
+function setSort(col) {
+  if (state.sortBy === col) {
+    state.sortOrder = state.sortOrder === 'desc' ? 'asc' : 'desc';
+  } else {
+    state.sortBy = col;
+    state.sortOrder = 'desc';
+  }
+  state.page = 1;
+  updateSortUI();
+  loadLeads();
+}
+
+function updateSortUI() {
+  ['fullName','company','status','capturedAt'].forEach(col => {
+    const el = document.getElementById('sort-'+col);
+    if (!el) return;
+    el.textContent = state.sortBy === col ? (state.sortOrder === 'desc' ? ' ▼' : ' ▲') : '';
+  });
+}
+
+async function loadLeads() {
+  const params = getFilters();
+  // Remove empty params
+  Object.keys(params).forEach(k => !params[k] && delete params[k]);
+  params.page = state.page;
+  params.pageSize = state.pageSize;
+  params.sortBy = state.sortBy;
+  params.sortOrder = state.sortOrder;
+
+  try {
+    const data = await api.listLeads(params);
+    if (!data) return;
+    state.total = data.total;
+    state.totalPages = data.totalPages;
+    renderTable(data.leads);
+    renderPagination();
+    document.getElementById('results-count').textContent =
+      data.total === 0 ? 'Nenhum resultado' : `${data.total} lead${data.total !== 1 ? 's' : ''}`;
+  } catch(err) {
+    showToast('Erro ao carregar leads: ' + err.message, 'error');
+  }
+}
+
+function renderTable(leads) {
+  const tbody = document.getElementById('leads-tbody');
+  const empty = document.getElementById('empty-state');
+  if (!leads || !leads.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  tbody.innerHTML = leads.map(l => `
+    <tr>
+      <td>
+        <div class="td-name"><a href="lead-detail.html?id=${l.id}" style="color:var(--text);text-decoration:none">${l.fullName}</a></div>
+        <div class="td-sub">${l.email || '—'}</div>
+      </td>
+      <td>${l.company || '—'}<div class="td-sub">${l.role || ''}</div></td>
+      <td>${l.phone || '—'}</td>
+      <td>${sourceBadge(l.source)}</td>
+      <td>${statusBadge(l.status)}</td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${formatDate(l.capturedAt)}</td>
+      <td>
+        <div class="td-actions">
+          <a href="lead-detail.html?id=${l.id}" class="action-btn" title="Ver detalhes">👁</a>
+          <button class="action-btn" onclick="openEdit('${l.id}')" title="Editar">✏</button>
+          <button class="action-btn del" onclick="deleteLead('${l.id}','${l.fullName.replace(/'/g,"\\'")}')">🗑</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderPagination() {
+  const info = document.getElementById('page-info');
+  const btns = document.getElementById('page-btns');
+  const prev = document.getElementById('btn-prev');
+  const next = document.getElementById('btn-next');
+  const start = (state.page - 1) * state.pageSize + 1;
+  const end = Math.min(state.page * state.pageSize, state.total);
+  info.textContent = state.total > 0 ? `${start}–${end} de ${state.total}` : '';
+  prev.disabled = state.page <= 1;
+  next.disabled = state.page >= state.totalPages;
+
+  // Page buttons
+  const pages = [];
+  for (let p = Math.max(1, state.page-2); p <= Math.min(state.totalPages, state.page+2); p++) pages.push(p);
+  btns.innerHTML = pages.map(p =>
+    `<button class="page-btn${p===state.page?' current':''}" onclick="goPage(${p})">${p}</button>`
+  ).join('');
+}
+
+function changePage(delta) { goPage(state.page + delta); }
+function goPage(p) {
+  if (p < 1 || p > state.totalPages) return;
+  state.page = p;
+  loadLeads();
+}
+
+// ─── CRUD ──────────────────────────────────────────────
+function openCreate() {
+  document.getElementById('modal-title').textContent = 'Novo Lead';
+  document.getElementById('lead-id').value = '';
+  ['fullName','email','phone','company','role','notes'].forEach(f => document.getElementById('f-'+f).value = '');
+  document.getElementById('f-source').value = 'outro';
+  document.getElementById('f-status').value = 'novo';
+  document.getElementById('f-capturedAt').value = new Date().toISOString().split('T')[0];
+  openModal('lead-modal');
+}
+
+async function openEdit(id) {
+  try {
+    const lead = await api.getLead(id);
+    if (!lead) return;
+    document.getElementById('modal-title').textContent = 'Editar Lead';
+    document.getElementById('lead-id').value = lead.id;
+    document.getElementById('f-fullName').value = lead.fullName || '';
+    document.getElementById('f-email').value = lead.email || '';
+    document.getElementById('f-phone').value = lead.phone || '';
+    document.getElementById('f-company').value = lead.company || '';
+    document.getElementById('f-role').value = lead.role || '';
+    document.getElementById('f-source').value = lead.source || 'outro';
+    document.getElementById('f-status').value = lead.status || 'novo';
+    document.getElementById('f-notes').value = lead.notes || '';
+    const cap = lead.capturedAt;
+    const capDate = cap ? (cap._seconds ? new Date(cap._seconds*1000) : new Date(cap)) : new Date();
+    document.getElementById('f-capturedAt').value = capDate.toISOString().split('T')[0];
+    openModal('lead-modal');
+  } catch(err) { showToast('Erro ao carregar lead: ' + err.message, 'error'); }
+}
+
+async function saveLead() {
+  const id = document.getElementById('lead-id').value;
+  const fullName = document.getElementById('f-fullName').value.trim();
+  if (!fullName) { showToast('Nome completo é obrigatório', 'error'); return; }
+
+  const payload = {
+    fullName,
+    email: document.getElementById('f-email').value.trim(),
+    phone: document.getElementById('f-phone').value.trim(),
+    company: document.getElementById('f-company').value.trim(),
+    role: document.getElementById('f-role').value.trim(),
+    source: document.getElementById('f-source').value,
+    status: document.getElementById('f-status').value,
+    notes: document.getElementById('f-notes').value.trim(),
+    capturedAt: document.getElementById('f-capturedAt').value || new Date().toISOString().split('T')[0],
+  };
+
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  try {
+    if (id) {
+      await api.updateLead(id, payload);
+      showToast('Lead atualizado com sucesso', 'success');
+    } else {
+      await api.createLead(payload);
+      showToast('Lead criado com sucesso', 'success');
+    }
+    closeModal('lead-modal');
+    loadLeads();
+  } catch(err) {
+    showToast('Erro: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Salvar Lead';
+  }
+}
+
+async function deleteLead(id, name) {
+  if (!confirm(`Remover o lead "${name}"?\n\nEsta ação não pode ser desfeita.`)) return;
+  try {
+    await api.deleteLead(id);
+    showToast('Lead removido', 'success');
+    loadLeads();
+  } catch(err) { showToast('Erro: ' + err.message, 'error'); }
+}
+
+// ─── Modal helpers ──────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ─── Import ─────────────────────────────────────────────
+function openImport() {
+  document.getElementById('import-status').style.display = 'none';
+  document.getElementById('import-file').value = '';
+  openModal('import-modal');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file) handleFileSelect(file);
+}
+
+async function handleFileSelect(file) {
+  if (!file) return;
+  const status = document.getElementById('import-status');
+  status.style.display = 'block';
+  status.innerHTML = `<span style="color:var(--amber)">Importando ${file.name}...</span>`;
+  try {
+    const result = await api.importLeads(file);
+    let html = `<span style="color:var(--green)">✓ ${result.imported} leads importados</span>`;
+    if (result.errors && result.errors.length) {
+      html += `<ul style="margin-top:8px;color:var(--red);font-size:12px">` +
+        result.errors.slice(0,5).map(e => `<li>• ${e}</li>`).join('') +
+        (result.errors.length > 5 ? `<li>...e mais ${result.errors.length - 5} erros</li>` : '') +
+        '</ul>';
+    }
+    status.innerHTML = html;
+    loadLeads();
+  } catch(err) {
+    status.innerHTML = `<span style="color:var(--red)">✗ Erro: ${err.message}</span>`;
+  }
+}
+
+// Init
+updateSortUI();
+loadLeads();
+
+// Auto-open modal if ?new=1
+if (new URLSearchParams(location.search).get('new')) openCreate();
+</script>
+</body>
+</html>

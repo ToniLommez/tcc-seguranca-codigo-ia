@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <span class="eyebrow">Pipeline</span>
+        <h2>Lead management workspace</h2>
+        <p>Search, sort, import, export, and manage your full lead database from one place.</p>
+    </div>
+    <div class="header-actions">
+        <a class="ghost-button" href="/leads/new">Create lead</a>
+        <button class="primary-button" id="exportCsvButton" type="button">Export CSV</button>
+    </div>
+</section>
+
+<section class="panel">
+    <form id="filtersForm" class="filter-grid">
+        <input type="text" name="search" placeholder="Search name, email, company">
+        <select name="status">
+            <option value="">All statuses</option>
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="qualified">Qualified</option>
+            <option value="lost">Lost</option>
+        </select>
+        <input type="text" name="source" placeholder="Source">
+        <input type="date" name="capture_date_from">
+        <input type="date" name="capture_date_to">
+        <select name="sort_by">
+            <option value="capture_date">Capture date</option>
+            <option value="full_name">Name</option>
+            <option value="company">Company</option>
+            <option value="status">Status</option>
+            <option value="updated_at">Last updated</option>
+        </select>
+        <select name="sort_order">
+            <option value="desc">Descending</option>
+            <option value="asc">Ascending</option>
+        </select>
+        <button class="primary-button" type="submit">Apply filters</button>
+    </form>
+
+    <div class="import-row">
+        <label class="file-input">
+            <span>Import CSV or Excel</span>
+            <input type="file" id="importInput" accept=".csv,.xlsx,.xls">
+        </label>
+        <button class="ghost-button" id="exportXlsxButton" type="button">Export Excel</button>
+        <p class="form-message" id="importMessage"></p>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Company</th>
+                    <th>Status</th>
+                    <th>Source</th>
+                    <th>Capture date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="leadsTableBody"></tbody>
+        </table>
+    </div>
+    <div class="table-footer">
+        <div id="resultsSummary"></div>
+        <div class="pager">
+            <button id="prevPageButton" class="ghost-button" type="button">Previous</button>
+            <span id="pageIndicator">Page 1</span>
+            <button id="nextPageButton" class="ghost-button" type="button">Next</button>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/leads.js"></script>
+{% endblock %}

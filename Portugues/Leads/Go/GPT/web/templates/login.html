@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}} | {{.AppName}}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="auth-body">
+  <main class="auth-shell">
+    <section class="auth-panel auth-brand">
+      <span class="eyebrow">Captação de Leads em Tecnologia</span>
+      <h1>{{.AppName}}</h1>
+      <p>Centralize os leads da sua operação, acompanhe o funil em tempo real e importe grandes volumes com segurança.</p>
+      <ul class="feature-list">
+        <li>Autenticação JWT com sessão web</li>
+        <li>CRM operacional com filtros, paginação e histórico</li>
+        <li>Importação e exportação CSV/Excel</li>
+      </ul>
+    </section>
+
+    <section class="auth-panel">
+      <div class="panel-header">
+        <h2>Entrar</h2>
+        <p>Use seu e-mail corporativo para acessar a base.</p>
+      </div>
+
+      <form class="stack-form" data-auth-form="login">
+        <label>
+          <span>E-mail</span>
+          <input type="email" name="email" placeholder="voce@empresa.com" required>
+        </label>
+        <label>
+          <span>Senha</span>
+          <input type="password" name="password" placeholder="Sua senha" required>
+        </label>
+
+        <div class="form-message" data-form-message></div>
+        <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+      </form>
+
+      <p class="auth-footer">Ainda não tem acesso? <a href="/register">Criar conta</a></p>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

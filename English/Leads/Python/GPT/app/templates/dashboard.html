@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <span class="eyebrow">Overview</span>
+        <h2>Lead generation dashboard</h2>
+        <p>Track lead flow, status distribution, and source performance across your operation.</p>
+    </div>
+    <a class="primary-button" href="/leads/new">Add lead</a>
+</section>
+
+<section class="metrics-grid" id="metricsGrid"></section>
+
+<section class="chart-grid">
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Captures over time</h3>
+        </div>
+        <canvas id="capturesChart" height="120"></canvas>
+    </article>
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Status distribution</h3>
+        </div>
+        <canvas id="statusChart" height="120"></canvas>
+    </article>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h3>Top acquisition sources</h3>
+    </div>
+    <div id="topSources" class="source-list"></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

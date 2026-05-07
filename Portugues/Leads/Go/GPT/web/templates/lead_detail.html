@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}} | {{.AppName}}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div>
+        <span class="eyebrow">Lead Ops</span>
+        <h1>{{.AppName}}</h1>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/app/dashboard">Dashboard</a>
+        <a class="active" href="/app/leads">Leads</a>
+        <a href="/app/leads/new">Novo lead</a>
+      </nav>
+      <div class="sidebar-footer">
+        <strong>{{.User.Name}}</strong>
+        <span>{{.User.Email}}</span>
+        <button class="btn btn-secondary btn-block" data-logout>Sair</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="page-header">
+        <div>
+          <span class="eyebrow">Ficha do Lead</span>
+          <h2>{{.Lead.FullName}}</h2>
+        </div>
+        <div class="header-actions">
+          <a class="btn btn-secondary" href="/app/leads/{{.Lead.ID}}/edit">Editar lead</a>
+          <a class="btn btn-secondary" href="/app/leads">Voltar</a>
+        </div>
+      </header>
+
+      <section class="detail-grid">
+        <article class="panel">
+          <div class="panel-header">
+            <h3>Informações completas</h3>
+          </div>
+          <dl class="detail-list">
+            <div><dt>Status</dt><dd><span class="status-pill {{statusClass .Lead.Status}}">{{.Lead.Status}}</span></dd></div>
+            <div><dt>E-mail</dt><dd>{{.Lead.Email}}</dd></div>
+            <div><dt>Telefone</dt><dd>{{.Lead.Phone}}</dd></div>
+            <div><dt>Empresa</dt><dd>{{.Lead.Company}}</dd></div>
+            <div><dt>Cargo</dt><dd>{{.Lead.Role}}</dd></div>
+            <div><dt>Fonte</dt><dd>{{.Lead.Source}}</dd></div>
+            <div><dt>Data de captura</dt><dd>{{formatDate .Lead.CaptureDate}}</dd></div>
+            <div><dt>Criado em</dt><dd>{{formatDateTime .Lead.CreatedAt}}</dd></div>
+            <div><dt>Atualizado em</dt><dd>{{formatDateTime .Lead.UpdatedAt}}</dd></div>
+          </dl>
+        </article>
+
+        <article class="panel">
+          <div class="panel-header">
+            <h3>Registrar interação</h3>
+          </div>
+          <form class="stack-form" data-interaction-form data-lead-id="{{.Lead.ID}}">
+            <label>
+              <span>Tipo</span>
+              <select name="type">
+                <option value="nota">Nota</option>
+                <option value="ligacao">Ligação</option>
+                <option value="email">E-mail</option>
+                <option value="reuniao">Reunião</option>
+              </select>
+            </label>
+            <label>
+              <span>Descrição</span>
+              <textarea name="notes" rows="6" placeholder="Descreva a interação com esse lead" required></textarea>
+            </label>
+            <div class="form-message" data-form-message></div>
+            <button class="btn btn-primary" type="submit">Adicionar interação</button>
+          </form>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Histórico de interações</h3>
+        </div>
+        <div class="timeline">
+          {{range .Interactions}}
+          <article class="timeline-item">
+            <div class="timeline-head">
+              <strong>{{.Type}}</strong>
+              <span>{{formatDateTime .CreatedAt}}</span>
+            </div>
+            <p>{{.Notes}}</p>
+            <div class="timeline-foot">
+              <span>Por {{.CreatedBy}}</span>
+              <button type="button" class="link-button danger-link" data-delete-interaction="{{.ID}}" data-lead-id="{{.LeadID}}">Excluir</button>
+            </div>
+          </article>
+          {{else}}
+          <p>Nenhuma interação registrada ainda.</p>
+          {{end}}
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

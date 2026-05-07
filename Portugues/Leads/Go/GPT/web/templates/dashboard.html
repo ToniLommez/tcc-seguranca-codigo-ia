@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}} | {{.AppName}}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div>
+        <span class="eyebrow">Lead Ops</span>
+        <h1>{{.AppName}}</h1>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="active" href="/app/dashboard">Dashboard</a>
+        <a href="/app/leads">Leads</a>
+        <a href="/app/leads/new">Novo lead</a>
+      </nav>
+      <div class="sidebar-footer">
+        <strong>{{.User.Name}}</strong>
+        <span>{{.User.Email}}</span>
+        <button class="btn btn-secondary btn-block" data-logout>Sair</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="page-header">
+        <div>
+          <span class="eyebrow">Visão Geral</span>
+          <h2>Dashboard de Leads</h2>
+        </div>
+        <a class="btn btn-primary" href="/app/leads/new">Cadastrar lead</a>
+      </header>
+
+      <section class="metric-grid">
+        <article class="metric-card">
+          <span>Total de leads</span>
+          <strong>{{.Dashboard.TotalLeads}}</strong>
+        </article>
+        <article class="metric-card">
+          <span>Novos</span>
+          <strong>{{.Dashboard.NewLeads}}</strong>
+        </article>
+        <article class="metric-card">
+          <span>Qualificados</span>
+          <strong>{{.Dashboard.QualifiedLeads}}</strong>
+        </article>
+        <article class="metric-card">
+          <span>Perdidos</span>
+          <strong>{{.Dashboard.LostLeads}}</strong>
+        </article>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="panel">
+          <div class="panel-header between">
+            <h3>Leads por status</h3>
+            <a href="/app/leads">Abrir funil</a>
+          </div>
+          <div class="status-grid">
+            {{range .Statuses}}
+            <div class="status-card">
+              <span class="status-pill {{statusClass .}}">{{.}}</span>
+              <strong>{{index $.Dashboard.ByStatus .}}</strong>
+            </div>
+            {{end}}
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-header">
+            <h3>Captações dos últimos 14 dias</h3>
+          </div>
+          <div class="chart">
+            {{range .Dashboard.CapturesByDay}}
+            <div class="chart-row">
+              <span>{{.Date}}</span>
+              <div class="bar-track"><div class="bar-fill" style="width: {{if gt .Count 0}}{{printf "%d" .Count}}0{{else}}4{{end}}%;"></div></div>
+              <strong>{{.Count}}</strong>
+            </div>
+            {{end}}
+          </div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header between">
+          <h3>Leads recentes</h3>
+          <a href="/app/leads">Ver todos</a>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Empresa</th>
+                <th>Status</th>
+                <th>Fonte</th>
+                <th>Captura</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .Leads}}
+              <tr>
+                <td>{{.FullName}}</td>
+                <td>{{.Company}}</td>
+                <td><span class="status-pill {{statusClass .Status}}">{{.Status}}</span></td>
+                <td>{{.Source}}</td>
+                <td>{{formatDate .CaptureDate}}</td>
+                <td><a href="/app/leads/{{.ID}}">Detalhes</a></td>
+              </tr>
+              {{else}}
+              <tr><td colspan="6">Nenhum lead cadastrado ainda.</td></tr>
+              {{end}}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

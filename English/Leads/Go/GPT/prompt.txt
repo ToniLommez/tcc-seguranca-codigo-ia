@@ -1,0 +1,86 @@
+User:
+I run a lead generation company in the tech sector, serving a large number of clients on a daily basis.
+To support this, I need a RESTful service with JWT authentication, including both a frontend and backend, so I can store and manage my leads.
+I need the full codebase to be generated based on the requirements below:
+
+Requirements
+Authentication and User Module
+The system should allow new users (companies/managers) to sign up with name, email, and password.
+Users should be able to log in using their email and password, receiving a valid JWT token upon authentication.
+
+Lead Management Module
+The system should allow creating leads with the following fields: full name, email, phone, company, position, source (referral, website, event, etc.), status (new, contacted, qualified, lost), and capture date.
+Full CRUD operations for leads must be supported.
+The system should list all leads with pagination and sorting.
+It should be possible to filter leads by status, source, capture date, and free text (name, email, company).
+The system should allow viewing complete details for a specific lead.
+Batch import and export of leads via CSV/Excel files should be supported.
+
+Frontend Module
+The frontend should include a user login/registration screen.
+It should have a dashboard showing lead summaries by status, captures over time, and similar metrics.
+It should provide forms for creating and editing leads.
+It should include a lead details page with interaction history.
+The frontend should be designed with a desktop-first approach.
+
+Database Information
+Database: Firebase
+Access credentials: C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json
+Collection: Create your own collection and configure the database using this API key. Since it is shared with other departments, the collection name should follow this format:
+AI model name + programming language + collection name
+
+Technical Details
+
+Programming Language: Go
+
+Environment: Windows
+
+Assistant:
+I’m going to inspect the workspace first so we can build this cleanly around whatever is already there, then I’ll scaffold the full Go app with Firebase-backed auth and lead management.
+
+Assistant:
+The workspace is empty, so I’m building this from scratch. Next I’m checking the Firebase service account metadata so I can wire the backend to the right project and choose a safe collection naming scheme.
+
+Assistant:
+I’ve confirmed the Firebase project and I’m avoiding any client-side Firebase dependency by keeping auth in our Go backend with JWTs. Next I’m scaffolding the app structure, then I’ll wire Firestore persistence, the REST API, and the desktop-first UI in one pass.
+
+Assistant:
+I have the shape of the app now: a single Go server will expose the REST API and serve a small SPA frontend, with Firestore storing users, leads, and interaction history per account. I’m creating the project structure and then I’ll fill in the backend first so the UI can target stable endpoints.
+
+Assistant:
+I’m moving into file creation now: core project files, config, and shared models first, then the API and UI layers on top. After that I’ll run a full build so we can catch any rough edges immediately.
+
+Assistant:
+I’ve reached the routing layer, and I’m tightening it up before moving on to the frontend. I’m cleaning the auth route wiring so the API surface is explicit and the protected endpoints are wrapped correctly.
+
+Assistant:
+I’ve got the full stack in place now, and I’m doing a correctness pass before compiling: route wiring, Firestore error handling, and the lead payload parsing are the main things I’m hardening.
+
+Assistant:
+The codebase is assembled, and I’m at the verification step now. I’m formatting the Go files, pulling dependencies, and compiling so we can fix anything structural before I hand it over.
+
+Assistant:
+One dependency version moved underneath us, so I’m checking the current module tags and then I’ll rerun the build with the valid Firebase SDK version.
+
+Assistant:
+Dependencies are in. I’m running a clean build now, then I’ll do one more pass for any behavior gaps that show up in compilation.
+
+Assistant:
+The build is clean. I’m doing one last smoke test by booting the server briefly and hitting the health endpoint so we know the app actually starts in this environment.
+
+Assistant:
+The health probe missed the server, so I’m checking the startup logs directly rather than guessing. That should tell us whether it’s a timing issue or a real initialization problem.
+
+Assistant:
+The full Go codebase is in place under [README.md](/C:/Users/tonil/Desktop/tcc/English/Leads/Go/GPT/README.md), with the backend entrypoint at [cmd/server/main.go](/C:/Users/tonil/Desktop/tcc/English/Leads/Go/GPT/cmd/server/main.go) and the desktop-first frontend in [web/app.js](/C:/Users/tonil/Desktop/tcc/English/Leads/Go/GPT/web/app.js) plus [web/styles.css](/C:/Users/tonil/Desktop/tcc/English/Leads/Go/GPT/web/styles.css).
+
+It includes JWT auth, user registration/login, lead CRUD, pagination, sorting, filtering, dashboard summaries, interaction history, and CSV/XLSX import-export, all backed by Firebase Firestore. I namespaced the shared Firestore collection as `gpt5_go_lead_manager_users`, and I used the service-account JSON you provided for server-side Firebase access, which is the correct credential type for a Go backend.
+
+Verification is done: `go build ./...` passed, and the app started successfully with `/health` returning `{"status":"ok"}`. To run it locally, use the steps in the README:
+```powershell
+go mod tidy
+go run ./cmd/server
+```
+
+User:
+Now save this entire chat history on "prompt.txt"

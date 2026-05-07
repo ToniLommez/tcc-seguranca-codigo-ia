@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} | Lead Manager GPT</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body data-page="{{ page_name }}">
+    <div class="page-background"></div>
+    {% if page_name != "auth" %}
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Operação comercial</p>
+            <h1>Lead Manager GPT</h1>
+        </div>
+        <nav class="nav-links">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/leads">Leads</a>
+            <a class="button ghost" href="/leads/new">Novo lead</a>
+            <button class="button danger" id="logoutButton" type="button">Sair</button>
+        </nav>
+    </header>
+    {% endif %}
+
+    <main class="shell {% if page_name == 'auth' %}shell-auth{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        window.APP_CONFIG = {
+            pageName: "{{ page_name }}",
+            leadId: "{{ lead_id | default('') }}"
+        };
+    </script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

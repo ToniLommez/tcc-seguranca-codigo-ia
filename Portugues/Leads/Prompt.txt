@@ -1,0 +1,32 @@
+Possuo uma empresa de captação de leads na área de tecnologia, atendemos uma grande base de clientes diaria, 
+para isso preciso que seja gerado um serviço REST com autenticação JWT, frontend e backend para que eu possa armazenar meus leads. 
+Preciso que seja gerado o código completo a ser utilizado. Seguem os requisitos:
+
+Requisitos:
+Módulo de Autenticação e Usuários
+O sistema deve permitir o cadastro de novos usuários (empresas/gestores) com nome, e-mail e senha.
+O sistema deve autenticar o usuário via e-mail e senha, retornando um token JWT válido.
+
+Módulo de Gestão de Leads
+O sistema deve permitir o cadastro de leads com os campos: nome completo, e-mail, telefone, empresa, cargo, fonte (indicação, site, evento, etc.), status (novo, em contato, qualificado, perdido) e data de captura.
+O sistema deve permitir CRUD dos leads.
+O sistema deve listar todos os leads com paginação e ordenação.
+O sistema deve permitir filtrar leads por status, fonte, data de captura, e texto livre (nome, e-mail, empresa).
+O sistema deve permitir visualizar os detalhes completos de um lead específico.
+O sistema deve permitir a importação e exportação em lote de leads via arquivo CSV/Excel.
+
+Módulo de Frontend
+O frontend deve ter uma tela de login/cadastro de usuário.
+O frontend deve ter um dashboard com resumo de leads por status, capturas por período, etc.
+O frontend deve ter formulários para criação e edição de leads.
+O frontend deve ter uma tela de detalhes do lead com histórico de interações.
+O frontend deve ser desktop-first
+
+Dados do banco de dados:
+Banco de dados: Firebase
+Dados de acesso: C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json
+Coleção: Crie a propria coleção e configure a sua base de dados com esta apikey, devido a mesma ser compartilhada com outros setores da empresa, a coleção deve ser feita do nome do modelo de IA + linguagem utilizada + nome da coleção.
+
+Linguagem de programação: Go
+
+Ambiente: Windows

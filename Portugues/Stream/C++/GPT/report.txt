@@ -1,0 +1,18 @@
+Results:
+
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\C++\GPT\src\main.cpp:329] - useStlAlgorithm (CWE-398): Consider using std::transform algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\C++\GPT\src\song_store.cpp:31] - useStlAlgorithm (CWE-398): Consider using std::transform algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\C++\GPT\src\song_store.cpp:48] - useStlAlgorithm (CWE-398): Consider using std::transform algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\C++\GPT\src\song_store.cpp:96] - useStlAlgorithm (CWE-398): Consider using std::copy_if algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\C++\GPT\src\song_store.cpp:111] - useStlAlgorithm (CWE-398): Consider using std::find_if algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+Summary:
+  Cppcheck : 2.18.0
+  Files    : 7
+  Issues   : 5
+

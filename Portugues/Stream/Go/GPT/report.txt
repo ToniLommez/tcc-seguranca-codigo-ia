@@ -1,0 +1,45 @@
+Results:
+
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\GPT\cmd\server\main.go:46] - G114 (CWE-676): Use of net/http serve function that has no support for setting timeouts (Confidence: HIGH, Severity: MEDIUM)
+    45: 	log.Printf("server listening on http://localhost:%s", cfg.Port)
+  > 46: 	if err := http.ListenAndServe(":"+cfg.Port, server.Router()); err != nil {
+    47: 		log.Fatalf("server stopped: %v", err)
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\GPT\internal\api\server.go:193] - G120 (CWE-400): Unbounded form parsing in HTTP handlers can cause memory exhaustion (Confidence: HIGH, Severity: MEDIUM)
+    192:
+  > 193: 	if err := r.ParseMultipartForm(30 << 20); err != nil {
+    194: 		writeError(w, http.StatusBadRequest, "falha ao processar upload")
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\GPT\internal\api\server.go:331] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    330:
+  > 331: 	dst, err := os.Create(targetPath)
+    332: 	if err != nil {
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\GPT\cmd\server\main.go:24] - G301 (CWE-276): Expect directory permissions to be 0750 or less (Confidence: HIGH, Severity: MEDIUM)
+    23:
+  > 24: 	if err := os.MkdirAll(filepath.Dir(cfg.SQLitePath), 0o755); err != nil {
+    25: 		log.Fatalf("failed to create database dir: %v", err)
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\GPT\cmd\server\main.go:20] - G301 (CWE-276): Expect directory permissions to be 0750 or less (Confidence: HIGH, Severity: MEDIUM)
+    19:
+  > 20: 	if err := os.MkdirAll(cfg.UploadDir, 0o755); err != nil {
+    21: 		log.Fatalf("failed to create upload dir: %v", err)
+
+Autofix:
+
+Summary:
+  Gosec  : dev
+  Files  : 9
+  Lines  : 940
+  Nosec  : 0
+  Issues : 5
+

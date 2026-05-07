@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Cadastro de lead</p>
+        <h2 id="leadFormTitle">Cadastrar novo lead</h2>
+        <p>Preencha os dados completos para manter a carteira organizada e rastreável.</p>
+    </div>
+    <a class="button ghost" href="/leads">Voltar para listagem</a>
+</section>
+
+<section class="panel">
+    <form id="leadForm" class="form-grid">
+        <label>
+            Nome completo
+            <input type="text" name="full_name" required>
+        </label>
+        <label>
+            E-mail
+            <input type="email" name="email" required>
+        </label>
+        <label>
+            Telefone
+            <input type="text" name="phone" required>
+        </label>
+        <label>
+            Empresa
+            <input type="text" name="company" required>
+        </label>
+        <label>
+            Cargo
+            <input type="text" name="role" required>
+        </label>
+        <label>
+            Fonte
+            <input type="text" name="source" placeholder="Indicação, site, evento..." required>
+        </label>
+        <label>
+            Status
+            <select name="status" required>
+                <option value="novo">Novo</option>
+                <option value="em_contato">Em contato</option>
+                <option value="qualificado">Qualificado</option>
+                <option value="perdido">Perdido</option>
+            </select>
+        </label>
+        <label>
+            Data de captura
+            <input type="date" name="captured_at" required>
+        </label>
+        <div class="form-actions wide">
+            <button class="button primary" type="submit">Salvar lead</button>
+            <a class="button ghost" href="/leads">Cancelar</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

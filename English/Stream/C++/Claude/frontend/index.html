@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoundStream</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- AUTH PAGE -->
+    <div id="auth-page" class="page active">
+        <div class="auth-container">
+            <div class="logo">
+                <div class="logo-icon">&#9835;</div>
+                <h1>SoundStream</h1>
+                <p class="subtitle">Your music, your way</p>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="tab-btn active" data-tab="login">Sign In</button>
+                <button class="tab-btn" data-tab="register">Sign Up</button>
+            </div>
+
+            <form id="login-form" class="auth-form active">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" placeholder="Your password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Sign In</button>
+            </form>
+
+            <form id="register-form" class="auth-form">
+                <div class="form-group">
+                    <label for="reg-name">Full Name</label>
+                    <input type="text" id="reg-name" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-email">Email</label>
+                    <input type="email" id="reg-email" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">Password</label>
+                    <input type="password" id="reg-password" placeholder="Minimum 6 characters" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Account Type</label>
+                    <div class="type-selector">
+                        <label class="type-option">
+                            <input type="radio" name="user-type" value="USER" checked>
+                            <div class="type-card">
+                                <span class="type-icon">&#9834;</span>
+                                <span class="type-label">Listener</span>
+                                <span class="type-desc">Discover and stream music</span>
+                            </div>
+                        </label>
+                        <label class="type-option">
+                            <input type="radio" name="user-type" value="ARTIST">
+                            <div class="type-card">
+                                <span class="type-icon">&#9836;</span>
+                                <span class="type-label">Artist</span>
+                                <span class="type-desc">Upload and share your music</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Account</button>
+            </form>
+
+            <div id="auth-error" class="error-msg hidden"></div>
+        </div>
+    </div>
+
+    <!-- ARTIST DASHBOARD -->
+    <div id="artist-page" class="page">
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo-small">&#9835; SoundStream</div>
+            </div>
+            <div class="header-right">
+                <span id="artist-welcome" class="welcome-text"></span>
+                <button id="artist-logout" class="btn btn-outline">Sign Out</button>
+            </div>
+        </header>
+
+        <main class="dashboard">
+            <section class="upload-section">
+                <h2>Upload New Song</h2>
+                <form id="upload-form" enctype="multipart/form-data">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="song-title">Title *</label>
+                            <input type="text" id="song-title" placeholder="Song title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="song-genre">Genre</label>
+                            <select id="song-genre">
+                                <option value="">Select genre</option>
+                                <option value="Pop">Pop</option>
+                                <option value="Rock">Rock</option>
+                                <option value="Hip-Hop">Hip-Hop</option>
+                                <option value="R&B">R&B</option>
+                                <option value="Electronic">Electronic</option>
+                                <option value="Jazz">Jazz</option>
+                                <option value="Classical">Classical</option>
+                                <option value="Country">Country</option>
+                                <option value="Latin">Latin</option>
+                                <option value="Indie">Indie</option>
+                                <option value="Metal">Metal</option>
+                                <option value="Blues">Blues</option>
+                                <option value="Reggae">Reggae</option>
+                                <option value="Folk">Folk</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="song-desc">Description (optional)</label>
+                        <textarea id="song-desc" placeholder="Tell listeners about this song..." rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="song-file">MP3 File *</label>
+                        <div class="file-upload">
+                            <input type="file" id="song-file" accept=".mp3,audio/mpeg" required>
+                            <div class="file-upload-label">
+                                <span class="file-icon">&#128190;</span>
+                                <span id="file-name">Click to select an MP3 file</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="upload-btn">
+                        Upload Song
+                    </button>
+                </form>
+                <div id="upload-status" class="status-msg hidden"></div>
+            </section>
+
+            <section class="my-songs-section">
+                <h2>My Songs</h2>
+                <div id="artist-songs-list" class="songs-grid">
+                    <p class="empty-state">No songs uploaded yet</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- USER DASHBOARD -->
+    <div id="user-page" class="page">
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo-small">&#9835; SoundStream</div>
+            </div>
+            <div class="header-center">
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="Search songs, artists, genres...">
+                    <button id="search-btn" class="btn-search">&#128269;</button>
+                </div>
+            </div>
+            <div class="header-right">
+                <span id="user-welcome" class="welcome-text"></span>
+                <button id="user-logout" class="btn btn-outline">Sign Out</button>
+            </div>
+        </header>
+
+        <main class="dashboard">
+            <section class="browse-section">
+                <div class="section-header">
+                    <h2 id="browse-title">All Songs</h2>
+                    <div class="filter-group">
+                        <select id="genre-filter">
+                            <option value="">All Genres</option>
+                            <option value="Pop">Pop</option>
+                            <option value="Rock">Rock</option>
+                            <option value="Hip-Hop">Hip-Hop</option>
+                            <option value="R&B">R&B</option>
+                            <option value="Electronic">Electronic</option>
+                            <option value="Jazz">Jazz</option>
+                            <option value="Classical">Classical</option>
+                            <option value="Country">Country</option>
+                            <option value="Latin">Latin</option>
+                            <option value="Indie">Indie</option>
+                            <option value="Metal">Metal</option>
+                            <option value="Blues">Blues</option>
+                            <option value="Reggae">Reggae</option>
+                            <option value="Folk">Folk</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="songs-list" class="songs-grid">
+                    <p class="empty-state">Loading songs...</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- AUDIO PLAYER BAR -->
+        <div id="player-bar" class="player-bar hidden">
+            <div class="player-info">
+                <div class="player-song-title" id="player-title">-</div>
+                <div class="player-artist" id="player-artist">-</div>
+            </div>
+            <div class="player-controls">
+                <button id="player-prev" class="player-btn">&#9198;</button>
+                <button id="player-play" class="player-btn play-btn">&#9654;</button>
+                <button id="player-next" class="player-btn">&#9197;</button>
+            </div>
+            <div class="player-progress">
+                <span id="player-current-time">0:00</span>
+                <input type="range" id="player-seek" min="0" max="100" value="0" class="seek-bar">
+                <span id="player-duration">0:00</span>
+            </div>
+            <div class="player-volume">
+                <span class="volume-icon">&#128266;</span>
+                <input type="range" id="player-volume" min="0" max="100" value="80" class="volume-bar">
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leads — LeadManager</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <h2>LeadManager</h2>
+            <span>Tech Lead Generation</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard">📊 Dashboard</a>
+            <a href="/leads">👥 Leads</a>
+        </nav>
+        <div class="sidebar-footer" id="sidebar-user"></div>
+    </aside>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>Leads</h1>
+            <div style="display:flex;gap:8px;">
+                <button class="btn btn-outline btn-sm" onclick="openImport()">⬆ Import</button>
+                <button class="btn btn-outline btn-sm" onclick="leads.exportCSV()">⬇ CSV</button>
+                <button class="btn btn-outline btn-sm" onclick="leads.exportExcel()">⬇ Excel</button>
+                <button class="btn btn-primary btn-sm" onclick="openCreate()">+ New Lead</button>
+            </div>
+        </div>
+
+        <div class="card" style="padding:16px;">
+            <div class="filter-bar">
+                <input type="text" id="filter-search" placeholder="Search name, email, company…" style="flex:1;min-width:200px;">
+                <select id="filter-status">
+                    <option value="">All Statuses</option>
+                    <option value="new">New</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="qualified">Qualified</option>
+                    <option value="lost">Lost</option>
+                </select>
+                <select id="filter-source">
+                    <option value="">All Sources</option>
+                    <option value="referral">Referral</option>
+                    <option value="website">Website</option>
+                    <option value="event">Event</option>
+                    <option value="social_media">Social Media</option>
+                    <option value="cold_call">Cold Call</option>
+                    <option value="other">Other</option>
+                </select>
+                <input type="date" id="filter-date-from" title="Capture date from">
+                <input type="date" id="filter-date-to" title="Capture date to">
+                <button class="btn btn-outline btn-sm" onclick="clearFilters()">Clear</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th onclick="setSort('full_name')">Name <span id="sort-full_name"></span></th>
+                        <th onclick="setSort('email')">Email <span id="sort-email"></span></th>
+                        <th onclick="setSort('company')">Company <span id="sort-company"></span></th>
+                        <th onclick="setSort('source')">Source <span id="sort-source"></span></th>
+                        <th onclick="setSort('status')">Status <span id="sort-status"></span></th>
+                        <th onclick="setSort('capture_date')">Captured <span id="sort-capture_date"></span></th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="leads-table"></tbody>
+            </table>
+
+            <div id="empty-state" class="empty-state hidden">
+                <h3>No leads found</h3>
+                <p>Try adjusting your filters or <button class="btn btn-primary btn-sm" onclick="openCreate()">create a new lead</button></p>
+            </div>
+
+            <div class="pagination">
+                <div class="pagination-info" id="pagination-info"></div>
+                <div class="pagination-controls" id="pagination-controls"></div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Lead Form Modal -->
+<div id="lead-modal" class="modal-overlay hidden">
+    <div class="modal">
+        <h2 id="modal-title">New Lead</h2>
+        <form id="lead-form" onsubmit="handleSaveLead(event)">
+            <input type="hidden" id="lead-id">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="f-full_name" required placeholder="Jane Smith">
+                </div>
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" id="f-email" required placeholder="jane@company.com">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" id="f-phone" placeholder="+1 555 000 0000">
+                </div>
+                <div class="form-group">
+                    <label>Company</label>
+                    <input type="text" id="f-company" placeholder="Acme Corp">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Position</label>
+                    <input type="text" id="f-position" placeholder="CEO">
+                </div>
+                <div class="form-group">
+                    <label>Capture Date</label>
+                    <input type="date" id="f-capture_date">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Source</label>
+                    <select id="f-source">
+                        <option value="">— Select —</option>
+                        <option value="referral">Referral</option>
+                        <option value="website">Website</option>
+                        <option value="event">Event</option>
+                        <option value="social_media">Social Media</option>
+                        <option value="cold_call">Cold Call</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="f-status">
+                        <option value="new">New</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="qualified">Qualified</option>
+                        <option value="lost">Lost</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea id="f-notes" rows="3" placeholder="Additional notes…" style="resize:vertical;"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="save-btn">Save Lead</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div id="import-modal" class="modal-overlay hidden">
+    <div class="modal">
+        <h2>Import Leads</h2>
+        <p style="color:var(--gray-500);font-size:14px;margin-bottom:16px;">Upload a CSV or Excel (.xlsx) file. The file must have headers: Full Name, Email, Phone, Company, Position, Source, Status, Capture Date, Notes.</p>
+        <div class="import-zone" id="import-zone" onclick="document.getElementById('import-file').click()">
+            <div style="font-size:40px;">📂</div>
+            <strong>Click to select file</strong>
+            <p>CSV or XLSX, max 10 MB</p>
+        </div>
+        <input type="file" id="import-file" accept=".csv,.xlsx" class="hidden" onchange="handleImportFile(event)">
+        <div id="import-result" style="margin-top:12px;font-size:14px;"></div>
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeImport()">Close</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/utils.js"></script>
+<script>
+if (!requireAuth()) throw new Error('not auth');
+populateSidebar();
+
+let state = { page: 1, pageSize: 10, sortBy: 'created_at', sortOrder: 'desc', total: 0, totalPages: 0 };
+
+async function loadLeads() {
+    const params = {
+        page: state.page,
+        page_size: state.pageSize,
+        sort_by: state.sortBy,
+        sort_order: state.sortOrder,
+        search: document.getElementById('filter-search').value,
+        status: document.getElementById('filter-status').value,
+        source: document.getElementById('filter-source').value,
+        date_from: document.getElementById('filter-date-from').value,
+        date_to: document.getElementById('filter-date-to').value,
+    };
+
+    try {
+        const res = await leads.list(params);
+        state.total = res.total;
+        state.totalPages = res.total_pages;
+        renderTable(res.data || []);
+        renderPagination();
+        updateSortIndicators();
+    } catch (e) {
+        showToast('Failed to load leads: ' + e.message, 'error');
+    }
+}
+
+function renderTable(data) {
+    const tbody = document.getElementById('leads-table');
+    const empty = document.getElementById('empty-state');
+    if (!data.length) {
+        tbody.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+    }
+    empty.classList.add('hidden');
+    tbody.innerHTML = data.map(l => `
+        <tr>
+            <td><a href="/leads/${l.id}" style="font-weight:500;color:var(--primary);text-decoration:none;">${l.full_name}</a></td>
+            <td>${l.email}</td>
+            <td>${l.company || '—'}</td>
+            <td>${l.source || '—'}</td>
+            <td>${statusBadge(l.status)}</td>
+            <td>${formatDate(l.capture_date)}</td>
+            <td>
+                <div class="actions-cell">
+                    <button class="icon-btn" title="View" onclick="window.location='/leads/${l.id}'">👁</button>
+                    <button class="icon-btn" title="Edit" onclick="openEdit(${JSON.stringify(l).replace(/"/g,'&quot;')})">✏️</button>
+                    <button class="icon-btn danger" title="Delete" onclick="deleteLead('${l.id}','${l.full_name}')">🗑</button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderPagination() {
+    const info = document.getElementById('pagination-info');
+    const controls = document.getElementById('pagination-controls');
+    const start = (state.page - 1) * state.pageSize + 1;
+    const end = Math.min(state.page * state.pageSize, state.total);
+    info.textContent = state.total ? `Showing ${start}–${end} of ${state.total} leads` : 'No results';
+
+    let btns = `<button onclick="goPage(${state.page-1})" ${state.page<=1?'disabled':''}>‹ Prev</button>`;
+    const maxPages = Math.min(state.totalPages, 7);
+    let startPage = Math.max(1, state.page - 3);
+    let endPage = Math.min(state.totalPages, startPage + maxPages - 1);
+    if (endPage - startPage < maxPages - 1) startPage = Math.max(1, endPage - maxPages + 1);
+    for (let p = startPage; p <= endPage; p++) {
+        btns += `<button onclick="goPage(${p})" class="${p===state.page?'active':''}">${p}</button>`;
+    }
+    btns += `<button onclick="goPage(${state.page+1})" ${state.page>=state.totalPages?'disabled':''}>Next ›</button>`;
+    controls.innerHTML = btns;
+}
+
+function goPage(p) {
+    if (p < 1 || p > state.totalPages) return;
+    state.page = p;
+    loadLeads();
+}
+
+function setSort(field) {
+    if (state.sortBy === field) {
+        state.sortOrder = state.sortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+        state.sortBy = field;
+        state.sortOrder = 'asc';
+    }
+    state.page = 1;
+    loadLeads();
+}
+
+function updateSortIndicators() {
+    ['full_name','email','company','source','status','capture_date'].forEach(f => {
+        const el = document.getElementById(`sort-${f}`);
+        if (el) el.textContent = state.sortBy === f ? (state.sortOrder === 'asc' ? '▲' : '▼') : '';
+    });
+}
+
+const debouncedLoad = debounce(() => { state.page = 1; loadLeads(); }, 350);
+document.getElementById('filter-search').addEventListener('input', debouncedLoad);
+document.getElementById('filter-status').addEventListener('change', () => { state.page=1; loadLeads(); });
+document.getElementById('filter-source').addEventListener('change', () => { state.page=1; loadLeads(); });
+document.getElementById('filter-date-from').addEventListener('change', () => { state.page=1; loadLeads(); });
+document.getElementById('filter-date-to').addEventListener('change', () => { state.page=1; loadLeads(); });
+
+function clearFilters() {
+    ['filter-search','filter-date-from','filter-date-to'].forEach(id => document.getElementById(id).value = '');
+    ['filter-status','filter-source'].forEach(id => document.getElementById(id).selectedIndex = 0);
+    state.page = 1;
+    loadLeads();
+}
+
+function openCreate() {
+    document.getElementById('modal-title').textContent = 'New Lead';
+    document.getElementById('lead-id').value = '';
+    document.getElementById('lead-form').reset();
+    document.getElementById('f-capture_date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('lead-modal').classList.remove('hidden');
+}
+
+function openEdit(lead) {
+    document.getElementById('modal-title').textContent = 'Edit Lead';
+    document.getElementById('lead-id').value = lead.id;
+    document.getElementById('f-full_name').value = lead.full_name || '';
+    document.getElementById('f-email').value = lead.email || '';
+    document.getElementById('f-phone').value = lead.phone || '';
+    document.getElementById('f-company').value = lead.company || '';
+    document.getElementById('f-position').value = lead.position || '';
+    document.getElementById('f-source').value = lead.source || '';
+    document.getElementById('f-status').value = lead.status || 'new';
+    document.getElementById('f-notes').value = lead.notes || '';
+    const cd = lead.capture_date ? new Date(lead.capture_date).toISOString().split('T')[0] : '';
+    document.getElementById('f-capture_date').value = cd;
+    document.getElementById('lead-modal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('lead-modal').classList.add('hidden');
+}
+
+async function handleSaveLead(e) {
+    e.preventDefault();
+    const id = document.getElementById('lead-id').value;
+    const body = {
+        full_name: document.getElementById('f-full_name').value,
+        email: document.getElementById('f-email').value,
+        phone: document.getElementById('f-phone').value,
+        company: document.getElementById('f-company').value,
+        position: document.getElementById('f-position').value,
+        source: document.getElementById('f-source').value,
+        status: document.getElementById('f-status').value,
+        notes: document.getElementById('f-notes').value,
+        capture_date: document.getElementById('f-capture_date').value ? new Date(document.getElementById('f-capture_date').value).toISOString() : null,
+    };
+    try {
+        if (id) {
+            await leads.update(id, body);
+            showToast('Lead updated successfully', 'success');
+        } else {
+            await leads.create(body);
+            showToast('Lead created successfully', 'success');
+        }
+        closeModal();
+        loadLeads();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+async function deleteLead(id, name) {
+    if (!confirm(`Delete lead "${name}"? This cannot be undone.`)) return;
+    try {
+        await leads.delete(id);
+        showToast('Lead deleted', 'success');
+        loadLeads();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+function openImport() {
+    document.getElementById('import-result').textContent = '';
+    document.getElementById('import-file').value = '';
+    document.getElementById('import-modal').classList.remove('hidden');
+}
+function closeImport() { document.getElementById('import-modal').classList.add('hidden'); }
+
+async function handleImportFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const resultEl = document.getElementById('import-result');
+    resultEl.textContent = 'Importing…';
+    try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await leads.import(fd);
+        resultEl.innerHTML = `<span style="color:var(--success)">✓ ${res.message}</span>`;
+        loadLeads();
+    } catch (err) {
+        resultEl.innerHTML = `<span style="color:var(--danger)">✗ ${err.message}</span>`;
+    }
+}
+
+loadLeads();
+</script>
+</body>
+</html>

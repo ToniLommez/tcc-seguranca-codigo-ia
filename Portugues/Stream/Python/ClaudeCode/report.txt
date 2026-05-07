@@ -1,0 +1,22 @@
+Results:
+
+
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'bearer'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   Location: C:/Users/tonil/Desktop/tcc/Portugues/Stream/Python/ClaudeCode/backend\auth\router.py:43:8
+42	        "access_token": token,
+43	        "token_type": "bearer",
+44	        "user": {
+45	            "id": user["id"],
+46	            "name": user["name"],
+47	            "email": user["email"],
+48	            "user_type": user["user_type"],
+49	        },
+50	    }
+
+Summary:
+  Bandit   : 1.9.4
+  Lines    : 442
+  Issues   : 1
+

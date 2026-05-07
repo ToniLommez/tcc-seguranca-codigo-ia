@@ -1,0 +1,454 @@
+\documentclass[12pt]{article}
+
+\usepackage{sbc-template}
+\usepackage[brazil]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{amsmath}
+
+\sloppy
+
+\title{Análise de Vulnerabilidades de Segurança em Código Gerado por Modelos de Linguagem: Um Estudo Comparativo entre GPT e Claude em Prompts em Português e Inglês}
+
+\author{Tonil A. Viera\inst{1}}
+
+\address{Instituto de Ciências Exatas e Informática\\
+  Pontifícia Universidade Católica de Minas Gerais (PUC Minas)\\
+  Belo Horizonte, MG -- Brasil
+  \email{tonil.viera@sga.pucminas.br}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This paper presents a comparative analysis of security vulnerabilities introduced by Large Language Models (LLMs) when generating source code from natural language prompts written in Portuguese (PT-BR) and English (EN-US). Two state-of-the-art models — GPT-5.4 Codex and Claude Sonnet 4.6 — were evaluated across 24 implementations spanning three programming languages (C++, Go, Python) and two application scenarios (Lead Management REST API and Music Streaming Service). Each implementation was subjected to automated static analysis using Cppcheck, Gosec, and Bandit, as well as a manual security code review following CWE classification. A total of 392 vulnerabilities were identified: 193 in Portuguese-prompted code and 199 in English-prompted code (3.1\% difference). Claude generated an average of 17.2 vulnerabilities per project versus 15.5 for GPT. CWE-798 (Hardcoded Credentials) was the only vulnerability present in all 24 implementations, confirming it as a systemic pattern in LLM-generated code regardless of language or model. The results suggest that prompt language influences complexity of generated code — particularly in C++ (more issues in PT) and Python (more issues in EN) — with linguistic descriptiveness and technical register as contributing factors.
+\end{abstract}
+
+\begin{resumo}
+Este artigo apresenta uma análise comparativa de vulnerabilidades de segurança introduzidas por Modelos de Linguagem de Grande Escala (LLMs) ao gerar código-fonte a partir de prompts em Português (PT-BR) e Inglês (EN-US). Dois modelos de ponta — GPT-5.4 Codex e Claude Sonnet 4.6 — foram avaliados em 24 implementações abrangendo três linguagens de programação (C++, Go, Python) e dois cenários de aplicação (API REST de Gerenciamento de Leads e Serviço de Streaming de Música). Cada implementação foi submetida à análise estática automatizada com Cppcheck, Gosec e Bandit, além de revisão manual de segurança seguindo a classificação CWE. Foram identificadas 392 vulnerabilidades: 193 em código gerado por prompts em português e 199 em inglês (diferença de 3,1\%). O Claude gerou em média 17,2 vulnerabilidades por projeto contra 15,5 do GPT. A CWE-798 (Credenciais Codificadas) foi a única vulnerabilidade presente nas 24 implementações, confirmando-se como padrão sistêmico do código gerado por LLMs, independente de idioma ou modelo. Os resultados sugerem que o idioma do prompt influencia a complexidade do código gerado — especialmente em C++ (mais problemas em PT) e Python (mais problemas em EN) — com a descrição linguística e o registro técnico como fatores contribuintes.
+\end{resumo}
+
+%-------------------------------------------------------------------
+\section{Introdução}
+%-------------------------------------------------------------------
+
+A adoção de Modelos de Linguagem de Grande Escala (LLMs) para geração de código tornou-se amplamente difundida entre desenvolvedores, equipes ágeis e estudantes de computação. Ferramentas como GitHub Copilot, ChatGPT e Claude Sonnet têm demonstrado capacidade de produzir implementações funcionais a partir de descrições em linguagem natural, acelerando significativamente o ciclo de desenvolvimento de software~\cite{pearce2022asleep}.
+
+Entretanto, a qualidade de segurança do código gerado automaticamente por LLMs ainda é objeto de investigação. Estudos recentes indicam que esses modelos tendem a introduzir vulnerabilidades conhecidas — como credenciais codificadas em código-fonte, transmissão em texto claro, ausência de limitação de taxa e configurações permissivas de CORS — mesmo em implementações funcionalmente corretas~\cite{pearce2022asleep,khoury2023secure}. Essa tendência é especialmente relevante no contexto brasileiro, onde uma parcela significativa dos desenvolvedores utiliza o português como idioma nativo para redigir especificações e prompts.
+
+A questão central deste trabalho é: \textit{a escolha do idioma do prompt — português (PT-BR) versus inglês (EN-US) — influencia o perfil de vulnerabilidades de segurança no código gerado por LLMs?} Para responder a essa questão, este estudo propõe um protocolo experimental controlado que gera 24 implementações completas (dois modelos $\times$ dois idiomas $\times$ dois cenários $\times$ três linguagens de programação), avalia cada implementação por análise estática automatizada e por revisão manual de segurança baseada em CWE, e compara os resultados entre idiomas, modelos e linguagens de programação.
+
+As principais contribuições deste trabalho são:
+\begin{itemize}
+  \item Um protocolo reproduzível para avaliação de segurança de código gerado por LLMs;
+  \item Dados empíricos sobre a influência do idioma do prompt no perfil de vulnerabilidades;
+  \item Análise qualitativa dos padrões de vulnerabilidade mais recorrentes em código LLM;
+  \item Uma hipótese linguística para explicar as diferenças observadas entre PT-BR e EN-US.
+\end{itemize}
+
+O restante do artigo está organizado da seguinte forma: a Seção~\ref{sec:trabalhos} apresenta trabalhos relacionados; a Seção~\ref{sec:metodologia} descreve a metodologia; a Seção~\ref{sec:implementacoes} documenta as implementações; a Seção~\ref{sec:estatica} apresenta os resultados da análise estática; a Seção~\ref{sec:manual} descreve a revisão manual; a Seção~\ref{sec:resultados} analisa os resultados; e as Seções~\ref{sec:conclusao} e~\ref{sec:futuros} apresentam conclusão e trabalhos futuros.
+
+%-------------------------------------------------------------------
+\section{Trabalhos Relacionados}
+\label{sec:trabalhos}
+%-------------------------------------------------------------------
+
+Pearce et al.~\cite{pearce2022asleep} realizaram o primeiro estudo sistemático sobre vulnerabilidades introduzidas por GitHub Copilot, analisando 89 cenários de geração de código e identificando que cerca de 40\% das sugestões continham vulnerabilidades de segurança. Os autores concluem que o Copilot pode ser considerado "dormindo no volante" — funcionalmente produtivo, mas inseguro.
+
+Khoury et al.~\cite{khoury2023secure} expandiram esse estudo para ChatGPT (GPT-3.5), avaliando 21 programas em cinco linguagens. Todos os programas gerados apresentaram ao menos uma vulnerabilidade de segurança, com as categorias CWE-20 (Validação de Entrada), CWE-787 (Escrita Fora dos Limites) e CWE-79 (XSS) sendo as mais recorrentes. Os autores destacam que o modelo demonstra conhecimento teórico de segurança, mas não o aplica consistentemente na geração de código.
+
+Tony et al.~\cite{tony2023llmseceval} desenvolveram o LLMSecEval, um benchmark de 150 cenários de geração de código para avaliação de segurança de LLMs, cobrindo os Top-25 CWEs do MITRE. Os resultados mostram que modelos maiores tendem a gerar código mais seguro, mas nenhum modelo testado está isento de vulnerabilidades críticas.
+
+No contexto de segurança em API REST, Yao et al.~\cite{yao2024survey} apresentam uma revisão sistemática sobre código LLM-gerado e concluem que padrões de autenticação (JWT, OAuth) são frequentemente implementados de forma insegura, com destaque para a ausência de verificação de expiração de tokens e o uso de segredos previsíveis.
+
+Diferentemente dos trabalhos citados, este estudo contribui com a variável do \textit{idioma do prompt} como fator de análise, preenche a lacuna de avaliações em PT-BR e aplica tanto análise estática automatizada quanto revisão manual alinhada ao CWE, cobrindo dois cenários de aplicação completos em três linguagens de programação.
+
+%-------------------------------------------------------------------
+\section{Metodologia}
+\label{sec:metodologia}
+%-------------------------------------------------------------------
+
+\subsection{Modelos Avaliados}
+
+Foram selecionados dois modelos de linguagem de ponta:
+\begin{itemize}
+  \item \textbf{GPT-5.4 Codex (OpenAI)}: modelo de alta capacidade com especialização em geração de código, acessado via interface de chat padrão;
+  \item \textbf{Claude Sonnet 4.6 (Anthropic)}: modelo conversacional com forte desempenho em tarefas de programação, acessado via interface de chat e Claude Code CLI.
+\end{itemize}
+
+\subsection{Cenários de Aplicação}
+
+Dois cenários de aplicação foram definidos para garantir cobertura de padrões de segurança distintos:
+
+\textbf{Cenário 1 — Gerenciamento de Leads (Leads):} API REST para gerenciamento de contatos/leads comerciais, com autenticação JWT, operações CRUD, importação/exportação CSV/Excel e integração com Firebase Firestore como banco de dados.
+
+\textbf{Cenário 2 — Streaming de Música (Stream):} Serviço de streaming de áudio com separação de papéis (usuário/artista), upload de arquivos MP3, reprodução em tempo real e autenticação baseada em tokens.
+
+Ambos os cenários envolvem mecanismos de autenticação, manipulação de arquivos, gerenciamento de sessão e exposição de dados sensíveis — áreas que historicamente concentram vulnerabilidades de segurança.
+
+\subsection{Linguagens de Programação}
+
+Três linguagens foram selecionadas por sua heterogeneidade em paradigmas de segurança e popularidade no mercado:
+\begin{itemize}
+  \item \textbf{C++}: linguagem de sistema, gerenciamento manual de memória, maior superfície para vulnerabilidades de baixo nível;
+  \item \textbf{Go}: linguagem moderna com garbage collector, tipagem estática e bibliotecas padrão de criptografia;
+  \item \textbf{Python}: linguagem dinâmica com vasto ecossistema de frameworks web (FastAPI, Flask).
+\end{itemize}
+
+\subsection{Design Experimental}
+
+O experimento segue um design fatorial completo $2 \times 2 \times 3$ (modelos $\times$ idiomas $\times$ linguagens), resultando em 12 configurações por cenário e 24 implementações no total (Tabela~\ref{tab:design}).
+
+\begin{table}[H]
+\centering
+\caption{Design experimental: 24 implementações}
+\label{tab:design}
+\begin{tabular}{llllll}
+\toprule
+\textbf{Cenário} & \textbf{Linguagem} & \textbf{Idioma PT} & & \textbf{Idioma EN} & \\
+ & & Claude & GPT & Claude & GPT \\
+\midrule
+Leads & C++ & \checkmark & \checkmark & \checkmark & \checkmark \\
+Leads & Go & \checkmark & \checkmark & \checkmark & \checkmark \\
+Leads & Python & \checkmark & \checkmark & \checkmark & \checkmark \\
+Stream & C++ & \checkmark & \checkmark & \checkmark & \checkmark \\
+Stream & Go & \checkmark & \checkmark & \checkmark & \checkmark \\
+Stream & Python & \checkmark & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Protocolo de Geração de Código}
+
+Para cada uma das 24 células do design, foi elaborado um prompt equivalente nos dois idiomas descrevendo os requisitos funcionais do cenário (autenticação, CRUD, upload/export, integração com Firebase). Os prompts em PT-BR e EN-US descrevem as mesmas funcionalidades, diferindo apenas no idioma. O código gerado foi executado localmente para verificação de compilação/execução antes da análise de segurança.
+
+\subsection{Instrumentos de Análise}
+
+\textbf{Análise Estática Automatizada:} Três ferramentas foram utilizadas conforme a linguagem alvo:
+\begin{itemize}
+  \item \textbf{Cppcheck 2.x} para C++: análise de memória, ponteiros nulos, buffer overflow e uso de APIs inseguras;
+  \item \textbf{Gosec v2.x} para Go: análise de criptografia fraca, credenciais hardcoded, injeção em logs (CWE-117) e erros não tratados;
+  \item \textbf{Bandit 1.x} para Python: análise de uso de funções inseguras, criptografia inadequada e configurações de rede permissivas.
+\end{itemize}
+
+\textbf{Revisão Manual de Segurança:} Para cada implementação, foi conduzida uma revisão manual sistemática do código-fonte, mapeando cada vulnerabilidade encontrada ao identificador CWE correspondente, classificando-a por severidade (Crítica, Alta, Média, Baixa) e documentando o vetor de exploração. A revisão cobriu exclusivamente o código da aplicação, excluindo bibliotecas de terceiros.
+
+%-------------------------------------------------------------------
+\section{Implementações}
+\label{sec:implementacoes}
+%-------------------------------------------------------------------
+
+As 24 implementações foram geradas entre março e abril de 2026. Cada implementação resultou em um projeto completo com backend funcional, incluindo configuração de build (CMakeLists.txt para C++, go.mod para Go, requirements.txt para Python), código de integração com Firebase Firestore e, onde aplicável, interfaces de usuário em HTML/CSS/JavaScript.
+
+Os projetos foram organizados na estrutura de diretórios:
+\begin{verbatim}
+tcc/
+  Portugues/{Leads,Stream}/{C++,Go,Python}/{Claude,GPT}/
+  English/{Leads,Stream}/{C++,Go,Python}/{Claude,GPT}/
+\end{verbatim}
+
+\textbf{Cenário Leads:} As implementações em C++ utilizaram cpp-httplib ou Crow como framework HTTP. As em Go utilizaram chi, Gin ou servidor HTTP nativo. As em Python utilizaram FastAPI ou Flask. Todas implementam os endpoints: \texttt{POST /api/auth/register}, \texttt{POST /api/auth/login}, \texttt{GET/POST/PUT/DELETE /api/leads}, \texttt{POST /api/leads/import} e \texttt{GET /api/leads/export}.
+
+\textbf{Cenário Stream:} As implementações em C++ utilizaram cpp-httplib. As em Go utilizaram chi ou servidor HTTP nativo com SQLite ou JSON para catálogo. As em Python utilizaram FastAPI com SQLite ou Firebase. Todos os projetos implementam: \texttt{POST /api/auth/register} e \texttt{/login}, \texttt{POST /api/artist/songs} (upload), \texttt{GET /api/songs} (listagem), \texttt{GET /api/songs/{id}/stream} (streaming com Range headers).
+
+A integração com Firebase Firestore foi comum a todas as implementações do cenário Leads. No cenário Stream, alguns modelos optaram por SQLite local combinado com sistema de arquivos, enquanto outros mantiveram Firebase para armazenamento de metadados.
+
+%-------------------------------------------------------------------
+\section{Análise Estática Automatizada}
+\label{sec:estatica}
+%-------------------------------------------------------------------
+
+A análise estática foi executada sobre o código-fonte de cada projeto utilizando os resultados armazenados nos arquivos \texttt{report.txt} de cada implementação. Os resultados são apresentados na Tabela~\ref{tab:estatica}.
+
+\begin{table}[H]
+\centering
+\caption{Resultados da análise estática por ferramenta e idioma}
+\label{tab:estatica}
+\begin{tabular}{llrr}
+\toprule
+\textbf{Linguagem} & \textbf{Ferramenta} & \textbf{Total PT} & \textbf{Total EN} \\
+\midrule
+C++ & Cppcheck & 8 & 9 \\
+Go & Gosec & 31 & 45 \\
+Python & Bandit & 13 & 15 \\
+\midrule
+\textbf{Total} & & \textbf{52} & \textbf{69} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+O Gosec foi a ferramenta com maior número de ocorrências reportadas, principalmente devido ao flagging agressivo de injeção em logs (CWE-117) e erros não tratados em chamadas de API (CWE-703) em projetos Go. Esses tipos de alertas possuem alto índice de falsos positivos em código Go convencional, pois o Gosec aplica análise de fluxo de dados que frequentemente captura padrões válidos.
+
+Os projetos C++ em português apresentaram ligeiramente menos alertas de Cppcheck (8 vs 9 em inglês), em parte porque a geração GPT/PT do cenário Leads/C++ utilizou uma biblioteca externa (\texttt{json.hpp}) que foi erroneamente incluída no escopo de análise do Cppcheck, sendo posteriormente descartada da contagem por não fazer parte do código da aplicação.
+
+A análise estática capturou um subconjunto restrito das vulnerabilidades totais identificadas na revisão manual, confirmando que ferramentas automatizadas são complementares, e não substitutivas, à revisão humana de segurança.
+
+%-------------------------------------------------------------------
+\section{Revisão Manual de Segurança}
+\label{sec:manual}
+%-------------------------------------------------------------------
+
+A revisão manual de segurança foi conduzida de forma independente para cada uma das 24 implementações, sem consulta prévia aos relatórios de análise estática, para evitar viés de confirmação. O processo seguiu o seguinte protocolo:
+
+\begin{enumerate}
+  \item Leitura completa do código-fonte da aplicação (excluindo bibliotecas de terceiros);
+  \item Identificação de cada padrão de vulnerabilidade com mapeamento ao CWE correspondente;
+  \item Classificação de severidade segundo o CVSS 3.1 (Crítica/Alta/Média/Baixa);
+  \item Documentação de vetor de exploração para cada vulnerabilidade identificada;
+  \item Registro de observações positivas (boas práticas encontradas).
+\end{enumerate}
+
+As revisões foram documentadas nos arquivos \texttt{security\_review.txt} de cada projeto. O total de vulnerabilidades identificadas manualmente foi de \textbf{392}, sendo 193 em projetos PT-BR e 199 em projetos EN-US.
+
+As categorias CWE mais recorrentes na revisão manual incluem: CWE-798 (Credenciais Hardcoded), CWE-319 (Transmissão em Texto Claro), CWE-307/770 (Ausência de Rate Limiting), CWE-942 (CORS Permissivo), CWE-352 (CSRF), CWE-521 (Política de Senha Fraca) e CWE-613 (Expiração de Sessão Insuficiente).
+
+%-------------------------------------------------------------------
+\section{Resultados e Discussão}
+\label{sec:resultados}
+%-------------------------------------------------------------------
+
+\subsection{Visão Geral: Contagem por Projeto}
+
+A Tabela~\ref{tab:resultados_completos} apresenta o número de vulnerabilidades identificadas na revisão manual para cada um dos 24 projetos, organizados por cenário, linguagem de programação, idioma do prompt e modelo de linguagem utilizado.
+
+\begin{table}[H]
+\centering
+\caption{Vulnerabilidades por projeto — Revisão Manual (CWE)}
+\label{tab:resultados_completos}
+\begin{tabular}{llrrrr}
+\toprule
+\multirow{2}{*}{\textbf{Cenário}} & \multirow{2}{*}{\textbf{Ling.}} &
+\multicolumn{2}{c}{\textbf{PT-BR}} & \multicolumn{2}{c}{\textbf{EN-US}} \\
+ & & \textbf{Claude} & \textbf{GPT} & \textbf{Claude} & \textbf{GPT} \\
+\midrule
+Leads & C++ & 27 & 18 & 16 & 14 \\
+Leads & Go  & 14 & 14 & 19 & 12 \\
+Leads & Python & 11 & 14 & 23 & 13 \\
+\midrule
+Stream & C++ & 18 & 17 & 18 & 25 \\
+Stream & Go  & 16 & 14 & 14 & 17 \\
+Stream & Python & 16 & 14 & 14 & 14 \\
+\midrule
+\textbf{Total PT} & & \textbf{102} & \textbf{91} & & \\
+\textbf{Total EN} & & & & \textbf{104} & \textbf{95} \\
+\textbf{Total geral} & & \multicolumn{2}{c}{\textbf{193}} & \multicolumn{2}{c}{\textbf{199}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Médias por Agrupamento}
+
+A Tabela~\ref{tab:medias} consolida as médias de vulnerabilidades por projeto segundo diferentes agrupamentos analíticos.
+
+\begin{table}[H]
+\centering
+\caption{Média de vulnerabilidades por projeto}
+\label{tab:medias}
+\begin{tabular}{llrr}
+\toprule
+\textbf{Dimensão} & \textbf{Grupo} & \textbf{Total} & \textbf{Média/projeto} \\
+\midrule
+Idioma & PT-BR & 193 & 16,1 \\
+Idioma & EN-US & 199 & 16,6 \\
+\midrule
+Modelo & Claude & 206 & 17,2 \\
+Modelo & GPT    & 186 & 15,5 \\
+\midrule
+Linguagem & C++    & 153 & 19,1 \\
+Linguagem & Go     & 120 & 15,0 \\
+Linguagem & Python & 119 & 14,9 \\
+\midrule
+Cenário & Leads  & 195 & 16,3 \\
+Cenário & Stream & 197 & 16,4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A diferença entre os idiomas é de apenas 3,1\% (199 vs 193), estatisticamente pequena. A diferença entre modelos é mais expressiva: Claude gerou em média 17,2 vulnerabilidades por projeto contra 15,5 do GPT (diferença de 11\%). C++ se destacou como a linguagem com maior média (19,1), seguida de Go (15,0) e Python (14,9). Os dois cenários apresentaram médias praticamente idênticas (16,3 vs 16,4), indicando que a complexidade de segurança dos dois domínios é comparável.
+
+\subsection{Vulnerabilidades Mais Críticas}
+
+\subsubsection{CWE-798: Credenciais Hardcoded (Universal)}
+
+A vulnerabilidade CWE-798 — uso de credenciais codificadas diretamente no código-fonte — foi identificada em \textbf{todas as 24 implementações} analisadas (100\% de ocorrência). Em todos os casos, dois padrões se repetiram:
+
+\begin{enumerate}
+  \item \textbf{Segredo JWT hardcoded}: todos os projetos incluíam um valor padrão previsível para o segredo de assinatura de tokens JWT (ex.: \texttt{"lead-manager-secret-key-change-in-production"}, \texttt{"change-this-secret-in-production"}, \texttt{"troque-esta-chave-em-producao"}). Esse padrão permite que um atacante forje tokens JWT arbitrários e assuma qualquer conta no sistema.
+  \item \textbf{Caminho absoluto para credenciais Firebase}: todos os projetos incluíram, como valor padrão, o caminho absoluto para o arquivo de credenciais do Firebase Admin SDK (\texttt{C:/Users/tonil/Desktop/tcc/lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json}), expondo o nome do projeto Firebase e a estrutura de diretórios do desenvolvedor.
+\end{enumerate}
+
+A universalidade da CWE-798 não é acidental: reflete um padrão comportamental dos LLMs de priorizar conveniência de desenvolvimento (código que "funciona imediatamente") sobre segurança, inserindo placeholders facilmente descobertos.
+
+\subsubsection{CWE-319: Transmissão em Texto Claro}
+
+CWE-319 — ausência de TLS/HTTPS — foi identificada em 20 dos 24 projetos (83\%), afetando principalmente implementações em C++ e Go, onde o desenvolvedor precisa configurar explicitamente um servidor SSL. Em C++, todos os oito projetos utilizaram \texttt{httplib::Server} em vez de \texttt{httplib::SSLServer}. Em Go, todos os oito projetos utilizaram \texttt{http.ListenAndServe} sem TLS. Nos projetos Python, a responsabilidade pelo TLS é geralmente delegada a um proxy reverso (nginx), o que pode explicar a menor incidência nessa linguagem.
+
+\subsubsection{CWE-307/770: Ausência de Rate Limiting}
+
+A ausência de limitação de taxa nos endpoints de autenticação (\texttt{/login}, \texttt{/register}) foi identificada em 22 dos 24 projetos (92\%). Esse padrão viabiliza ataques de força bruta e credential stuffing. Os dois projetos que implementaram alguma forma de proteção o fizeram parcialmente (limitação de tamanho de payload, sem limitação de frequência).
+
+\subsubsection{CWE-942: CORS Permissivo}
+
+Configurações de CORS excessivamente permissivas (\texttt{allow\_origins=["*"]} combinado com \texttt{allow\_credentials=True}) foram encontradas em 20 dos 24 projetos (83\%). Essa combinação é especialmente perigosa pois viola a especificação CORS (que proíbe credenciais com origem curinga) e pode ser explorada dependendo da implementação do servidor.
+
+\subsection{Padrões por Idioma do Prompt}
+
+\subsubsection{Diferenças por Linguagem de Programação}
+
+A Tabela~\ref{tab:por_linguagem} apresenta os totais de vulnerabilidades desagregados por linguagem de programação e idioma do prompt.
+
+\begin{table}[H]
+\centering
+\caption{Vulnerabilidades por linguagem e idioma do prompt}
+\label{tab:por_linguagem}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Linguagem} & \textbf{PT-BR} & \textbf{EN-US} & \textbf{Dif.} & \textbf{Dif. \%} \\
+\midrule
+C++    & 80 & 73 & $+7$ (PT) & $+9,6\%$ \\
+Go     & 58 & 62 & $+4$ (EN) & $+6,9\%$ \\
+Python & 55 & 64 & $+9$ (EN) & $+16,4\%$ \\
+\midrule
+\textbf{Total} & \textbf{193} & \textbf{199} & $+6$ (EN) & $+3,1\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Os resultados revelam um padrão assimétrico: prompts em \textbf{português geraram mais vulnerabilidades em C++}, enquanto prompts em \textbf{inglês geraram mais vulnerabilidades em Go e Python}. A diferença mais expressiva ocorre em Python ($+16,4\%$ EN), seguida de C++ ($+9,6\%$ PT).
+
+\subsubsection{Casos Extremos}
+
+Os casos com maior divergência entre idiomas merecem análise individual:
+
+\begin{itemize}
+  \item \textbf{Leads/C++/Claude:} PT=27 vs EN=16 ($+69\%$ PT). O código C++ gerado pelo Claude a partir do prompt em português foi significativamente mais complexo, implementando mais funcionalidades (como validação customizada de e-mail, exportação em múltiplos formatos e sistema de busca com múltiplos campos), o que ampliou a superfície de ataque.
+  \item \textbf{Leads/Python/Claude:} PT=11 vs EN=23 ($+109\%$ EN). O Claude em inglês gerou uma implementação Python mais sofisticada (com mais middlewares, validações e endpoints), enquanto a versão PT implementou um conjunto funcional mínimo com menor número de vetores de ataque.
+  \item \textbf{Stream/C++/GPT:} PT=17 vs EN=25 ($+47\%$ EN). O GPT em inglês gerou uma implementação C++ do streaming com mais funcionalidades avançadas (range requests, catálogo JSON, função de geração de IDs), cada uma introduzindo vulnerabilidades adicionais.
+  \item \textbf{Stream/C++/Claude:} PT=18 vs EN=18 (empate). Para esse cenário específico, ambos os idiomas convergiram para implementações de complexidade equivalente, resultando em exatamente o mesmo número de vulnerabilidades identificadas.
+\end{itemize}
+
+\subsection{Análise Linguística: Por que o Idioma Influencia?}
+
+A diferença no perfil de vulnerabilidades entre PT-BR e EN-US não está relacionada ao \textit{conhecimento de segurança} dos modelos — que permanece equivalente em ambos os idiomas — mas sim à \textit{complexidade e completude do código gerado}.
+
+\subsubsection{Português como Idioma Descritivo}
+
+O português brasileiro é tipicamente mais descritivo e prolixo que o inglês em contextos técnicos. Frases como \textit{"desenvolva um sistema completo de gerenciamento de leads com autenticação JWT, operações CRUD completas, importação e exportação de dados"} tendem a ser mais longas e detalhadas em português, o que parece induzir os LLMs a gerarem implementações mais extensas e funcionalmente completas.
+
+Essa hipótese explica o padrão observado em C++: o prompt em português, por ser mais detalhado nas descrições de funcionalidades, levou à geração de código C++ com mais componentes (sistema de hash de senhas, cliente Firebase customizado, sistema de exportação completo), cada componente introduzindo novos vetores de ataque. C++ é uma linguagem onde a complexidade do código se traduz diretamente em maior superfície de ataque — gerenciamento manual de memória, construtores de URL não sanitizados, comparações de strings não-constantes.
+
+\subsubsection{Inglês como Idioma Técnico Preciso}
+
+O inglês possui um vocabulário técnico mais consolidado para programação. Termos como \textit{"streaming endpoint"}, \textit{"CRUD operations"}, \textit{"JWT bearer token middleware"} têm significados técnicos bem definidos que os LLMs associam a padrões de implementação específicos — frequentemente mais sofisticados.
+
+Em Python e Go, onde a especificidade técnica do inglês mapeia diretamente para convenções de frameworks (FastAPI, chi, Gin), os prompts em inglês parecem ativar padrões de implementação mais completos, incluindo mais middlewares, dependências externas e funcionalidades avançadas. Isso explicaria por que EN gerou mais vulnerabilidades em Python ($+16,4\%$) e Go ($+6,9\%$): não porque o código seja menos seguro por natureza, mas porque é mais complexo e apresenta maior superfície de análise.
+
+\subsubsection{Vulnerabilidades Sistêmicas Independentes do Idioma}
+
+É importante ressaltar que as vulnerabilidades mais graves (CWE-798, CWE-319, CWE-307) não apresentam variação significativa por idioma: ambas as línguas as produzem com frequência equivalente. Isso confirma que essas vulnerabilidades são \textit{sistêmicas} do comportamento dos LLMs — não são artefatos linguísticos, mas sim limitações intrínsecas do processo de geração de código por modelos de linguagem.
+
+Em particular, a CWE-798 (presente em 100\% dos projetos, em ambos os idiomas) demonstra que os LLMs priorizam a conveniência do desenvolvedor (fornecer um valor funcional imediato) sobre a segurança, independentemente de como a especificação foi escrita.
+
+\subsection{Diferenças entre Modelos}
+
+Claude gerou consistentemente mais vulnerabilidades que GPT (17,2 vs 15,5 por projeto, diferença de 11\%). Essa diferença não necessariamente indica que o Claude é menos seguro: pode refletir que o Claude gera código mais extenso e completo, com mais funcionalidades implementadas, o que expõe mais superfície de análise.
+
+O Claude apresentou diferenças mais expressivas entre PT e EN na mesma linguagem e cenário (ex.: Leads/C++: PT=27 vs EN=16; Leads/Python: PT=11 vs EN=23), sugerindo maior sensibilidade à variação linguística do prompt. O GPT mostrou comportamento mais estável entre idiomas, com diferenças menores entre PT e EN para a maioria das combinações.
+
+%-------------------------------------------------------------------
+\section{Conclusão}
+\label{sec:conclusao}
+%-------------------------------------------------------------------
+
+Este trabalho investigou empiricamente se o idioma do prompt (PT-BR vs EN-US) influencia o perfil de vulnerabilidades de segurança no código gerado por LLMs. A análise de 24 implementações completas, avaliadas por análise estática automatizada e revisão manual baseada em CWE, permitiu as seguintes conclusões:
+
+\textbf{(1) A diferença global entre idiomas é pequena (3,1\%)}, mas consistente: EN gerou ligeiramente mais vulnerabilidades no total (199 vs 193). Essa diferença não é suficiente para recomendar um idioma sobre o outro com base apenas em segurança.
+
+\textbf{(2) A influência do idioma se manifesta de forma diferenciada por linguagem de programação}: Portuguese gerou mais vulnerabilidades em C++ ($+9,6\%$), enquanto English gerou mais em Python ($+16,4\%$) e Go ($+6,9\%$). Essa assimetria está relacionada à natureza descritiva do português (que gera implementações C++ mais completas) e à precisão técnica do inglês (que ativa padrões de frameworks mais sofisticados em Python e Go).
+
+\textbf{(3) CWE-798 é a única vulnerabilidade universal:} presente nas 24 implementações, independente de idioma, modelo ou linguagem. Credenciais hardcoded e caminhos de arquivos sensíveis são um padrão sistêmico dos LLMs que precisa ser tratado em revisões de código obrigatórias.
+
+\textbf{(4) Claude gerou mais vulnerabilidades que GPT (11\% a mais)}, possivelmente por produzir código mais extenso. As diferenças entre os modelos são mais expressivas que as diferenças entre idiomas.
+
+\textbf{(5) C++ apresentou a maior média de vulnerabilidades (19,1/projeto)}, seguido de Go (15,0) e Python (14,9), refletindo a maior complexidade de gerenciamento seguro de recursos em linguagens de sistema.
+
+Os resultados reforçam que código gerado por LLMs requer revisão de segurança obrigatória antes de ser utilizado em produção, independentemente do idioma de especificação utilizado.
+
+%-------------------------------------------------------------------
+\section{Trabalhos Futuros}
+\label{sec:futuros}
+%-------------------------------------------------------------------
+
+Como extensões naturais deste trabalho, identificamos as seguintes direções:
+
+\begin{itemize}
+  \item \textbf{Expansão para outros idiomas}: incluir espanhol, mandarim e alemão para testar se a hipótese linguística se confirma em um espectro mais amplo;
+  \item \textbf{Análise de modelos adicionais}: incluir Gemini, Mistral e Llama para comparação com os modelos analisados;
+  \item \textbf{Avaliação de versões subsequentes}: repetir o estudo com versões mais recentes dos modelos para verificar se as vulnerabilidades sistêmicas foram mitigadas por atualização do modelo;
+  \item \textbf{Prompts de segurança explícita}: investigar se a adição de requisitos explícitos de segurança nos prompts (ex.: "implemente com HTTPS obrigatório e sem credenciais hardcoded") reduz a incidência das vulnerabilidades identificadas;
+  \item \textbf{Estudo de correção assistida}: avaliar se os mesmos LLMs são capazes de identificar e corrigir as vulnerabilidades presentes em seus próprios códigos quando questionados.
+\end{itemize}
+
+%-------------------------------------------------------------------
+\bibliographystyle{sbc}
+\bibliography{referencias}
+
+\begin{thebibliography}{9}
+
+\bibitem{pearce2022asleep}
+PEARCE, H. et al.
+\textbf{Asleep at the Keyboard? Assessing the Security of GitHub Copilot's Code Contributions}.
+In: \textit{IEEE Symposium on Security and Privacy (SP)}, 2022. p. 754--768.
+
+\bibitem{khoury2023secure}
+KHOURY, R. et al.
+\textbf{How Secure is Code Generated by ChatGPT?}
+In: \textit{IEEE International Conference on Systems, Man, and Cybernetics (SMC)}, 2023. p. 2445--2450.
+
+\bibitem{tony2023llmseceval}
+TONY, C. et al.
+\textbf{LLMSecEval: A Dataset of Natural Language Prompts for Security Evaluations}.
+In: \textit{IEEE/ACM Mining Software Repositories (MSR)}, 2023. p. 588--592.
+
+\bibitem{yao2024survey}
+YAO, Y. et al.
+\textbf{A Survey on Large Language Model (LLM) Security and Privacy: The Good, the Bad, and the Ugly}.
+\textit{High-Confidence Computing}, v. 4, n. 2, 2024.
+
+\bibitem{mitre2024cwe}
+MITRE CORPORATION.
+\textbf{Common Weakness Enumeration (CWE) Top 25 Most Dangerous Software Weaknesses 2024}.
+Disponível em: \url{https://cwe.mitre.org/top25/}. Acesso em: mai. 2026.
+
+\bibitem{owasp2021}
+OWASP FOUNDATION.
+\textbf{OWASP Top Ten 2021}.
+Disponível em: \url{https://owasp.org/www-project-top-ten/}. Acesso em: mai. 2026.
+
+\bibitem{siddiq2022securityeval}
+SIDDIQ, M. L.; SANTOS, J. C.
+\textbf{SecurityEval Dataset: Mining Vulnerability Examples to Evaluate Machine Learning-Based Code Generation Techniques}.
+In: \textit{ACM/IEEE Mining Software Repositories (MSR)}, 2022. p. 488--492.
+
+\bibitem{jesse2023large}
+JESSE, K.; AHMED, T.; DEVANBU, P. T.
+\textbf{Large Language Models Know What Makes Exemplary Contexts}.
+\textit{arXiv preprint arXiv:2301.07093}, 2023.
+
+\bibitem{sandoval2023lost}
+SANDOVAL, G. et al.
+\textbf{Lost at C: A User Study on the Security Implications of Large Language Model Code Assistants}.
+In: \textit{USENIX Security Symposium}, 2023. p. 2205--2222.
+
+\end{thebibliography}
+
+\end{document}

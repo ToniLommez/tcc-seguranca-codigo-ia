@@ -1,0 +1,10 @@
+Results:
+
+
+	No issues identified.
+
+Summary:
+  Bandit   : 1.9.4
+  Lines    : 778
+  Issues   : 0
+

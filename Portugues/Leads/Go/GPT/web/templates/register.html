@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Title}} | {{.AppName}}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="auth-body">
+  <main class="auth-shell">
+    <section class="auth-panel auth-brand">
+      <span class="eyebrow">Onboarding de Gestores</span>
+      <h1>{{.AppName}}</h1>
+      <p>Cadastre a empresa ou gestor responsável e comece a armazenar leads em uma base própria no Firebase.</p>
+      <div class="metric-grid">
+        <article class="metric-card compact">
+          <strong>Firebase</strong>
+          <span>Persistência em coleções dedicadas</span>
+        </article>
+        <article class="metric-card compact">
+          <strong>Go</strong>
+          <span>REST API e frontend no mesmo serviço</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="auth-panel">
+      <div class="panel-header">
+        <h2>Criar conta</h2>
+        <p>Crie o usuário administrador da sua operação.</p>
+      </div>
+
+      <form class="stack-form" data-auth-form="register">
+        <label>
+          <span>Nome</span>
+          <input type="text" name="name" placeholder="Nome do gestor ou empresa" required>
+        </label>
+        <label>
+          <span>E-mail</span>
+          <input type="email" name="email" placeholder="voce@empresa.com" required>
+        </label>
+        <label>
+          <span>Senha</span>
+          <input type="password" name="password" placeholder="Mínimo de 6 caracteres" required>
+        </label>
+
+        <div class="form-message" data-form-message></div>
+        <button type="submit" class="btn btn-primary btn-block">Criar conta</button>
+      </form>
+
+      <p class="auth-footer">Já possui cadastro? <a href="/login">Entrar</a></p>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

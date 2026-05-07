@@ -1,0 +1,31 @@
+Results:
+
+
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'bearer'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   Location: C:/Users/tonil/Desktop/tcc/Portugues/Leads/Python/Claude/backend\auth\routes.py:62:35
+61	    token = create_access_token({"sub": user_id, "email": body.email, "name": body.name})
+62	    return {"access_token": token, "token_type": "bearer", "user": {"id": user_id, "name": body.name, "email": body.email}}
+63
+
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'bearer'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   Location: C:/Users/tonil/Desktop/tcc/Portugues/Leads/Python/Claude/backend\auth\routes.py:81:35
+80	    token = create_access_token({"sub": doc.id, "email": user["email"], "name": user["name"]})
+81	    return {"access_token": token, "token_type": "bearer", "user": {"id": doc.id, "name": user["name"], "email": user["email"]}}
+82
+
+>> Issue: [B104:hardcoded_bind_all_interfaces] Possible binding to all interfaces.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-605 (https://cwe.mitre.org/data/definitions/605.html)
+   Location: C:/Users/tonil/Desktop/tcc/Portugues/Leads/Python/Claude/backend\main.py:57:33
+56	    import uvicorn
+57	    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+Summary:
+  Bandit   : 1.9.4
+  Lines    : 486
+  Issues   : 3
+

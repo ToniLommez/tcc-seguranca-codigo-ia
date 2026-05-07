@@ -1,0 +1,141 @@
+User:
+<environment_context>
+  <cwd>C:\Users\tonil\Desktop\tcc\English\Stream\Go\GPT</cwd>
+  <shell>powershell</shell>
+  <current_date>2026-05-06</current_date>
+  <timezone>America/Sao_Paulo</timezone>
+</environment_context>
+
+User:
+I have a small technology company focused on a music streaming system with registration and playback.
+
+We currently use a legacy system and want to abandon it to start a new modern, more organized, and scalable solution.
+
+The system must allow two types of users: artists and regular users, with separate functionalities.
+
+I need a complete REST service with JWT authentication, frontend and backend.
+
+The system must store music files locally on the server (the cloud will only be used for user registration).
+
+I need the complete code to be generated. The requirements are as follows:
+
+
+
+Authentication and Users Module
+
+The system must allow user registration with: name, email, password, type (ARTIST or USER).
+
+The system must authenticate via email and password, returning a JWT token.
+
+The system must ensure access control based on user type.
+
+
+
+Artist Module (Music Upload)
+
+Only users of type ARTIST can access this module.
+
+The artist must be able to register songs with: title, genre, description (optional).
+
+The artist must upload the music file (MP3 only).
+
+The file must be stored locally on the server (e.g., /uploads folder).
+
+The system must save the file path in the database.
+
+The artist MUST NOT be able to listen to music, only register it.
+
+
+
+User Module (Music Consumption)
+
+List songs.
+
+Search songs by: name, artist, and genre.
+
+Play the music directly in the browser (streaming via backend).
+
+The backend must provide an endpoint to serve the audio file.
+
+
+
+Streaming Module
+
+The backend must provide an endpoint for audio playback.
+
+Must support basic streaming.
+
+Files must be served directly from local storage.
+
+
+
+Frontend Module
+
+The frontend must be desktop-first.
+
+
+
+Database
+
+Database: Firebase (only for users).
+
+Music files: local storage on the server (filesystem).
+
+Do not use external storage services.
+
+
+
+Firebase access data:
+
+C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json
+
+
+
+Programming language: Go
+
+
+
+Environment: Windows
+
+Assistant:
+I’m going to inspect the current workspace first so we can build this cleanly on top of whatever is already there, then I’ll scaffold the backend/frontend structure around your Go + Firebase + local-audio requirements.
+
+Assistant:
+I’ve confirmed the workspace is effectively empty, so I’m treating this as a fresh build. Next I’m checking the local toolchain and the Firebase service account shape so I can wire the project around what you already have instead of guessing.
+
+Assistant:
+I have enough context now to map this into a full app. I’m going to build a single Go service that serves both the REST API and a desktop-first frontend, using Firestore for users and local audio storage for song metadata and uploaded MP3s.
+
+Assistant:
+I’m at the point of writing the project skeleton now. I’ll create the backend packages, local storage folders, and the static frontend in one pass so we can move straight into wiring features instead of dribbling out partial files.
+
+Assistant:
+The first pass of the full app is in place. I’m running formatting and dependency resolution now so we can catch compile-time issues immediately instead of leaving you with a scaffold that only looks complete on paper.
+
+Assistant:
+gofmt is clean. Dependency download just hit the time limit, so I’m rerunning that with a longer window and then I’ll do a real build check on the finished project.
+
+Assistant:
+The dependency graph resolved, but it pulled in a newer Go toolchain for the SQLite driver. I’m validating the actual build now and will tighten any rough edges that show up before I hand this over.
+
+Assistant:
+The project compiles cleanly. I’m doing one last runtime sanity check by starting the server and hitting the health endpoint so we know the generated code is not just buildable, but actually boots on this Windows setup.
+
+Assistant:
+Port 8080 already appears to be serving something else on this machine, so I’m retrying the boot check on an alternate port to verify the app itself rather than the existing listener.
+
+Assistant:
+I’ve verified the server boots and answers GET /api/health. I’m doing one final cleanup pass now so the workspace contains source and docs, not generated runtime artifacts.
+
+Assistant:
+A leftover server process is still holding the local songs database open from the runtime check. I’m closing that cleanly and removing the generated DB file so the workspace stays source-only.
+
+Assistant:
+The full project is generated in README.md, with the Go entrypoint in cmd/server/main.go and the desktop-first frontend in web/static/index.html, web/static/styles.css, and web/static/app.js. It includes JWT auth, role-based access, artist-only MP3 upload, user-only search/list/stream playback, local file storage in uploads/, and local song metadata persistence plus Firestore-backed users.
+
+One important implementation note: because the Firebase data you provided is a service-account JSON and not a Firebase Web API key, I implemented user registration/login against Firestore with hashed passwords, then issued JWTs from the Go backend. That keeps user data in Firebase as requested and avoids depending on unavailable client-auth credentials.
+
+Verification: go build ./... passed, and the app booted successfully with GET /api/health returning {"status":"ok"}. One environment note: the SQLite driver pulled the Go 1.25 toolchain automatically, so go.mod is now set to Go 1.25.0. To run it, use go run ./cmd/server from C:\Users\tonil\Desktop\tcc\English\Stream\Go\GPT.
+
+User:
+now save the entire chat history on "prompt.txt"

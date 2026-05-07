@@ -1,0 +1,14 @@
+Results:
+
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\C++\GPT\src\main.cpp:329] - useStlAlgorithm (CWE-398): Consider using std::transform algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\C++\GPT\src\main.cpp:348] - useStlAlgorithm (CWE-398): Consider using std::transform algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\C++\GPT\src\song_repository.cpp:76] - useStlAlgorithm (CWE-398): Consider using std::copy_if algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+Summary:
+  Cppcheck : 2.18.0
+  Files    : 7
+  Issues   : 3
+

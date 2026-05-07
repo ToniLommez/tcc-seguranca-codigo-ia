@@ -1,0 +1,318 @@
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\src\app_config.cpp:0:0: information: Too many #ifdef configurations - cppcheck only checks 12 of 256 configurations. Use --force to check all configurations. [toomanyconfigs]
+
+^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:22216:13: error: Found an exit path from function with non-void return type that has missing return statement [missingReturn]
+            } // cppcheck-suppress[missingReturn]
+            ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:22239:13: error: Found an exit path from function with non-void return type that has missing return statement [missingReturn]
+            } // cppcheck-suppress[missingReturn]
+            ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:6374:5: style: Class 'byte_container_with_subtype' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    byte_container_with_subtype(const container_type& b) noexcept(noexcept(container_type(b)))
+    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:6379:5: style: Class 'byte_container_with_subtype' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    byte_container_with_subtype(container_type&& b) noexcept(noexcept(container_type(std::move(b))))
+    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:6960:5: style: Class 'wide_string_input_adapter' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    wide_string_input_adapter(BaseInputAdapter base)
+    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:15733:5: style: Class 'json_ref' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    json_ref(value_type&& value)
+    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:15737:5: style: Class 'json_ref' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    json_ref(const value_type& value)
+    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:15951:5: style: Class 'output_adapter' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    output_adapter(std::vector<CharType, AllocatorType>& vec)
+    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:15955:5: style: Class 'output_adapter' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    output_adapter(std::basic_ostream<CharType>& s)
+    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:15959:5: style: Class 'output_adapter' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    output_adapter(StringType& s)
+    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:21056:5: style: Class 'basic_json' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    basic_json(const value_t v)
+    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:21076:5: style: Class 'basic_json' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    basic_json(CompatibleType && val) noexcept(noexcept( // NOLINT(bugprone-forwarding-reference-overload,bugprone-exception-escape)
+    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:21090:5: style: Class 'basic_json' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    basic_json(const BasicJsonType& val)
+    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:21148:5: style: Class 'basic_json' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    basic_json(initializer_list_t init,
+    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:21387:5: style: Class 'basic_json' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    basic_json(const JsonRef& ref) : basic_json(ref.moved_or_copied()) {}
+    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24523:9: style: Struct 'data' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+        data(const value_t v)
+        ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:8645:26: performance: Function 'get_position()' should return member 'position' by const reference. [returnByReference]
+    constexpr position_t get_position() const noexcept
+                         ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:13447:25: style: Condition '!(ignore_trailing_commas&&last_token==token_type::end_array)' is always true [knownConditionTrueFalse]
+                    if (!(ignore_trailing_commas && last_token == token_type::end_array))
+                        ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:13485:21: style: Condition '!(ignore_trailing_commas&&last_token==token_type::end_object)' is always true [knownConditionTrueFalse]
+                if (!(ignore_trailing_commas && last_token == token_type::end_object))
+                    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:19779:36: warning: %g in format string (no. 2) requires 'double' but the argument type is 'number_float_t'. [invalidPrintfArgType_float]
+        std::ptrdiff_t len = (std::snprintf)(number_buffer.data(), number_buffer.size(), "%.*g", d, x);
+                                   ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:18433:26: style: The comparison 'kAlpha >= -60' is always true. [knownConditionTrueFalse]
+    static_assert(kAlpha >= -60, "internal error");
+                         ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:18154:25: note: 'kAlpha' is assigned value '-60' here.
+constexpr int kAlpha = -60;
+                        ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:18433:26: note: The comparison 'kAlpha >= -60' is always true.
+    static_assert(kAlpha >= -60, "internal error");
+                         ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:18434:26: style: The comparison 'kGamma <= -32' is always true. [knownConditionTrueFalse]
+    static_assert(kGamma <= -32, "internal error");
+                         ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:18155:25: note: 'kGamma' is assigned value '-32' here.
+constexpr int kGamma = -32;
+                        ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:18434:26: note: The comparison 'kGamma <= -32' is always true.
+    static_assert(kGamma <= -32, "internal error");
+                         ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:19787:27: style: The comparison 'thousands_sep != '\0'' is always false because 'thousands_sep' and ''\0'' represent the same value. [knownConditionTrueFalse]
+        if (thousands_sep != '\0')
+                          ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:19915:32: note: 'thousands_sep' is assigned value ''\0'' here.
+    const char thousands_sep = '\0';
+                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:19787:27: note: The comparison 'thousands_sep != '\0'' is always false because 'thousands_sep' and ''\0'' represent the same value.
+        if (thousands_sep != '\0')
+                          ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:19797:27: style: The comparison 'decimal_point != '\0'' is always false because 'decimal_point' and ''\0'' represent the same value. [knownConditionTrueFalse]
+        if (decimal_point != '\0' && decimal_point != '.')
+                          ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:19917:32: note: 'decimal_point' is assigned value ''\0'' here.
+    const char decimal_point = '\0';
+                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:19797:27: note: The comparison 'decimal_point != '\0'' is always false because 'decimal_point' and ''\0'' represent the same value.
+        if (decimal_point != '\0' && decimal_point != '.')
+                          ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:23759:24: style: Parameter 'other' can be declared as reference to const [constParameterReference]
+    void swap(array_t& other) // NOLINT(bugprone-exception-escape,cppcoreguidelines-noexcept-swap,performance-noexcept-swap)
+                       ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:23775:25: style: Parameter 'other' can be declared as reference to const [constParameterReference]
+    void swap(object_t& other) // NOLINT(bugprone-exception-escape,cppcoreguidelines-noexcept-swap,performance-noexcept-swap)
+                        ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:23791:25: style: Parameter 'other' can be declared as reference to const [constParameterReference]
+    void swap(string_t& other) // NOLINT(bugprone-exception-escape,cppcoreguidelines-noexcept-swap,performance-noexcept-swap)
+                        ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:23807:25: style: Parameter 'other' can be declared as reference to const [constParameterReference]
+    void swap(binary_t& other) // NOLINT(bugprone-exception-escape,cppcoreguidelines-noexcept-swap,performance-noexcept-swap)
+                        ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:23823:50: style: Parameter 'other' can be declared as reference to const [constParameterReference]
+    void swap(typename binary_t::container_type& other) // NOLINT(bugprone-exception-escape)
+                                                 ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24290:77: warning: Access of moved variable 'cb'. [accessMoved]
+        parser(detail::input_adapter(std::forward<InputType>(i)), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved,accessForwarded]
+                                                                            ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24290:67: note: Calling std::move(cb)
+        parser(detail::input_adapter(std::forward<InputType>(i)), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved,accessForwarded]
+                                                                  ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24290:77: note: Access of moved variable 'cb'.
+        parser(detail::input_adapter(std::forward<InputType>(i)), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved,accessForwarded]
+                                                                            ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24306:48: warning: Access of moved variable 'first'. [accessMoved]
+        parser(detail::input_adapter(std::move(first), std::move(last)), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved]
+                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24306:38: note: Calling std::move(first)
+        parser(detail::input_adapter(std::move(first), std::move(last)), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved]
+                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24306:48: note: Access of moved variable 'first'.
+        parser(detail::input_adapter(std::move(first), std::move(last)), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved]
+                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24306:66: warning: Access of moved variable 'last'. [accessMoved]
+        parser(detail::input_adapter(std::move(first), std::move(last)), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved]
+                                                                 ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24306:56: note: Calling std::move(last)
+        parser(detail::input_adapter(std::move(first), std::move(last)), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved]
+                                                       ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24306:66: note: Access of moved variable 'last'.
+        parser(detail::input_adapter(std::move(first), std::move(last)), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved]
+                                                                 ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24306:84: warning: Access of moved variable 'cb'. [accessMoved]
+        parser(detail::input_adapter(std::move(first), std::move(last)), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved]
+                                                                                   ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24306:74: note: Calling std::move(cb)
+        parser(detail::input_adapter(std::move(first), std::move(last)), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved]
+                                                                         ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24306:84: note: Access of moved variable 'cb'.
+        parser(detail::input_adapter(std::move(first), std::move(last)), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved]
+                                                                                   ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24319:35: warning: Access of moved variable 'cb'. [accessMoved]
+        parser(i.get(), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved]
+                                  ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24319:25: note: Calling std::move(cb)
+        parser(i.get(), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved]
+                        ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24319:35: note: Access of moved variable 'cb'.
+        parser(i.get(), std::move(cb), allow_exceptions, ignore_comments, ignore_trailing_commas).parse(true, result); // cppcheck-suppress[accessMoved]
+                                  ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24716:64: warning: Access of moved variable 'ia'. [accessMoved]
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::cbor).sax_parse(input_format_t::cbor, &sdp, strict, tag_handler); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24716:54: note: Calling std::move(ia)
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::cbor).sax_parse(input_format_t::cbor, &sdp, strict, tag_handler); // cppcheck-suppress[accessMoved]
+                                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24716:64: note: Access of moved variable 'ia'.
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::cbor).sax_parse(input_format_t::cbor, &sdp, strict, tag_handler); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24732:64: warning: Access of moved variable 'ia'. [accessMoved]
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::cbor).sax_parse(input_format_t::cbor, &sdp, strict, tag_handler); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24732:54: note: Calling std::move(ia)
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::cbor).sax_parse(input_format_t::cbor, &sdp, strict, tag_handler); // cppcheck-suppress[accessMoved]
+                                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24732:64: note: Access of moved variable 'ia'.
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::cbor).sax_parse(input_format_t::cbor, &sdp, strict, tag_handler); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24758:64: warning: Access of moved variable 'ia'. [accessMoved]
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::cbor).sax_parse(input_format_t::cbor, &sdp, strict, tag_handler); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24758:54: note: Calling std::move(ia)
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::cbor).sax_parse(input_format_t::cbor, &sdp, strict, tag_handler); // cppcheck-suppress[accessMoved]
+                                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24758:64: note: Access of moved variable 'ia'.
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::cbor).sax_parse(input_format_t::cbor, &sdp, strict, tag_handler); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24773:64: warning: Access of moved variable 'ia'. [accessMoved]
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::msgpack).sax_parse(input_format_t::msgpack, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24773:54: note: Calling std::move(ia)
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::msgpack).sax_parse(input_format_t::msgpack, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24773:64: note: Access of moved variable 'ia'.
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::msgpack).sax_parse(input_format_t::msgpack, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24788:64: warning: Access of moved variable 'ia'. [accessMoved]
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::msgpack).sax_parse(input_format_t::msgpack, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24788:54: note: Calling std::move(ia)
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::msgpack).sax_parse(input_format_t::msgpack, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24788:64: note: Access of moved variable 'ia'.
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::msgpack).sax_parse(input_format_t::msgpack, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24812:64: warning: Access of moved variable 'ia'. [accessMoved]
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::msgpack).sax_parse(input_format_t::msgpack, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24812:54: note: Calling std::move(ia)
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::msgpack).sax_parse(input_format_t::msgpack, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24812:64: note: Access of moved variable 'ia'.
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::msgpack).sax_parse(input_format_t::msgpack, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24827:64: warning: Access of moved variable 'ia'. [accessMoved]
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::ubjson).sax_parse(input_format_t::ubjson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24827:54: note: Calling std::move(ia)
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::ubjson).sax_parse(input_format_t::ubjson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24827:64: note: Access of moved variable 'ia'.
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::ubjson).sax_parse(input_format_t::ubjson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24842:64: warning: Access of moved variable 'ia'. [accessMoved]
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::ubjson).sax_parse(input_format_t::ubjson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24842:54: note: Calling std::move(ia)
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::ubjson).sax_parse(input_format_t::ubjson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24842:64: note: Access of moved variable 'ia'.
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::ubjson).sax_parse(input_format_t::ubjson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24866:64: warning: Access of moved variable 'ia'. [accessMoved]
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::ubjson).sax_parse(input_format_t::ubjson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24866:54: note: Calling std::move(ia)
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::ubjson).sax_parse(input_format_t::ubjson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24866:64: note: Access of moved variable 'ia'.
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::ubjson).sax_parse(input_format_t::ubjson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24881:64: warning: Access of moved variable 'ia'. [accessMoved]
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bjdata).sax_parse(input_format_t::bjdata, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24881:54: note: Calling std::move(ia)
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bjdata).sax_parse(input_format_t::bjdata, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24881:64: note: Access of moved variable 'ia'.
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bjdata).sax_parse(input_format_t::bjdata, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24896:64: warning: Access of moved variable 'ia'. [accessMoved]
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bjdata).sax_parse(input_format_t::bjdata, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24896:54: note: Calling std::move(ia)
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bjdata).sax_parse(input_format_t::bjdata, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24896:64: note: Access of moved variable 'ia'.
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bjdata).sax_parse(input_format_t::bjdata, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24911:64: warning: Access of moved variable 'ia'. [accessMoved]
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bson).sax_parse(input_format_t::bson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24911:54: note: Calling std::move(ia)
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bson).sax_parse(input_format_t::bson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24911:64: note: Access of moved variable 'ia'.
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bson).sax_parse(input_format_t::bson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24926:64: warning: Access of moved variable 'ia'. [accessMoved]
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bson).sax_parse(input_format_t::bson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24926:54: note: Calling std::move(ia)
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bson).sax_parse(input_format_t::bson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24926:64: note: Access of moved variable 'ia'.
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bson).sax_parse(input_format_t::bson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24950:64: warning: Access of moved variable 'ia'. [accessMoved]
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bson).sax_parse(input_format_t::bson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24950:54: note: Calling std::move(ia)
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bson).sax_parse(input_format_t::bson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:24950:64: note: Access of moved variable 'ia'.
+        const bool res = binary_reader<decltype(ia)>(std::move(ia), input_format_t::bson).sax_parse(input_format_t::bson, &sdp, strict); // cppcheck-suppress[accessMoved]
+                                                               ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:6527:22: style: Consider using std::accumulate algorithm instead of a raw loop. [useStlAlgorithm]
+                seed = combine(seed, hash(element));
+                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:6570:22: style: Consider using std::accumulate algorithm instead of a raw loop. [useStlAlgorithm]
+                seed = combine(seed, std::hash<std::uint8_t> {}(byte));
+                     ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:12137:25: style: Consider using std::any_of algorithm instead of a raw loop. [useStlAlgorithm]
+                        {
+                        ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:17598:17: style: Consider using std::accumulate algorithm instead of a raw loop. [useStlAlgorithm]
+            len *= static_cast<std::size_t>(el.m_data.m_value.number_unsigned);
+                ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:20823:31: style: Consider using std::transform algorithm instead of a raw loop. [useStlAlgorithm]
+                        stack.push_back(std::move(it.second));
+                              ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:20845:35: style: Consider using std::transform algorithm instead of a raw loop. [useStlAlgorithm]
+                            stack.push_back(std::move(it.second));
+                                  ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:6153:30: style: Variable 'integral_value_t' is assigned a value that is never used. [unreadVariable]
+    static constexpr value_t integral_value_t = std::is_unsigned<underlying_type>::value ? value_t::number_unsigned : value_t::number_integer;
+                             ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:20155:27: style: Variable 'offset' is assigned a value that is never used. [unreadVariable]
+        const auto offset = std::distance(Container::begin(), first);
+                          ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:20155:20: style: Variable 'offset' is assigned a value that is never used. [unreadVariable]
+        const auto offset = std::distance(Container::begin(), first);
+                   ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:3105:5: error: syntax error [syntaxError]
+    JSON_ASSERT(!f.empty());
+    ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\GPT\external\json.hpp:22212:13: error: syntax error [syntaxError]
+            JSON_CATCH (std::out_of_range&)
+            ^

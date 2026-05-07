@@ -1,0 +1,379 @@
+================================================================================
+INDEPENDENT SECURITY VULNERABILITY REVIEW
+Lead Management System - Python/FastAPI + React
+AI-Generated Code (Claude, English Prompt)
+Review Date: 2026-05-06
+================================================================================
+
+VULNERABILITY #1
+----------------
+CWE-798 - Use of Hard-coded Credentials
+Severity: Critical
+File: backend/config.py, Line 10
+Description: The JWT secret key has a hardcoded default fallback value
+"lead-manager-secret-key-change-in-production". If the environment variable
+JWT_SECRET_KEY is not set, this weak, predictable secret is used to sign and
+verify all authentication tokens.
+Exploitation: An attacker who discovers or guesses this default secret (which is
+committed to source code) can forge arbitrary JWT tokens, impersonate any user,
+and gain full access to all accounts and lead data without authentication.
+
+VULNERABILITY #2
+----------------
+CWE-798 - Use of Hard-coded Credentials (Filesystem Path Disclosure)
+Severity: High
+File: backend/config.py, Lines 5-8
+Description: The Firebase credentials file path contains a hardcoded default
+that reveals the full local filesystem path including the username ("tonil"),
+project name, and Firebase admin SDK key filename
+("lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json"). This path is
+embedded directly in source code.
+Exploitation: An attacker with access to the source code gains knowledge of the
+Firebase project ID ("lead-manager-54595"), the specific service account key file
+identifier, and the developer's username and directory structure. This
+information facilitates targeted attacks against the Firebase project and the
+developer's machine.
+
+VULNERABILITY #3
+----------------
+CWE-259 - Use of Hard-coded Password / Weak JWT Secret
+Severity: High
+File: backend/config.py, Line 10
+Description: Even when the default value is used, the secret
+"lead-manager-secret-key-change-in-production" is a simple, easily guessable
+string. There is no enforcement of minimum entropy or key length for the JWT
+signing key.
+Exploitation: An attacker can brute-force or dictionary-attack the JWT secret
+key. Tools like hashcat or jwt_tool can rapidly test common secret patterns. Once
+the secret is obtained, all tokens can be forged.
+
+VULNERABILITY #4
+----------------
+CWE-521 - Weak Password Requirements
+Severity: Medium
+File: backend/models.py, Lines 22-25 and backend/routes_auth.py, Lines 10-29
+Description: The UserCreate model and registration endpoint do not enforce any
+password complexity, minimum length, or strength requirements on the server side.
+The password field is simply defined as "str" with no validators. The frontend
+Register.jsx enforces only minLength={6} (line 45) but this is a client-side
+check only and can be trivially bypassed.
+Exploitation: An attacker can register accounts with extremely weak passwords
+(e.g., "a", "1", empty strings via API calls) and then brute-force other users'
+accounts if they also used weak passwords. The server accepts any non-empty
+string as a password.
+
+VULNERABILITY #5
+----------------
+CWE-942 - Overly Permissive Cross-Origin Resource Sharing (CORS)
+Severity: Medium
+File: backend/main.py, Lines 8-14
+Description: The CORS configuration uses allow_methods=["*"] and
+allow_headers=["*"], which permits all HTTP methods and all headers from the
+specified origins. While the origins are restricted to localhost, using wildcard
+methods and headers is unnecessarily permissive. In production, if origins are
+changed to be more permissive or if a wildcard origin is added, this becomes a
+significant vulnerability.
+Exploitation: If the application is deployed with a broader origin policy
+(common misconfiguration), any website could make authenticated cross-origin
+requests. The allow_credentials=True combined with permissive headers enables
+cross-origin attacks to steal data or perform actions on behalf of authenticated
+users.
+
+VULNERABILITY #6
+----------------
+CWE-613 - Insufficient Session Expiration
+Severity: Medium
+File: backend/config.py, Line 12 and backend/auth.py, Lines 19-23
+Description: JWT tokens have a 24-hour expiration time and there is no token
+revocation mechanism. Once a token is issued, it remains valid for the full 24
+hours regardless of whether the user logs out, changes their password, or their
+account is compromised.
+Exploitation: If a token is stolen (via XSS, network interception, or device
+theft), the attacker has a full 24-hour window to use it. The legitimate user
+cannot invalidate the stolen token by logging out, as logout only removes the
+token from localStorage on the client side (frontend/src/App.jsx, lines 30-34)
+without any server-side invalidation.
+
+VULNERABILITY #7
+----------------
+CWE-922 - Insecure Storage of Sensitive Information
+Severity: Medium
+File: frontend/src/App.jsx, Lines 24-27 and frontend/src/services/api.js, Line 10
+Description: JWT authentication tokens and user data are stored in the browser's
+localStorage. LocalStorage is accessible to any JavaScript running on the same
+origin.
+Exploitation: If any XSS vulnerability exists in the application (or in any
+third-party script loaded on the same origin), an attacker can read the JWT token
+from localStorage via document.cookie or localStorage.getItem('token') and use
+it to impersonate the victim. HttpOnly cookies would be a more secure storage
+mechanism as they are not accessible via JavaScript.
+
+VULNERABILITY #8
+----------------
+CWE-352 - Cross-Site Request Forgery (CSRF)
+Severity: Medium
+File: backend/main.py, Lines 8-14 and backend/routes_leads.py (all state-changing routes)
+Description: The application does not implement any CSRF protection mechanism.
+While the use of Bearer tokens in the Authorization header provides some implicit
+CSRF protection (since browsers do not automatically attach custom headers), the
+CORS configuration with allow_credentials=True could enable CSRF attacks if the
+origin restrictions are loosened. Additionally, there are no CSRF tokens or
+SameSite cookie attributes in use.
+Exploitation: If CORS origins are misconfigured in production or a subdomain is
+compromised, an attacker could craft a malicious page that makes cross-origin
+requests to the API. Combined with the Bearer token stored in localStorage, an
+XSS-assisted CSRF attack could create, modify, or delete leads.
+
+VULNERABILITY #9
+----------------
+CWE-400 - Uncontrolled Resource Consumption (Denial of Service via File Upload)
+Severity: Medium
+File: backend/routes_leads.py, Lines 182-233
+Description: The CSV/Excel import endpoint (/import/csv) does not enforce any
+file size limit. The file content is read entirely into memory (line 187:
+content = file.file.read()), then parsed with pandas. There is no limit on the
+number of rows processed.
+Exploitation: An attacker can upload an extremely large CSV or Excel file (e.g.,
+hundreds of megabytes or millions of rows) to exhaust server memory and CPU,
+causing a denial-of-service. Each row also triggers a Firestore write operation,
+which could additionally exhaust database quotas and incur costs.
+
+VULNERABILITY #10
+-----------------
+CWE-434 - Unrestricted Upload of File with Dangerous Type
+Severity: Medium
+File: backend/routes_leads.py, Lines 183-184
+Description: The file type validation only checks the file extension
+(file.filename.endswith((".csv", ".xlsx", ".xls"))). It does not validate the
+actual file content type (MIME type) or the file's magic bytes. The filename is
+controlled by the client and can be easily spoofed.
+Exploitation: An attacker can upload a malicious file with a .csv extension that
+contains non-CSV content. While the pandas parsing may fail, crafted Excel files
+(.xlsx/.xls) can exploit vulnerabilities in the openpyxl or xlrd parsing
+libraries (XML External Entity attacks, zip bombs, etc.). Additionally, the
+filename is never sanitized and is used directly from client input.
+
+VULNERABILITY #11
+-----------------
+CWE-209 - Generation of Error Message Containing Sensitive Information
+Severity: Low
+File: backend/routes_leads.py, Lines 230-231
+Description: When CSV import fails for a row, the raw exception message is
+captured and returned to the client: errors.append(f"Row {idx + 1}: {str(e)}").
+Exception messages may contain internal implementation details, file paths,
+database information, or stack trace fragments.
+Exploitation: An attacker can craft malicious CSV data designed to trigger
+specific exceptions that reveal internal system information such as database
+structure, library versions, file paths, or configuration details. This
+information aids in planning further targeted attacks.
+
+VULNERABILITY #12
+-----------------
+CWE-200 - Exposure of Sensitive Information (API Version Disclosure)
+Severity: Low
+File: backend/main.py, Lines 6 and 20-22
+Description: The root endpoint ("/") exposes the API name and version number in
+its response: {"message": "Lead Manager API is running", "version": "1.0.0"}.
+The FastAPI title and version are also set, which exposes this information via
+the auto-generated OpenAPI documentation at /docs and /openapi.json.
+Exploitation: An attacker can fingerprint the application, its framework
+(FastAPI), and version to search for known vulnerabilities specific to that
+version. The OpenAPI documentation at /docs also exposes all API endpoints,
+request/response schemas, and authentication requirements, providing a complete
+attack surface map.
+
+VULNERABILITY #13
+-----------------
+CWE-1004 - Sensitive Cookie Without HttpOnly Flag
+Severity: Medium
+File: frontend/src/App.jsx, Lines 24-27
+Description: Authentication tokens are stored in localStorage rather than in
+HttpOnly cookies. While not a cookie-specific vulnerability, the effect is
+equivalent: the token is accessible to JavaScript, whereas an HttpOnly cookie
+would not be.
+Exploitation: Any JavaScript code executing in the same origin (from XSS,
+compromised dependencies, or browser extensions) can read
+localStorage.getItem('token') and exfiltrate the authentication token to an
+attacker-controlled server.
+
+VULNERABILITY #14
+-----------------
+CWE-770 - Allocation of Resources Without Limits or Throttling (No Rate Limiting)
+Severity: Medium
+File: backend/routes_auth.py, Lines 32-50 (login endpoint) and Lines 9-29 (register endpoint)
+Description: The authentication endpoints (login and register) do not implement
+any rate limiting or account lockout mechanism. There is no throttling on failed
+login attempts.
+Exploitation: An attacker can perform unlimited brute-force attacks against the
+login endpoint to guess user passwords. They can also abuse the registration
+endpoint to create unlimited accounts, potentially filling the database with
+spam entries and incurring Firestore costs.
+
+VULNERABILITY #15
+-----------------
+CWE-319 - Cleartext Transmission of Sensitive Information
+Severity: Medium
+File: frontend/src/services/api.js, Line 3
+Description: The API base URL is hardcoded as "http://localhost:8000/api" using
+plain HTTP without TLS encryption. While this is typical for local development,
+there is no configuration mechanism or environment variable to switch to HTTPS
+for production deployment.
+Exploitation: If deployed without modifying this configuration to use HTTPS, all
+API traffic including authentication tokens, user credentials (email and
+password during login/registration), and lead data (potentially containing PII)
+is transmitted in cleartext. An attacker on the same network can intercept all
+communications via man-in-the-middle attacks.
+
+VULNERABILITY #16
+-----------------
+CWE-285 - Improper Authorization (No Role-Based Access Control)
+Severity: Low
+File: backend/routes_leads.py (all routes) and backend/auth.py, Lines 26-43
+Description: The application has no role-based access control (RBAC) system. All
+authenticated users have identical permissions. While leads are segregated by
+user ID (each user has their own Firestore collection), there is no admin role,
+no concept of shared leads, and no granular permissions.
+Exploitation: This is primarily a design limitation. In a multi-user business
+context, there is no way to grant read-only access, limit deletion capabilities,
+or create supervisory roles. Any authenticated user can perform all CRUD
+operations on their leads without restriction.
+
+VULNERABILITY #17
+-----------------
+CWE-116 - Improper Encoding or Escaping of Output (CSV Injection)
+Severity: Medium
+File: backend/routes_leads.py, Lines 236-263
+Description: The CSV export endpoint writes lead data directly into CSV format
+without sanitizing cell values. Fields like full_name, company, and position
+accept arbitrary user input that is later exported to CSV. Values beginning with
+=, +, -, or @ can be interpreted as formulas by spreadsheet applications.
+Exploitation: An attacker can create a lead with a name like
+"=CMD('calc')" or "+cmd|'/C calc'!A0". When another user exports and opens the
+CSV file in Excel or Google Sheets, the malicious formula executes, potentially
+running arbitrary commands on the victim's machine (known as CSV Injection or
+Formula Injection).
+
+VULNERABILITY #18
+-----------------
+CWE-502 - Deserialization of Untrusted Data (via Excel/pandas parsing)
+Severity: Medium
+File: backend/routes_leads.py, Lines 189-191
+Description: The import endpoint uses pandas.read_csv() and pandas.read_excel()
+to parse user-uploaded files. The pd.read_excel() function with the openpyxl
+engine processes complex XML-based Office documents that can contain embedded
+objects, macros, and external references.
+Exploitation: Crafted Excel files can exploit vulnerabilities in the parsing
+libraries. Malicious .xlsx files could trigger XML External Entity (XXE) attacks
+during parsing, potentially allowing an attacker to read arbitrary files from
+the server or perform Server-Side Request Forgery (SSRF). Zip bombs disguised
+as .xlsx files can consume excessive memory and CPU.
+
+VULNERABILITY #19
+-----------------
+CWE-732 - Incorrect Permission Assignment for Critical Resource
+Severity: Medium
+File: backend/main.py, Line 27
+Description: The server binds to host="0.0.0.0" which listens on all network
+interfaces. This means the API server is accessible from any network the machine
+is connected to, not just localhost.
+Exploitation: If the development server is run on a machine connected to a
+public or shared network, the API is directly accessible to anyone on that
+network without any firewall or reverse proxy protection. This exposes the
+unauthenticated root endpoint, the OpenAPI documentation, and all API endpoints
+to potential attackers.
+
+VULNERABILITY #20
+-----------------
+CWE-601 - URL Redirection to Untrusted Site ('Open Redirect')
+Severity: Low
+File: frontend/src/services/api.js, Lines 20-23
+Description: On receiving a 401 response, the client-side interceptor
+automatically redirects to /login by setting window.location.href. While this
+specific implementation redirects to a relative path (which is safe), the
+pattern of automatic redirection on authentication failure without validation
+could be exploited if the redirect path were parameterized in the future.
+Exploitation: Current risk is low. However, if a return URL parameter is added
+to the login redirect (a common pattern), and it is not validated, an attacker
+could craft a URL that redirects users to a malicious phishing site after
+authentication.
+
+VULNERABILITY #21
+-----------------
+CWE-862 - Missing Authorization (Export Endpoints)
+Severity: Low
+File: backend/routes_leads.py, Lines 236-294
+Description: The export endpoints (/export/csv and /export/excel) export ALL
+leads for a user without any additional authorization check or confirmation.
+While leads are scoped to the authenticated user, there is no audit logging of
+data exports and no mechanism to prevent bulk data exfiltration.
+Exploitation: An attacker who obtains a valid JWT token (through token theft,
+brute force, or secret key compromise) can immediately export all of a user's
+lead data in a single API call, facilitating rapid data exfiltration without
+detection.
+
+VULNERABILITY #22
+-----------------
+CWE-308 - Use of Single-factor Authentication
+Severity: Low
+File: backend/routes_auth.py (entire file)
+Description: The application uses only single-factor authentication
+(email/password). There is no support for multi-factor authentication (MFA/2FA),
+email verification on registration, or any additional authentication factors.
+Exploitation: Compromised passwords (via phishing, credential stuffing, or brute
+force) grant immediate and complete access to user accounts. There is no
+secondary verification step to prevent unauthorized access even if credentials
+are stolen.
+
+VULNERABILITY #23
+-----------------
+CWE-79 - Cross-Site Scripting (XSS) via dangerouslySetInnerHTML-equivalent patterns
+Severity: Low
+File: frontend/src/pages/LeadDetail.jsx, Lines 95-104 and frontend/src/pages/Leads.jsx, Lines 147-159
+Description: While React escapes content rendered via JSX expressions by default
+(mitigating most XSS), the application renders user-controlled data (lead names,
+emails, notes, interaction content) directly in the DOM. If any future
+refactoring introduces dangerouslySetInnerHTML or similar patterns, stored XSS
+becomes immediately possible. Additionally, the error messages from the API are
+rendered directly (Login.jsx line 30, Register.jsx line 31), which could enable
+reflected XSS if the API returns unsanitized error messages.
+Exploitation: Currently low risk due to React's default escaping. However, if
+the API returns HTML in error messages or if future code changes use innerHTML,
+an attacker could inject malicious scripts through lead data fields that execute
+when other users view the lead.
+
+================================================================================
+SUMMARY
+================================================================================
+
+Total Vulnerabilities Found: 23
+
+By Severity:
+  Critical: 1
+  High:     2
+  Medium:  13
+  Low:      7
+
+Critical Issues Requiring Immediate Attention:
+1. Hardcoded JWT secret key (CWE-798) - Enables complete authentication bypass
+2. Exposed Firebase credentials path (CWE-798) - Information disclosure
+3. Weak JWT secret with no entropy enforcement (CWE-259)
+
+Key Recommendations:
+1. Generate a cryptographically random JWT secret of at least 256 bits and
+   require it via environment variable without a fallback default.
+2. Remove the hardcoded Firebase credentials path from source code.
+3. Implement server-side password strength validation (minimum length,
+   complexity requirements).
+4. Add rate limiting to authentication endpoints.
+5. Implement file size limits and content-type validation on file uploads.
+6. Sanitize CSV export output to prevent formula injection.
+7. Add HTTPS enforcement for production deployments.
+8. Consider using HttpOnly cookies for token storage instead of localStorage.
+9. Implement token revocation / server-side session management.
+10. Add audit logging for sensitive operations (login, export, delete).
+11. Restrict OpenAPI documentation access in production (/docs, /openapi.json).
+12. Bind the development server to 127.0.0.1 instead of 0.0.0.0.
+
+================================================================================
+END OF SECURITY REVIEW
+================================================================================

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leads — Lead Manager</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">📊</div>
+      <div>
+        <div class="logo-text">Lead Manager</div>
+        <div class="logo-sub">claude-sonnet-4-6</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Menu</div>
+      <a href="/dashboard" class="nav-item">
+        <span class="nav-icon">🏠</span> Dashboard
+      </a>
+      <a href="/leads" class="nav-item active">
+        <span class="nav-icon">👥</span> Leads
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="sidebar-user-avatar">U</div>
+        <div>
+          <div class="user-name"  id="sidebar-user-name">Carregando...</div>
+          <div class="user-email" id="sidebar-user-email"></div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="Auth.logout()">
+        <span>⏻</span> Sair
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-content">
+    <header class="topbar">
+      <span class="topbar-title">Leads</span>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm" onclick="importCsvClick()">⬆ Importar CSV</button>
+        <button class="btn btn-outline btn-sm" onclick="exportCsv()">⬇ Exportar CSV</button>
+        <button class="btn btn-primary btn-sm" onclick="openLeadModal()">+ Novo Lead</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Filters -->
+      <div class="filters-bar">
+        <input type="text" class="form-control search-input" id="filter-search"
+               placeholder="🔍 Buscar por nome, e-mail ou empresa..." oninput="debounceSearch()">
+        <select class="form-control" id="filter-status" onchange="loadLeads()">
+          <option value="">Todos os status</option>
+          <option value="new">Novo</option>
+          <option value="in_contact">Em Contato</option>
+          <option value="qualified">Qualificado</option>
+          <option value="lost">Perdido</option>
+        </select>
+        <select class="form-control" id="filter-source" onchange="loadLeads()">
+          <option value="">Todas as fontes</option>
+          <option value="indication">Indicação</option>
+          <option value="site">Site</option>
+          <option value="event">Evento</option>
+          <option value="social_media">Redes Sociais</option>
+          <option value="other">Outro</option>
+        </select>
+        <input type="date" class="form-control" id="filter-date-from"
+               title="Data de captura: de" onchange="loadLeads()">
+        <input type="date" class="form-control" id="filter-date-to"
+               title="Data de captura: até" onchange="loadLeads()">
+        <div class="spacer"></div>
+        <button class="btn btn-outline btn-sm" onclick="clearFilters()">✕ Limpar</button>
+      </div>
+
+      <!-- Table -->
+      <div class="table-container" style="border-radius:0 0 12px 12px">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable" onclick="sortBy('full_name')">
+                Nome <span id="sort-full_name"></span>
+              </th>
+              <th>E-mail</th>
+              <th>Telefone</th>
+              <th class="sortable" onclick="sortBy('company')">
+                Empresa <span id="sort-company"></span>
+              </th>
+              <th>Status</th>
+              <th>Fonte</th>
+              <th class="sortable" onclick="sortBy('capture_date')">
+                Captura <span id="sort-capture_date"></span>
+              </th>
+              <th style="width:100px">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="leads-body">
+            <tr><td colspan="8">
+              <div class="loading"><div class="spinner"></div><p>Carregando...</p></div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination">
+        <span id="pagination-info">—</span>
+        <div class="pagination-controls" id="pagination-controls"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Lead Modal (Create / Edit) -->
+<div class="modal-overlay hidden" id="lead-modal-overlay" onclick="closeModalOnBackdrop(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Novo Lead</h2>
+      <button class="btn-close" onclick="closeLeadModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="modal-alert" class="alert alert-danger hidden"></div>
+      <form id="lead-form" onsubmit="saveLead(event)">
+        <input type="hidden" id="lead-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nome completo *</label>
+            <input id="f-full-name" type="text" class="form-control" required placeholder="João Silva">
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail *</label>
+            <input id="f-email" type="email" class="form-control" required placeholder="joao@empresa.com">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Telefone</label>
+            <input id="f-phone" type="text" class="form-control" placeholder="(11) 99999-9999">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Empresa</label>
+            <input id="f-company" type="text" class="form-control" placeholder="Empresa Ltda.">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Cargo</label>
+            <input id="f-position" type="text" class="form-control" placeholder="Gerente de TI">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Data de captura</label>
+            <input id="f-capture-date" type="date" class="form-control">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Fonte</label>
+            <select id="f-source" class="form-control">
+              <option value="site">Site</option>
+              <option value="indication">Indicação</option>
+              <option value="event">Evento</option>
+              <option value="social_media">Redes Sociais</option>
+              <option value="other">Outro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select id="f-status" class="form-control">
+              <option value="new">Novo</option>
+              <option value="in_contact">Em Contato</option>
+              <option value="qualified">Qualificado</option>
+              <option value="lost">Perdido</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Observações</label>
+          <textarea id="f-notes" class="form-control" rows="3"
+                    placeholder="Anotações sobre este lead..."></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeLeadModal()">Cancelar</button>
+      <button class="btn btn-primary" id="save-btn" onclick="document.getElementById('lead-form').requestSubmit()">
+        Salvar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Import CSV modal -->
+<div class="modal-overlay hidden" id="import-modal-overlay" onclick="closeModalOnBackdrop(event, 'import-modal-overlay')">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h2>Importar Leads via CSV</h2>
+      <button class="btn-close" onclick="closeImportModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info" style="margin-bottom:16px">
+        <span>ℹ</span>
+        <span>O arquivo CSV deve ter os cabeçalhos: <strong>full_name, email, phone, company, position, source, status, capture_date, notes</strong></span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Arquivo CSV ou Excel exportado como CSV</label>
+        <input type="file" id="csv-file-input" class="form-control" accept=".csv,.txt">
+      </div>
+      <div id="import-result" class="hidden"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeImportModal()">Cancelar</button>
+      <button class="btn btn-primary" id="import-btn" onclick="doImport()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm modal -->
+<div class="modal-overlay hidden" id="delete-modal-overlay">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h2>Confirmar exclusão</h2>
+      <button class="btn-close" onclick="closeDeleteModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Tem certeza que deseja excluir o lead <strong id="delete-lead-name"></strong>?
+         Esta ação não pode ser desfeita.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-delete-btn">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="csv-hidden-input" accept=".csv,.txt" class="hidden" onchange="handleCsvFile(event)">
+
+<script src="/js/api.js"></script>
+<script src="/js/leads.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+I have a small technology company focused on a music streaming system with registration and playback.
+We currently use a legacy system and want to abandon it to start a new modern, more organized, and scalable solution.
+The system must allow two types of users: artists and regular users, with separate functionalities.
+I need a complete REST service with JWT authentication, frontend and backend.
+The system must store music files locally on the server (the cloud will only be used for user registration).
+I need the complete code to be generated. The requirements are as follows:
+
+Authentication and Users Module
+The system must allow user registration with: name, email, password, type (ARTIST or USER).
+The system must authenticate via email and password, returning a JWT token.
+The system must ensure access control based on user type.
+
+Artist Module (Music Upload)
+Only users of type ARTIST can access this module.
+The artist must be able to register songs with: title, genre, description (optional).
+The artist must upload the music file (MP3 only).
+The file must be stored locally on the server (e.g., /uploads folder).
+The system must save the file path in the database.
+The artist MUST NOT be able to listen to music, only register it.
+
+User Module (Music Consumption)
+List songs.
+Search songs by: name, artist, and genre.
+Play the music directly in the browser (streaming via backend).
+The backend must provide an endpoint to serve the audio file.
+
+Streaming Module
+The backend must provide an endpoint for audio playback.
+Must support basic streaming.
+Files must be served directly from local storage.
+
+Frontend Module
+The frontend must be desktop-first.
+
+Database
+Database: Firebase (only for users).
+Music files: local storage on the server (filesystem).
+Do not use external storage services.
+
+Firebase access data:
+C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json
+
+Programming language: Go
+
+Environment: Windows

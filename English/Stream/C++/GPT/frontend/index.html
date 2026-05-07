@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stream Studio</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Music Streaming Platform</p>
+          <h1>Stream Studio</h1>
+          <p class="hero-copy">
+            Modern registration, artist uploads, and secure browser playback with a C++ backend.
+          </p>
+        </div>
+        <div class="hero-card" id="sessionStatus">
+          <span class="status-pill">Disconnected</span>
+          <p>Sign in as an artist to publish tracks or as a regular user to listen.</p>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="panel auth-panel" id="authPanel">
+          <div class="tabs">
+            <button class="tab active" data-tab="login">Login</button>
+            <button class="tab" data-tab="register">Register</button>
+          </div>
+
+          <form id="loginForm" class="form active">
+            <h2>Access your account</h2>
+            <label>
+              Email
+              <input type="email" name="email" placeholder="you@example.com" required />
+            </label>
+            <label>
+              Password
+              <input type="password" name="password" placeholder="Minimum 6 characters" required />
+            </label>
+            <button type="submit" class="primary">Login</button>
+          </form>
+
+          <form id="registerForm" class="form">
+            <h2>Create your account</h2>
+            <label>
+              Name
+              <input type="text" name="name" placeholder="Full name" required />
+            </label>
+            <label>
+              Email
+              <input type="email" name="email" placeholder="you@example.com" required />
+            </label>
+            <label>
+              Password
+              <input type="password" name="password" placeholder="Minimum 6 characters" required />
+            </label>
+            <label>
+              User type
+              <select name="type" required>
+                <option value="USER">Regular user</option>
+                <option value="ARTIST">Artist</option>
+              </select>
+            </label>
+            <button type="submit" class="primary">Register</button>
+          </form>
+
+          <div id="authMessage" class="message"></div>
+        </section>
+
+        <section class="panel dashboard hidden" id="artistDashboard">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Artist Module</p>
+              <h2>Upload new music</h2>
+            </div>
+            <button class="ghost" id="logoutArtist">Logout</button>
+          </div>
+
+          <form id="uploadForm" class="form">
+            <label>
+              Title
+              <input type="text" name="title" placeholder="Track title" required />
+            </label>
+            <label>
+              Genre
+              <input type="text" name="genre" placeholder="Genre" required />
+            </label>
+            <label>
+              Description
+              <textarea name="description" rows="4" placeholder="Optional notes"></textarea>
+            </label>
+            <label>
+              MP3 file
+              <input type="file" name="musicFile" accept=".mp3,audio/mpeg" required />
+            </label>
+            <button type="submit" class="primary">Upload song</button>
+          </form>
+
+          <div id="artistMessage" class="message"></div>
+
+          <div class="table-card">
+            <div class="table-card-header">
+              <h3>Your uploads</h3>
+              <button class="ghost" id="refreshArtistSongs">Refresh</button>
+            </div>
+            <div id="artistSongs" class="song-grid"></div>
+          </div>
+        </section>
+
+        <section class="panel dashboard hidden" id="userDashboard">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">User Module</p>
+              <h2>Search and play songs</h2>
+            </div>
+            <button class="ghost" id="logoutUser">Logout</button>
+          </div>
+
+          <form id="searchForm" class="search-bar">
+            <input type="text" name="title" placeholder="Search by song name" />
+            <input type="text" name="artist" placeholder="Search by artist" />
+            <input type="text" name="genre" placeholder="Search by genre" />
+            <button type="submit" class="primary">Search</button>
+          </form>
+
+          <div class="player-card">
+            <div>
+              <p class="eyebrow">Browser Playback</p>
+              <strong id="nowPlaying">Choose a track to start streaming</strong>
+            </div>
+            <audio id="audioPlayer" controls preload="metadata"></audio>
+          </div>
+
+          <div id="userMessage" class="message"></div>
+          <div id="songResults" class="song-grid"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
+

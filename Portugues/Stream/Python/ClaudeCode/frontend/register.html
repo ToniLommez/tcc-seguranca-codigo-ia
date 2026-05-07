@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SoundStream — Cadastro</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="auth-body">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <span class="logo-icon">🎵</span>
+        <h1>SoundStream</h1>
+      </div>
+
+      <h2>Criar conta</h2>
+
+      <div id="alert" class="alert"></div>
+
+      <form id="registerForm" novalidate>
+        <div class="form-group">
+          <label for="name">Nome completo</label>
+          <input type="text" id="name" placeholder="Seu nome" required autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" placeholder="seu@email.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="password">Senha <span style="color:var(--text-muted);font-weight:400">(mín. 6 caracteres)</span></label>
+          <input type="password" id="password" placeholder="••••••••" required autocomplete="new-password">
+        </div>
+
+        <div class="form-group">
+          <label>Tipo de conta</label>
+          <div class="type-toggle">
+            <div class="type-btn active" data-type="USUARIO" id="btnUser">
+              🎧 Ouvinte
+            </div>
+            <div class="type-btn" data-type="ARTISTA" id="btnArtist">
+              🎤 Artista
+            </div>
+          </div>
+          <input type="hidden" id="userType" value="USUARIO">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="registerBtn">Criar conta</button>
+      </form>
+
+      <p class="auth-link">Já tem conta? <a href="/">Entrar</a></p>
+    </div>
+  </div>
+
+  <script src="/static/js/auth.js"></script>
+  <script>
+    const _u = getUser();
+    if (_u && getToken()) redirectByRole(_u);
+
+    const alertEl = document.getElementById('alert');
+
+    function showAlert(type, msg) {
+      alertEl.className = `alert alert-${type}`;
+      alertEl.textContent = msg;
+      alertEl.style.display = 'block';
+    }
+
+    // Toggle tipo de usuário
+    document.querySelectorAll('.type-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('userType').value = btn.dataset.type;
+      });
+    });
+
+    document.getElementById('registerForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = document.getElementById('registerBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Criando conta...';
+      alertEl.style.display = 'none';
+
+      try {
+        await register(
+          document.getElementById('name').value.trim(),
+          document.getElementById('email').value.trim(),
+          document.getElementById('password').value,
+          document.getElementById('userType').value,
+        );
+      } catch (err) {
+        showAlert('error', err.message);
+        btn.disabled = false;
+        btn.textContent = 'Criar conta';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,371 @@
+================================================================================
+SOUNDSTREAM - CHAT HISTORY / DEVELOPMENT LOG
+================================================================================
+Date: 2026-05-06
+Project: SoundStream - C++ Music Streaming System
+Location: C:\Users\tonil\Desktop\tcc\English\Stream\C++\Claude\
+================================================================================
+
+================================================================================
+USER REQUEST
+================================================================================
+
+I have a small technology company focused on a music streaming system with
+registration and playback.
+
+We currently use a legacy system and want to abandon it to start a new modern,
+more organized, and scalable solution.
+
+The system must allow two types of users: artists and regular users, with
+separate functionalities.
+
+I need a complete REST service with JWT authentication, frontend and backend.
+
+The system must store music files locally on the server (the cloud will only be
+used for user registration).
+
+I need the complete code to be generated. The requirements are as follows:
+
+
+Authentication and Users Module
+
+The system must allow user registration with: name, email, password, type
+(ARTIST or USER).
+
+The system must authenticate via email and password, returning a JWT token.
+
+The system must ensure access control based on user type.
+
+
+Artist Module (Music Upload)
+
+Only users of type ARTIST can access this module.
+
+The artist must be able to register songs with: title, genre, description
+(optional).
+
+The artist must upload the music file (MP3 only).
+
+The file must be stored locally on the server (e.g., /uploads folder).
+
+The system must save the file path in the database.
+
+The artist MUST NOT be able to listen to music, only register it.
+
+
+User Module (Music Consumption)
+
+List songs.
+
+Search songs by: name, artist, and genre.
+
+Play the music directly in the browser (streaming via backend).
+
+The backend must provide an endpoint to serve the audio file.
+
+
+Streaming Module
+
+The backend must provide an endpoint for audio playback.
+
+Must support basic streaming.
+
+Files must be served directly from local storage.
+
+
+Frontend Module
+
+The frontend must be desktop-first.
+
+
+Database
+
+Database: Firebase (only for users).
+
+Music files: local storage on the server (filesystem).
+
+Do not use external storage services.
+
+
+Firebase access data:
+
+C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json
+
+
+Programming language: C++
+
+
+Environment: Windows
+
+
+================================================================================
+IMPLEMENTATION SUMMARY
+================================================================================
+
+A complete C++ music streaming system was built with:
+
+- Backend: C++ with cpp-httplib (HTTP server), nlohmann/json, jwt-cpp, OpenSSL,
+  curl (Firebase API)
+- Frontend: HTML/CSS/JS served as static files, desktop-first dark theme
+- Firebase Firestore: REST API for users and song metadata
+- Local storage: /uploads for MP3 files
+
+
+================================================================================
+PROJECT STRUCTURE
+================================================================================
+
+Claude/
+├── CMakeLists.txt              # CMake build configuration
+├── vcpkg.json                  # Dependency manifest (cpp-httplib, nlohmann-json,
+│                               #   jwt-cpp, openssl, curl)
+├── build.bat                   # One-click build script
+├── run.bat                     # One-click run script
+├── firebase-credentials.json   # Firebase service account credentials
+├── include/
+│   ├── models.h                # User & Song data structures
+│   ├── crypto_utils.h          # SHA-256 hashing, salt generation, UUID
+│   ├── jwt_auth.h              # JWT token creation/verification (HS256)
+│   └── firebase_client.h       # Firestore REST API client (OAuth2 + CRUD)
+├── src/
+│   └── main.cpp                # HTTP server with all REST routes
+├── frontend/
+│   ├── index.html              # Single-page app (login/register, artist
+│   │                           #   dashboard, user dashboard, audio player)
+│   ├── css/style.css           # Dark theme, desktop-first responsive design
+│   └── js/app.js               # Auth, upload, search, playback logic
+└── uploads/                    # MP3 files stored here at runtime
+
+
+================================================================================
+FILES CREATED
+================================================================================
+
+1. vcpkg.json
+   - Package manifest with dependencies: cpp-httplib, nlohmann-json, jwt-cpp,
+     openssl, curl
+
+2. CMakeLists.txt
+   - CMake 3.20+, C++17 standard
+   - Links all libraries: httplib, nlohmann_json, jwt-cpp, OpenSSL, CURL
+   - Copies frontend folder and creates uploads directory in build output
+
+3. include/models.h
+   - Structs: User, Song, TokenPayload
+   - Helper functions: user_to_json(), song_to_json()
+
+4. include/crypto_utils.h
+   - sha256() using OpenSSL
+   - generate_salt() using OpenSSL RAND_bytes
+   - hash_password() / verify_password() with salt
+   - generate_uuid() for unique IDs
+
+5. include/jwt_auth.h
+   - JwtAuth class with create_token() and verify_token()
+   - Uses HS256 algorithm with configurable secret
+   - Tokens include: user_id, email, type, name
+   - 24-hour expiration
+   - Uses jwt-cpp/traits/nlohmann-json/defaults.h for nlohmann integration
+
+6. include/firebase_client.h
+   - FirebaseClient class
+   - Reads service account JSON credentials
+   - Creates Google OAuth2 JWT signed with RSA private key
+   - Exchanges JWT for access token via Google token endpoint
+   - Automatic token refresh when expired
+   - CRUD operations on Firestore via REST API:
+     create_document(), get_document(), list_documents(),
+     query_by_field(), delete_document()
+   - Uses libcurl for HTTPS requests
+
+7. src/main.cpp
+   - HTTP server on port 8080
+   - CORS support for all routes
+   - Auth middleware supporting both Authorization header and query param token
+
+   Routes:
+   - POST /api/auth/register  : Register user (name, email, password, type)
+   - POST /api/auth/login     : Login with email/password, returns JWT
+   - POST /api/artist/songs   : Upload song (multipart: title, genre, desc, file)
+   - GET  /api/artist/songs   : List artist's own songs
+   - GET  /api/songs           : List all songs (USER only)
+   - GET  /api/songs/search    : Search by q, genre, artist params
+   - GET  /api/stream/{id}     : Stream audio with Range header support
+   - Static file serving from frontend/ directory
+
+8. frontend/index.html
+   - Three views: Auth page, Artist dashboard, User dashboard
+   - Auth page: Login/Register forms with user type selector (Listener/Artist)
+   - Artist dashboard: Upload form (title, genre, description, MP3 file),
+     list of uploaded songs
+   - User dashboard: Search bar, genre filter, song grid with play buttons,
+     audio player bar at bottom
+
+9. frontend/css/style.css
+   - Dark theme with purple accent (#6c5ce7)
+   - CSS custom properties for theming
+   - Desktop-first responsive layout with mobile breakpoints
+   - Card-based song grid, sticky header, fixed audio player bar
+   - Loading spinner overlay
+
+10. frontend/js/app.js
+    - State management with localStorage for session persistence
+    - API helper with automatic JWT header injection
+    - Auth flow: login, register, logout, session restore
+    - Artist: file upload with FormData, song list rendering
+    - User: song listing, search (by name/genre/artist), genre filter
+    - Audio player: play/pause, prev/next, seek bar, volume control,
+      auto-advance to next song, playlist management
+    - HTML escaping for XSS prevention
+
+11. build.bat
+    - Checks for vcpkg installation
+    - Installs dependencies via vcpkg
+    - Configures and builds with CMake
+
+12. run.bat
+    - Copies runtime files (firebase credentials, frontend, uploads) to
+      build directory
+    - Launches soundstream.exe
+
+
+================================================================================
+BUILD PROCESS
+================================================================================
+
+1. Dependencies installed via vcpkg (manifest mode):
+   - cpp-httplib v0.43.1
+   - nlohmann-json v3.12.0
+   - jwt-cpp v0.7.2
+   - openssl v3.6.2
+   - curl v8.19.0
+   (plus transitive: brotli, zlib)
+
+2. CMake configured with vcpkg toolchain:
+   cmake .. -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+            -DVCPKG_TARGET_TRIPLET=x64-windows
+
+3. Build Issues Encountered and Fixed:
+   a) jwt-cpp v0.7.2 with JWT_DISABLE_PICOJSON requires explicit json_traits.
+      Fixed by including jwt-cpp/traits/nlohmann-json/defaults.h instead of
+      jwt-cpp/jwt.h. This header provides convenience functions (jwt::create(),
+      jwt::verify(), jwt::decode(), jwt::claim) pre-configured for nlohmann.
+
+   b) cpp-httplib v0.43.1 changed multipart form data API.
+      Old API: req.has_file(), req.get_file_value()
+      New API: req.form.has_file(), req.form.get_file(),
+               req.form.has_field(), req.form.get_field()
+      Fixed all multipart handling in the upload route.
+
+   c) MSVC deprecation warning for gmtime().
+      Fixed by adding #define _CRT_SECURE_NO_WARNINGS.
+
+4. Final build: successful with Clang 21.1.0 via Ninja generator.
+   Output: build/soundstream.exe (1.98 MB)
+
+
+================================================================================
+API TESTING RESULTS
+================================================================================
+
+All endpoints tested and verified:
+
+1. POST /api/auth/register (ARTIST)
+   Input:  {"name":"Test Artist","email":"artist@test.com",
+            "password":"password123","type":"ARTIST"}
+   Result: 201 - User registered, JWT token returned
+
+2. POST /api/auth/register (USER)
+   Input:  {"name":"Test Listener","email":"user@test.com",
+            "password":"password123","type":"USER"}
+   Result: 201 - User registered, JWT token returned
+
+3. POST /api/auth/register (duplicate email)
+   Result: 409 - "Email already registered"
+
+4. POST /api/auth/login
+   Input:  {"email":"artist@test.com","password":"password123"}
+   Result: 200 - JWT token + user data returned
+
+5. POST /api/artist/songs (multipart upload)
+   Headers: Authorization: Bearer <artist_token>
+   Form:    title=My First Song, genre=Rock,
+            description=A test track, file=test.mp3
+   Result: 201 - Song uploaded, file saved to uploads/<uuid>.mp3
+
+6. GET /api/songs (USER token)
+   Result: 200 - Array of songs with metadata (file_path excluded)
+
+7. GET /api/songs/search?genre=Rock (USER token)
+   Result: 200 - Filtered results matching genre
+
+8. GET /api/stream/<songId> (USER token)
+   Result: 200 - audio/mpeg content, Accept-Ranges: bytes
+
+9. GET /api/stream/<songId> with Range header (USER token)
+   Headers: Range: bytes=0-99
+   Result: 206 Partial Content - Range streaming works
+
+10. GET /api/stream/<songId> (ARTIST token)
+    Result: 403 - "Only regular users can stream music"
+    (Access control verified: artists cannot listen)
+
+
+================================================================================
+HOW TO BUILD AND RUN
+================================================================================
+
+Prerequisites:
+- Windows 10/11
+- Visual Studio 2022 (or Build Tools) with C++ workload
+- vcpkg installed at C:\vcpkg
+- CMake 3.20+
+
+Build:
+1. Open terminal in project directory
+2. Run: build.bat
+   OR manually:
+   cd build
+   cmake .. -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+            -DVCPKG_TARGET_TRIPLET=x64-windows
+   cmake --build . --config Release
+
+Run:
+1. Run: run.bat
+   OR manually:
+   Copy firebase-credentials.json to build/
+   Copy frontend/ folder to build/
+   Create build/uploads/ directory
+   cd build && soundstream.exe
+
+2. Open browser: http://localhost:8080
+
+Server runs on port 8080 by default.
+
+
+================================================================================
+TECHNOLOGY STACK
+================================================================================
+
+Backend:
+- Language: C++17
+- HTTP Server: cpp-httplib v0.43.1 (header-only)
+- JSON: nlohmann-json v3.12.0 (header-only)
+- JWT: jwt-cpp v0.7.2 with HS256 algorithm
+- Crypto: OpenSSL v3.6.2 (SHA-256 hashing, RSA signing)
+- HTTP Client: libcurl v8.19.0 (Firebase API calls)
+- Build: CMake + vcpkg + Ninja
+
+Frontend:
+- HTML5 / CSS3 / Vanilla JavaScript
+- Single-page application architecture
+- Dark theme with Inter font (Google Fonts)
+- HTML5 Audio API for music playback
+
+Database:
+- Firebase Firestore (cloud) - user profiles and song metadata
+- Local filesystem - MP3 audio files in /uploads
+
+Authentication:
+- JWT (JSON Web Tokens) with HS256 signing
+- Service Account OAuth2 for Firebase Firestore access

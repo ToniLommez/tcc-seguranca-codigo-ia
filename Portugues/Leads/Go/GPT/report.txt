@@ -1,0 +1,38 @@
+Results:
+
+
+[C:\Users\tonil\Desktop\tcc\Leads\Go\GPT\internal\http\server.go:543] - G124 (CWE-614): http.Cookie missing or has insecure Secure, HttpOnly, or SameSite attribute (Confidence: HIGH, Severity: MEDIUM)
+    542: func (s *Server) clearAuthCookie(w http.ResponseWriter) {
+  > 543: 	http.SetCookie(w, &http.Cookie{
+    544: 		Name:     s.config.CookieName,
+
+Autofix: 
+
+[C:\Users\tonil\Desktop\tcc\Leads\Go\GPT\internal\http\server.go:532] - G124 (CWE-614): http.Cookie missing or has insecure Secure, HttpOnly, or SameSite attribute (Confidence: HIGH, Severity: MEDIUM)
+    531: func (s *Server) setAuthCookie(w http.ResponseWriter, token string) {
+  > 532: 	http.SetCookie(w, &http.Cookie{
+    533: 		Name:     s.config.CookieName,
+
+Autofix: 
+
+[C:\Users\tonil\Desktop\tcc\Leads\Go\GPT\internal\http\server.go:486] - G705 (CWE-79): XSS via taint analysis (Confidence: HIGH, Severity: MEDIUM)
+    485: 	w.WriteHeader(http.StatusOK)
+  > 486: 	_, _ = w.Write(payload)
+    487: }
+
+Autofix: 
+
+[C:\Users\tonil\Desktop\tcc\Leads\Go\GPT\internal\http\server.go:451] - G120 (CWE-400): Unbounded form parsing in HTTP handlers can cause memory exhaustion (Confidence: HIGH, Severity: MEDIUM)
+    450: func (s *Server) handleImportLeadsAPI(w http.ResponseWriter, r *http.Request) {
+  > 451: 	if err := r.ParseMultipartForm(20 << 20); err != nil {
+    452: 		s.badRequest(w, "arquivo invalido")
+
+Autofix: 
+
+Summary:
+  Gosec  : dev
+  Files  : 8
+  Lines  : 1975
+  Nosec  : 0
+  Issues : 4
+

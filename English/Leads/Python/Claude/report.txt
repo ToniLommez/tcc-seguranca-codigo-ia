@@ -1,0 +1,33 @@
+Results:
+
+
+>> Issue: [B104:hardcoded_bind_all_interfaces] Possible binding to all interfaces.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-605 (https://cwe.mitre.org/data/definitions/605.html)
+   Location: C:/Users/tonil/Desktop/tcc/English/Leads/Python/Claude/backend\main.py:27:33
+26	    import uvicorn
+27	    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'bearer'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   Location: C:/Users/tonil/Desktop/tcc/English/Leads/Python/Claude/backend\routes_auth.py:27:8
+26	        "access_token": token,
+27	        "token_type": "bearer",
+28	        "user": {"id": user_id, "name": user.name, "email": user.email},
+29	    }
+
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'bearer'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   Location: C:/Users/tonil/Desktop/tcc/English/Leads/Python/Claude/backend\routes_auth.py:48:8
+47	        "access_token": token,
+48	        "token_type": "bearer",
+49	        "user": {"id": doc.id, "name": user_data["name"], "email": user_data["email"]},
+50	    }
+
+Summary:
+  Bandit   : 1.9.4
+  Lines    : 394
+  Issues   : 3
+

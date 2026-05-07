@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streamline Music</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <aside class="hero-panel">
+      <p class="eyebrow">Go + Firebase + Local Streaming</p>
+      <h1>Streamline Music</h1>
+      <p class="hero-copy">
+        A desktop-first music platform with strict access control: artists upload MP3 tracks, listeners search and play them directly from your Go backend.
+      </p>
+      <div class="hero-card">
+        <span>Current rules</span>
+        <ul>
+          <li>Artists can upload and manage their own songs.</li>
+          <li>Regular users can search, list, and stream music.</li>
+          <li>Audio files stay on the server filesystem.</li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Music Streaming System</p>
+          <h2 id="workspace-title">Access Portal</h2>
+        </div>
+        <div class="session-box hidden" id="session-box">
+          <span id="session-user"></span>
+          <button class="secondary-button" id="logout-button" type="button">Logout</button>
+        </div>
+      </header>
+
+      <section class="panel auth-panel" id="auth-panel">
+        <div class="tab-row">
+          <button class="tab-button active" id="login-tab" type="button">Login</button>
+          <button class="tab-button" id="register-tab" type="button">Register</button>
+        </div>
+
+        <form class="form-grid" id="login-form">
+          <label>
+            <span>Email</span>
+            <input name="email" type="email" placeholder="artist@email.com" required>
+          </label>
+          <label>
+            <span>Password</span>
+            <input name="password" type="password" placeholder="Your password" required>
+          </label>
+          <button class="primary-button" type="submit">Login</button>
+        </form>
+
+        <form class="form-grid hidden" id="register-form">
+          <label>
+            <span>Name</span>
+            <input name="name" type="text" placeholder="Full name" required>
+          </label>
+          <label>
+            <span>Email</span>
+            <input name="email" type="email" placeholder="name@email.com" required>
+          </label>
+          <label>
+            <span>Password</span>
+            <input name="password" type="password" placeholder="At least 6 characters" required minlength="6">
+          </label>
+          <label>
+            <span>User type</span>
+            <select name="type" required>
+              <option value="USER">Regular User</option>
+              <option value="ARTIST">Artist</option>
+            </select>
+          </label>
+          <button class="primary-button" type="submit">Create account</button>
+        </form>
+      </section>
+
+      <section class="dashboard hidden" id="artist-dashboard">
+        <div class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Artist Module</p>
+              <h3>Upload a New Track</h3>
+            </div>
+            <p class="side-note">Artists can upload only. Playback is blocked for this profile.</p>
+          </div>
+          <form class="form-grid upload-form" id="upload-form">
+            <label>
+              <span>Song title</span>
+              <input name="title" type="text" placeholder="Night Drive" required>
+            </label>
+            <label>
+              <span>Genre</span>
+              <input name="genre" type="text" placeholder="Synthwave" required>
+            </label>
+            <label class="full-width">
+              <span>Description</span>
+              <textarea name="description" rows="4" placeholder="Optional track notes"></textarea>
+            </label>
+            <label class="full-width">
+              <span>MP3 file</span>
+              <input name="file" type="file" accept=".mp3,audio/mpeg" required>
+            </label>
+            <button class="primary-button" type="submit">Upload song</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Catalog</p>
+              <h3>My Uploaded Songs</h3>
+            </div>
+          </div>
+          <div class="song-list" id="artist-song-list"></div>
+        </div>
+      </section>
+
+      <section class="dashboard hidden" id="user-dashboard">
+        <div class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">User Module</p>
+              <h3>Search and Listen</h3>
+            </div>
+          </div>
+          <form class="search-grid" id="search-form">
+            <label>
+              <span>Song name</span>
+              <input name="title" type="text" placeholder="Search by title">
+            </label>
+            <label>
+              <span>Artist</span>
+              <input name="artist" type="text" placeholder="Search by artist">
+            </label>
+            <label>
+              <span>Genre</span>
+              <input name="genre" type="text" placeholder="Search by genre">
+            </label>
+            <button class="secondary-button" type="submit">Search</button>
+          </form>
+        </div>
+
+        <div class="panel player-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Streaming</p>
+              <h3 id="player-title">Select a song to play</h3>
+            </div>
+            <span id="player-subtitle" class="side-note">Playback uses the backend streaming endpoint.</span>
+          </div>
+          <audio id="audio-player" controls preload="none"></audio>
+        </div>
+
+        <div class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Available Songs</p>
+              <h3>Catalog Search Results</h3>
+            </div>
+          </div>
+          <div class="song-list" id="user-song-list"></div>
+        </div>
+      </section>
+
+      <section class="status-panel hidden" id="status-panel"></section>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

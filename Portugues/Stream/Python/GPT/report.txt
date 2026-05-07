@@ -1,0 +1,16 @@
+Results:
+
+
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   Location: C:/Users/tonil/Desktop/tcc/Portugues/Stream/Python/GPT\app\services\song_service.py:112:14
+111	    where_clause = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+112	    query = f"SELECT * FROM songs {where_clause} ORDER BY created_at DESC"
+113
+
+Summary:
+  Bandit   : 1.9.4
+  Lines    : 516
+  Issues   : 1
+

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="auth-hero">
+    <div class="hero-copy">
+        <p class="eyebrow">Captação e operação comercial</p>
+        <h2>Centralize sua base diária de leads com segurança, filtros rápidos e visão de performance.</h2>
+        <p class="hero-text">
+            Backend REST em Python, autenticação JWT e armazenamento no Firebase em uma única aplicação pronta para uso.
+        </p>
+        <div class="hero-grid">
+            <article class="stat-card accent">
+                <span>JWT</span>
+                <strong>Autenticação protegida</strong>
+            </article>
+            <article class="stat-card">
+                <span>Importação</span>
+                <strong>CSV e Excel</strong>
+            </article>
+            <article class="stat-card">
+                <span>Dashboard</span>
+                <strong>Resumo por status e período</strong>
+            </article>
+        </div>
+    </div>
+
+    <div class="auth-panels">
+        <section class="panel glass">
+            <h3>Entrar</h3>
+            <p>Use seu e-mail corporativo para acessar a operação.</p>
+            <form id="loginForm" class="stack-form">
+                <label>
+                    E-mail
+                    <input type="email" name="email" placeholder="gestor@empresa.com" required>
+                </label>
+                <label>
+                    Senha
+                    <input type="password" name="password" placeholder="Sua senha" required>
+                </label>
+                <button class="button primary" type="submit">Acessar dashboard</button>
+            </form>
+        </section>
+
+        <section class="panel">
+            <h3>Criar conta</h3>
+            <p>Cadastre uma nova empresa ou gestor responsável.</p>
+            <form id="registerForm" class="stack-form">
+                <label>
+                    Nome
+                    <input type="text" name="name" placeholder="Nome do gestor" required>
+                </label>
+                <label>
+                    E-mail
+                    <input type="email" name="email" placeholder="novo@empresa.com" required>
+                </label>
+                <label>
+                    Senha
+                    <input type="password" name="password" placeholder="Mínimo de 6 caracteres" required>
+                </label>
+                <button class="button secondary" type="submit">Cadastrar e entrar</button>
+            </form>
+        </section>
+    </div>
+</section>
+{% endblock %}

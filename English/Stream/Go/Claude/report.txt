@@ -1,0 +1,129 @@
+Results:
+
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\config\config.go:28] - G101 (CWE-798): Potential hardcoded credentials (Confidence: LOW, Severity: HIGH)
+    27: 	if credFile == "" {
+  > 28: 		credFile = "firebase-credentials.json"
+    29: 	}
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\handlers\stream.go:32] - G703 (CWE-22): Path traversal via taint analysis (Confidence: HIGH, Severity: HIGH)
+    31:
+  > 32: 	file, err := os.Open(song.FilePath)
+    33: 	if err != nil {
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\handlers\artist.go:143] - G703 (CWE-22): Path traversal via taint analysis (Confidence: HIGH, Severity: HIGH)
+    142:
+  > 143: 	os.Remove(song.FilePath)
+    144:
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\config\config.go:41] - G703 (CWE-22): Path traversal via taint analysis (Confidence: HIGH, Severity: HIGH)
+    40:
+  > 41: 	os.MkdirAll(uploadsDir, 0755)
+    42:
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\main.go:70] - G114 (CWE-676): Use of net/http serve function that has no support for setting timeouts (Confidence: HIGH, Severity: MEDIUM)
+    69: 	fmt.Printf("Frontend available at http://localhost:%s\n", cfg.Port)
+  > 70: 	log.Fatal(http.ListenAndServe(":"+cfg.Port, handler))
+    71: }
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\handlers\artist.go:33] - G120 (CWE-400): Unbounded form parsing in HTTP handlers can cause memory exhaustion (Confidence: HIGH, Severity: MEDIUM)
+    32: 	r.Body = http.MaxBytesReader(w, r.Body, 50<<20) // 50MB max
+  > 33: 	if err := r.ParseMultipartForm(50 << 20); err != nil {
+    34: 		respondError(w, http.StatusBadRequest, "file too large (max 50MB)")
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\handlers\artist.go:71] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    70:
+  > 71: 	dst, err := os.Create(filePath)
+    72: 	if err != nil {
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\config\config.go:41] - G301 (CWE-276): Expect directory permissions to be 0750 or less (Confidence: HIGH, Severity: MEDIUM)
+    40:
+  > 41: 	os.MkdirAll(uploadsDir, 0755)
+    42:
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\handlers\stream.go:100] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    99: 		if n > 0 {
+  > 100: 			w.Write(buf[:n])
+    101: 			remaining -= int64(n)
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\handlers\stream.go:90] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    89:
+  > 90: 	file.Seek(start, 0)
+    91: 	buf := make([]byte, 8192)
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\handlers\auth.go:129] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    128: 	w.WriteHeader(status)
+  > 129: 	json.NewEncoder(w).Encode(data)
+    130: }
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\handlers\artist.go:143] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    142:
+  > 143: 	os.Remove(song.FilePath)
+    144:
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\handlers\artist.go:103] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    102: 	if err != nil {
+  > 103: 		os.Remove(filePath)
+    104: 		respondError(w, http.StatusInternalServerError, "failed to save song metadata")
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\handlers\artist.go:79] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    78: 	if _, err := io.Copy(dst, file); err != nil {
+  > 79: 		os.Remove(filePath)
+    80: 		respondError(w, http.StatusInternalServerError, "failed to save file")
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\handlers\artist.go:66] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    65: 	}
+  > 66: 	file.Seek(0, io.SeekStart)
+    67:
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\config\config.go:41] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    40:
+  > 41: 	os.MkdirAll(uploadsDir, 0755)
+    42:
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\Claude\internal\auth\middleware.go:76] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    75: 	w.WriteHeader(status)
+  > 76: 	json.NewEncoder(w).Encode(models.ErrorResponse{Error: message})
+    77: }
+
+Autofix:
+
+Summary:
+  Gosec  : dev
+  Files  : 10
+  Lines  : 965
+  Nosec  : 0
+  Issues : 17
+

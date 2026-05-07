@@ -1,0 +1,134 @@
+================================================================================
+CHAT HISTORY — LeadManager Project
+Date: 2026-05-05
+================================================================================
+
+--------------------------------------------------------------------------------
+USER:
+--------------------------------------------------------------------------------
+
+I run a lead generation company in the tech sector, serving a large number of
+clients on a daily basis.
+To support this, I need a RESTful service with JWT authentication, including
+both a frontend and backend, so I can store and manage my leads.
+I need the full codebase to be generated based on the requirements below:
+
+Requirements
+Authentication and User Module
+The system should allow new users (companies/managers) to sign up with name,
+email, and password.
+Users should be able to log in using their email and password, receiving a
+valid JWT token upon authentication.
+
+Lead Management Module
+The system should allow creating leads with the following fields: full name,
+email, phone, company, position, source (referral, website, event, etc.),
+status (new, contacted, qualified, lost), and capture date.
+Full CRUD operations for leads must be supported.
+The system should list all leads with pagination and sorting.
+It should be possible to filter leads by status, source, capture date, and
+free text (name, email, company).
+The system should allow viewing complete details for a specific lead.
+Batch import and export of leads via CSV/Excel files should be supported.
+
+Frontend Module
+The frontend should include a user login/registration screen.
+It should have a dashboard showing lead summaries by status, captures over
+time, and similar metrics.
+It should provide forms for creating and editing leads.
+It should include a lead details page with interaction history.
+The frontend should be designed with a desktop-first approach.
+
+Database Information
+Database: Firebase
+Access credentials:
+  C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json
+Collection: Create your own collection and configure the database using this
+API key. Since it is shared with other departments, the collection name should
+follow this format:
+  AI model name + programming language + collection name
+
+Technical Details
+Programming Language: Go
+Environment: Windows
+
+--------------------------------------------------------------------------------
+ASSISTANT:
+--------------------------------------------------------------------------------
+
+Built a full-stack lead management system in Go with the following components:
+
+PROJECT STRUCTURE:
+  cmd/server/main.go                  - Server entry point, HTTP routing
+  internal/auth/jwt.go                - JWT token generation & validation
+  internal/firebase/client.go         - Firebase/Firestore singleton client
+  internal/models/user.go             - User, SignupRequest, LoginRequest, AuthResponse structs
+  internal/models/lead.go             - Lead, Interaction, LeadFilter, PaginatedResponse structs
+  internal/handlers/auth.go           - Signup & login API handlers
+  internal/handlers/leads.go          - Full CRUD + stats + interactions handlers
+  internal/handlers/import_export.go  - CSV/Excel import & export handlers
+  internal/csvutil/csvutil.go         - CSV/Excel parsing & generation logic
+  internal/middleware/auth.go         - JWT Bearer auth middleware + CORS middleware
+  web/static/css/style.css            - Full desktop-first CSS (sidebar layout, modals, charts)
+  web/static/js/api.js                - Frontend API client (fetch wrapper + auth helpers)
+  web/static/js/utils.js              - Shared utilities (toast, date format, debounce, etc.)
+  web/templates/index.html            - Login / signup screen
+  web/templates/dashboard.html        - Stats dashboard with bar chart and donut chart
+  web/templates/leads.html            - Paginated leads table with filters, sort, import/export
+  web/templates/lead-detail.html      - Lead detail view + interaction history
+  run.bat                             - Windows startup script
+
+FIREBASE COLLECTIONS (naming: AI model + language + collection):
+  claude_go_users               - user accounts
+  claude_go_leads               - lead records
+  claude_go_leads_interactions  - interaction history per lead
+
+API ENDPOINTS:
+  POST   /api/auth/signup
+  POST   /api/auth/login
+  GET    /api/leads                        (filter: status, source, date_from, date_to, search, page, page_size, sort_by, sort_order)
+  POST   /api/leads
+  GET    /api/leads/{id}
+  PUT    /api/leads/{id}
+  DELETE /api/leads/{id}
+  GET    /api/leads/{id}/interactions
+  POST   /api/leads/{id}/interactions
+  GET    /api/leads/stats
+  GET    /api/leads/export/csv
+  GET    /api/leads/export/excel
+  POST   /api/leads/import               (multipart/form-data, field: "file", accepts .csv or .xlsx)
+
+DEPENDENCIES (go.mod):
+  firebase.google.com/go/v4
+  cloud.google.com/go/firestore
+  google.golang.org/api
+  github.com/golang-jwt/jwt/v5
+  golang.org/x/crypto
+  github.com/xuri/excelize/v2
+
+TO RUN:
+  cd C:\Users\tonil\Desktop\tcc\English\Leads\Go\Claude
+  run.bat
+
+  Then open http://localhost:8080
+
+ENVIRONMENT VARIABLES (set in run.bat):
+  FIREBASE_CREDENTIALS  - path to Firebase service account JSON
+  JWT_SECRET            - secret key for JWT signing
+  PORT                  - HTTP port (default 8080)
+
+--------------------------------------------------------------------------------
+USER:
+--------------------------------------------------------------------------------
+
+Now save this chat history on "prompt.txt"
+
+--------------------------------------------------------------------------------
+ASSISTANT:
+--------------------------------------------------------------------------------
+
+Saved this conversation to prompt.txt in the project root.
+
+================================================================================
+END OF CHAT HISTORY
+================================================================================

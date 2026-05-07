@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StreamMusic — Painel do Artista</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
+      </svg>
+      <span>StreamMusic</span>
+    </div>
+
+    <nav>
+      <div class="nav-section">
+        <div class="nav-label">Menu</div>
+        <a class="nav-item active" data-view="upload">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+          </svg>
+          Upload de Música
+        </a>
+        <a class="nav-item" data-view="my-songs">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
+          </svg>
+          Minhas Músicas
+        </a>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="userInitial">A</div>
+        <div class="user-details">
+          <strong id="userName">Artista</strong>
+          <small id="userEmail"></small>
+        </div>
+      </div>
+      <button class="btn btn-outline btn-full" id="logoutBtn" style="font-size:.85rem;padding:9px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        Sair
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main-content">
+    <header class="topbar">
+      <h2 id="topbarTitle">Upload de Música</h2>
+      <span style="color:var(--accent-lt);font-size:.8rem;font-weight:600;
+                   background:rgba(124,58,237,.2);padding:4px 12px;border-radius:20px;">
+        🎤 Artista
+      </span>
+    </header>
+
+    <div class="content-area">
+
+      <!-- ── Upload view ── -->
+      <div class="view" data-view="upload">
+        <div class="card">
+          <div class="card-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+            </svg>
+            Cadastrar nova música
+          </div>
+
+          <div id="uploadMsg"></div>
+
+          <form id="uploadForm">
+            <!-- Drop zone -->
+            <div class="drop-zone" id="dropZone">
+              <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
+              </svg>
+              <p><span id="fileLabel">Clique ou arraste um arquivo MP3</span></p>
+              <p style="font-size:.8rem;margin-top:4px;">Apenas arquivos .mp3 são aceitos</p>
+            </div>
+            <input type="file" id="fileInput" accept=".mp3,audio/mpeg" style="display:none">
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div class="form-group">
+                <label>Título *</label>
+                <input type="text" id="titleInput" placeholder="Nome da música" required>
+              </div>
+              <div class="form-group">
+                <label>Gênero *</label>
+                <select id="genreInput" required>
+                  <option value="">Selecione...</option>
+                  <option>Pop</option>
+                  <option>Rock</option>
+                  <option>Sertanejo</option>
+                  <option>Funk</option>
+                  <option>Pagode</option>
+                  <option>MPB</option>
+                  <option>Eletrônica</option>
+                  <option>Hip-Hop</option>
+                  <option>Jazz</option>
+                  <option>Clássica</option>
+                  <option>Forró</option>
+                  <option>Reggae</option>
+                  <option>Outro</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Descrição (opcional)</label>
+              <textarea id="descInput" placeholder="Conte um pouco sobre esta música..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="submitBtn" style="min-width:160px">
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+              </svg>
+              Enviar Música
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ── My songs view ── -->
+      <div class="view" data-view="my-songs" style="display:none">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-val" id="songCount">0</div>
+            <div class="stat-label">Músicas Cadastradas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" style="font-size:1.5rem">🎤</div>
+            <div class="stat-label">Perfil de Artista</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" style="font-size:1.5rem">✅</div>
+            <div class="stat-label">Conta Ativa</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
+            </svg>
+            Minhas Músicas
+          </div>
+          <div id="mySongsList">
+            <div class="spinner" style="margin-top:40px"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content-area -->
+  </div><!-- /main-content -->
+</div><!-- /dashboard -->
+
+<script src="/assets/js/api.js"></script>
+<script src="/assets/js/artist.js"></script>
+</body>
+</html>

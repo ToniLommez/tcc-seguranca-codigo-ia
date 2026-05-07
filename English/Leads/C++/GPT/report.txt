@@ -1,0 +1,22 @@
+Results:
+
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\GPT\src\firestore_client.cpp:27] - useStlAlgorithm (CWE-398): Consider using std::transform algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\GPT\src\firestore_client.cpp:271] - useStlAlgorithm (CWE-398): Consider using std::find_if algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\GPT\src\models.cpp:25] - useStlAlgorithm (CWE-398): Consider using std::transform algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\GPT\src\models.cpp:48] - useStlAlgorithm (CWE-398): Consider using std::transform algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\GPT\src\utils.cpp:306] - knownConditionTrueFalse (CWE-571): Condition '!row.empty()' is always true (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\GPT\src\utils.cpp:102] - useStlAlgorithm (CWE-398): Consider using std::transform algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\GPT\src\utils.cpp:327] - useStlAlgorithm (CWE-398): Consider using std::any_of algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+Summary:
+  Cppcheck : 2.18.0
+  Files    : 8
+  Issues   : 7
+

@@ -1,0 +1,6 @@
+build/
+storage/uploads/*
+!storage/uploads/.gitkeep
+storage/data/songs.json
+appsettings.json
+

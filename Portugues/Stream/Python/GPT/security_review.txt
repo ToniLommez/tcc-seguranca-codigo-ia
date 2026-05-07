@@ -1,0 +1,266 @@
+================================================================================
+SECURITY VULNERABILITY REVIEW REPORT
+Application: Music Streaming Platform (Python/FastAPI)
+AI Generator: GPT (Portuguese prompt)
+Reviewer: Independent Security Auditor (Claude Opus 4.6)
+Date: 2026-05-06
+================================================================================
+
+SUMMARY
+-------
+Total vulnerabilities found: 14
+  Critical: 3
+  High:     4
+  Medium:   5
+  Low:      2
+
+================================================================================
+DETAILED FINDINGS
+================================================================================
+
+[V-01] CWE-798 — Hardcoded Secret Key
+Severity: Critical
+File: app/core/config.py
+Line: 17
+Description:
+  The JWT secret key has a hardcoded default value "change-me-in-production".
+  If the SECRET_KEY environment variable is not set, the application uses this
+  trivially guessable default to sign and verify all JWT tokens.
+Exploitation:
+  An attacker who discovers (or guesses) that the default secret is in use can
+  forge arbitrary JWT tokens, impersonate any user (including artists), upload
+  malicious files, and access all protected endpoints. The default value is
+  visible in the source code and is a common pattern that attackers specifically
+  look for.
+
+--------------------------------------------------------------------------------
+
+[V-02] CWE-798 — Hardcoded Firebase Credentials Path
+Severity: Critical
+File: app/core/config.py
+Lines: 20-25
+Description:
+  The default value for FIREBASE_CREDENTIALS_PATH contains a hardcoded absolute
+  path to a Firebase Admin SDK service account key file:
+  "C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json"
+  This exposes the project ID ("lead-manager-54595"), the service account type
+  ("firebase-adminsdk"), and the private key ID ("375221693a") directly in the
+  source code.
+Exploitation:
+  This information disclosure aids attackers in targeting the specific Firebase
+  project. If this code is committed to a public repository, an attacker learns
+  the exact Firebase project name and can attempt to access it. The path also
+  reveals the local username ("tonil") and directory structure.
+
+--------------------------------------------------------------------------------
+
+[V-03] CWE-489 — Debug Mode Enabled by Default
+Severity: High
+File: app/core/config.py
+Line: 16
+Description:
+  The DEBUG setting defaults to "true". When debug mode is active, FastAPI
+  exposes detailed stack traces and internal error information in HTTP responses.
+Exploitation:
+  Attackers can trigger errors intentionally to obtain stack traces that reveal
+  internal file paths, library versions, database schema details, and other
+  sensitive information useful for further attacks.
+
+--------------------------------------------------------------------------------
+
+[V-04] CWE-942 — Overly Permissive CORS Configuration
+Severity: Medium
+File: app/main.py
+Lines: 23-29
+Description:
+  The CORS middleware is configured with allow_methods=["*"] and
+  allow_headers=["*"], and allow_credentials=True. While origins are restricted
+  by default to localhost, the wildcard methods and headers combined with
+  credentials support is overly permissive.
+Exploitation:
+  If CORS_ORIGINS is modified to include broad patterns (e.g., "*"), attackers
+  could perform cross-origin requests from malicious websites that carry the
+  user's credentials, enabling CSRF-like attacks against authenticated endpoints.
+  Even with restricted origins, allowing all methods and headers expands the
+  attack surface unnecessarily.
+
+--------------------------------------------------------------------------------
+
+[V-05] CWE-319 — JWT Token Transmitted in URL Query Parameter
+Severity: High
+File: app/core/security.py
+Lines: 44-46
+Description:
+  The get_current_user function accepts JWT tokens from query parameters for
+  streaming endpoints (request.query_params.get("token")). This means the full
+  authentication token is included in the URL.
+Exploitation:
+  URLs with tokens are logged in web server access logs, browser history, proxy
+  logs, and HTTP Referer headers. An attacker with access to any of these logs
+  can steal the token and impersonate the user. The token persists in these
+  locations long after it should have expired, creating a persistent credential
+  exposure window.
+
+--------------------------------------------------------------------------------
+
+[V-06] CWE-434 — Insufficient File Upload Validation
+Severity: High
+File: app/services/song_service.py
+Lines: 25-27
+Description:
+  The file upload validation checks only the file extension (.mp3) and the
+  Content-Type header. The Content-Type header is entirely client-controlled
+  and trivially spoofed. Additionally, "application/octet-stream" is accepted
+  as a valid content type, which is a generic catch-all type. There is no
+  validation of the actual file content (magic bytes/file signature).
+Exploitation:
+  An attacker with an artist account can upload any file type (executable,
+  script, HTML, etc.) by simply naming it with a .mp3 extension and setting
+  the Content-Type to "audio/mpeg". The file is stored on disk and its path
+  is recorded in the database. If the upload directory is served statically
+  or if the path is otherwise accessible, this could lead to stored XSS
+  (via HTML files), malware distribution, or server-side code execution.
+
+--------------------------------------------------------------------------------
+
+[V-07] CWE-770 — No File Size Limit on Uploads
+Severity: Medium
+File: app/services/song_service.py
+Lines: 32-34
+Description:
+  The file upload handler uses shutil.copyfileobj to write the uploaded file
+  to disk without any size limit check. There is no configured maximum upload
+  size at the application level.
+Exploitation:
+  An attacker with artist credentials can upload extremely large files to
+  exhaust disk space, causing a Denial of Service. Repeatedly uploading
+  multi-gigabyte files could fill the server's storage and crash the
+  application or other services sharing the same filesystem.
+
+--------------------------------------------------------------------------------
+
+[V-08] CWE-200 — Sensitive Data Exposure via API Response (File Path)
+Severity: Medium
+File: app/schemas/song.py
+Line: 17
+File: app/services/song_service.py
+Lines: 63-71
+Description:
+  The SongResponse schema includes the "file_path" field, which contains the
+  full absolute filesystem path to the uploaded audio file (e.g.,
+  "C:\Users\tonil\Desktop\tcc\...\uploads\<uuid>.mp3"). This path is returned
+  in all song-related API responses.
+Exploitation:
+  This exposes the server's internal directory structure, operating system,
+  username, and deployment paths to any authenticated user. This information
+  is valuable for attackers planning path traversal attacks, understanding the
+  server layout, or crafting targeted exploits.
+
+--------------------------------------------------------------------------------
+
+[V-09] CWE-200 — Excessive Data in JWT Token Payload
+Severity: Low
+File: app/api/auth.py
+Lines: 22-28
+Description:
+  The JWT token payload includes the user's email, name, and user_type in
+  addition to the required subject claim. JWT tokens are base64-encoded (not
+  encrypted) and can be decoded by anyone who possesses them.
+Exploitation:
+  Any party that intercepts or obtains a JWT token (especially via the URL
+  query parameter vulnerability in V-05) can decode it and extract the user's
+  email address, full name, and account type without needing any secret key.
+
+--------------------------------------------------------------------------------
+
+[V-10] CWE-862 — Missing Authorization Check for Song Deletion/Modification
+Severity: Medium
+File: app/api/artists.py (entire file)
+File: app/api/songs.py (entire file)
+Description:
+  There are no endpoints for updating or deleting songs, but more critically,
+  the artist songs endpoint (/api/artists/songs/mine) only lists songs. There
+  is no ownership verification mechanism that would prevent a future delete or
+  update endpoint from being exploited. Additionally, any ARTISTA user can
+  upload songs, but there is no rate limiting or quota system.
+Exploitation:
+  While currently the attack surface is limited to read operations, the lack
+  of an ownership verification pattern means that if CRUD operations are added
+  later, they are likely to be implemented without proper authorization checks.
+  This is a design-level security concern.
+
+--------------------------------------------------------------------------------
+
+[V-11] CWE-307 — No Brute Force Protection on Login
+Severity: High
+File: app/api/auth.py
+Lines: 17-20
+Description:
+  The login endpoint has no rate limiting, account lockout mechanism, or
+  CAPTCHA protection. The endpoint simply returns 401 for invalid credentials
+  with no tracking of failed attempts.
+Exploitation:
+  An attacker can perform unlimited password guessing attempts against the
+  /api/auth/login endpoint using automated tools. With no rate limiting,
+  a brute force or credential stuffing attack can test thousands of
+  password combinations per second to compromise user accounts.
+
+--------------------------------------------------------------------------------
+
+[V-12] CWE-918 — Potential Path Traversal in Stream Service
+Severity: Medium
+File: app/services/stream_service.py
+Lines: 22-25
+Description:
+  The stream_song_file function receives a file_path string from the database
+  and opens it directly using Path(file_path) without validating that the path
+  is within the expected upload directory. While the path is sourced from the
+  database (not directly from user input), if an attacker can manipulate
+  database records (e.g., via SQL injection or direct database access), they
+  could read arbitrary files from the filesystem.
+Exploitation:
+  If an attacker gains the ability to insert or modify song records in the
+  SQLite database, they could set file_path to any file on the system (e.g.,
+  "/etc/passwd" or the Firebase credentials JSON file) and then use the
+  streaming endpoint to read its contents.
+
+--------------------------------------------------------------------------------
+
+[V-13] CWE-352 — No CSRF Protection on State-Changing Endpoints
+Severity: Low
+File: app/api/auth.py, app/api/artists.py
+Description:
+  The application uses Bearer token authentication which provides some
+  inherent CSRF protection. However, the streaming endpoint accepts tokens
+  via query parameters (V-05), and there is no explicit CSRF token mechanism.
+  State-changing operations (register, login, upload) rely solely on the
+  Bearer token.
+Exploitation:
+  While Bearer tokens are not automatically attached by browsers (unlike
+  cookies), the query-parameter token acceptance for streaming creates a
+  scenario where a malicious page could construct streaming URLs with stolen
+  tokens. The lack of additional CSRF protection is a defense-in-depth concern.
+
+--------------------------------------------------------------------------------
+
+[V-14] CWE-1188 — Insecure Default: Unrestricted User Type Registration
+Severity: Critical
+File: app/api/auth.py
+Lines: 11-13
+File: app/schemas/user.py
+Lines: 11-15
+Description:
+  The registration endpoint allows any unauthenticated user to register with
+  any user_type, including "ARTISTA". There is no admin approval, email
+  verification, or any gating mechanism for artist accounts. The UserCreate
+  schema accepts user_type directly from the request body.
+Exploitation:
+  Any attacker can register as an ARTISTA and immediately gain access to file
+  upload capabilities. Combined with the insufficient file upload validation
+  (V-06), this means any anonymous user can upload potentially malicious files
+  to the server. This effectively bypasses the intended access control model
+  where only legitimate artists should be able to upload content.
+
+================================================================================
+END OF REPORT
+================================================================================

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SoundStream — Painel do Artista</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">🎵</span>
+      <h1>SoundStream</h1>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="user-name" id="userName">Carregando...</div>
+      <div class="user-role">🎤 Artista</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Músicas</div>
+      <button class="nav-item active" onclick="switchTab('tab-upload', this)">
+        <span class="nav-icon">⬆️</span> Upload
+      </button>
+      <button class="nav-item" onclick="switchTab('tab-songs', this)">
+        <span class="nav-icon">🎵</span> Minhas Músicas
+        <span style="margin-left:auto;background:var(--accent);color:#fff;font-size:0.72rem;padding:1px 8px;border-radius:20px" id="songCount">0</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn btn-secondary btn-full" onclick="logout()">Sair</button>
+    </div>
+  </aside>
+
+  <!-- Área principal -->
+  <main class="main-area">
+    <div class="main-header">
+      <h2 id="pageTitle">Upload de Música</h2>
+    </div>
+
+    <div class="main-content">
+
+      <div id="uploadAlert" class="alert"></div>
+
+      <!-- Tab: Upload -->
+      <div class="tab-panel active" id="tab-upload">
+        <div class="upload-card">
+          <form id="uploadForm" novalidate>
+
+            <!-- Drop zone -->
+            <div class="drop-zone" id="dropZone">
+              <input type="file" id="fileInput" accept=".mp3" tabindex="-1">
+              <div class="drop-zone-icon">🎵</div>
+              <div class="drop-zone-text">Arraste o arquivo MP3 aqui ou clique para selecionar</div>
+              <div class="drop-zone-hint">Somente MP3 · Máximo 50 MB</div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="title">Título da música *</label>
+                <input type="text" id="title" placeholder="Nome da música" required>
+              </div>
+              <div class="form-group">
+                <label for="genre">Gênero *</label>
+                <select id="genre" required>
+                  <option value="" disabled selected>Selecione...</option>
+                  <option>Pop</option>
+                  <option>Rock</option>
+                  <option>Sertanejo</option>
+                  <option>Funk</option>
+                  <option>MPB</option>
+                  <option>Hip-Hop</option>
+                  <option>Eletrônico</option>
+                  <option>Gospel</option>
+                  <option>Forró</option>
+                  <option>Pagode</option>
+                  <option>Samba</option>
+                  <option>Metal</option>
+                  <option>Indie</option>
+                  <option>Jazz</option>
+                  <option>Clássico</option>
+                  <option>Outro</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="description">Descrição <span style="color:var(--text-muted);font-weight:400">(opcional)</span></label>
+              <textarea id="description" placeholder="Sobre essa música..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="submitBtn">Cadastrar Música</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tab: Minhas Músicas -->
+      <div class="tab-panel" id="tab-songs">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Total de músicas</div>
+            <div class="stat-value purple" id="songCount2">0</div>
+          </div>
+        </div>
+        <div id="mySongsList">
+          <div class="loading-state"><span class="spinner"></span> Carregando...</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="/static/js/auth.js"></script>
+<script>
+  function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+
+    const titles = { 'tab-upload': 'Upload de Música', 'tab-songs': 'Minhas Músicas' };
+    document.getElementById('pageTitle').textContent = titles[tabId] || '';
+
+    if (tabId === 'tab-songs') loadMySongs();
+  }
+</script>
+<script src="/static/js/artist.js"></script>
+<script>
+  // Sincroniza o segundo contador de stat-card
+  const _origUpdate = updateSongCount;
+  async function updateSongCount() {
+    await _origUpdate();
+    document.getElementById('songCount2').textContent =
+      document.getElementById('songCount').textContent;
+  }
+  // Atualiza stat-card após carga inicial
+  (async () => {
+    const res = await apiRequest('/api/music/my');
+    if (res) {
+      const songs = await res.json();
+      document.getElementById('songCount').textContent  = songs.length;
+      document.getElementById('songCount2').textContent = songs.length;
+    }
+  })();
+</script>
+</body>
+</html>

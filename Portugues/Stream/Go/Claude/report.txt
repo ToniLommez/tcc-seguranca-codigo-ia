@@ -1,0 +1,94 @@
+Results:
+
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\Claude\config\config.go:11] - G101 (CWE-798): Potential hardcoded credentials (Confidence: LOW, Severity: HIGH)
+    10:
+  > 11: 	const defaultCredentialsPath = `C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json`
+    12:
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\Claude\handlers\music.go:61] - G703 (CWE-22): Path traversal via taint analysis (Confidence: HIGH, Severity: HIGH)
+    60:
+  > 61: 	file, err := os.Open(music.FilePath)
+    62: 	if err != nil {
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\Claude\main.go:66] - G114 (CWE-676): Use of net/http serve function that has no support for setting timeouts (Confidence: HIGH, Severity: MEDIUM)
+    65: 	log.Printf("Servidor rodando em http://localhost:%s", port)
+  > 66: 	log.Fatal(http.ListenAndServe(":"+port, r))
+    67: }
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\Claude\handlers\artist.go:29] - G120 (CWE-400): Unbounded form parsing in HTTP handlers can cause memory exhaustion (Confidence: HIGH, Severity: MEDIUM)
+    28: 	// Limit upload to 50 MB.
+  > 29: 	if err := r.ParseMultipartForm(50 << 20); err != nil {
+    30: 		writeJSON(w, http.StatusBadRequest, models.ErrorResponse{Error: "falha ao processar formulário (máx 50MB)"})
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\Claude\handlers\artist.go:58] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    57:
+  > 58: 	dst, err := os.Create(filePath)
+    59: 	if err != nil {
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\Claude\main.go:29] - G301 (CWE-276): Expect directory permissions to be 0750 or less (Confidence: HIGH, Severity: MEDIUM)
+    28:
+  > 29: 	if err := os.MkdirAll("uploads", 0755); err != nil {
+    30: 		log.Fatal("Falha ao criar diretório de uploads:", err)
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\Claude\db\sqlite.go:54] - G306 (CWE-276): Expect WriteFile permissions to be 0600 or less (Confidence: HIGH, Severity: MEDIUM)
+    53: 	}
+  > 54: 	return os.WriteFile(d.path, data, 0644)
+    55: }
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\Claude\main.go:65] - G706 (CWE-117): Log injection via taint analysis (Confidence: HIGH, Severity: LOW)
+    64:
+  > 65: 	log.Printf("Servidor rodando em http://localhost:%s", port)
+    66: 	log.Fatal(http.ListenAndServe(":"+port, r))
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\Claude\middleware\auth.go:84] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    83: 	w.WriteHeader(code)
+  > 84: 	w.Write([]byte(`{"error":"` + msg + `"}`))
+    85: }
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\Claude\handlers\auth.go:164] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    163: 	w.WriteHeader(status)
+  > 164: 	json.NewEncoder(w).Encode(v)
+    165: }
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\Claude\handlers\artist.go:82] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    81: 	if err := h.db.CreateMusic(music); err != nil {
+  > 82: 		os.Remove(filePath)
+    83: 		writeJSON(w, http.StatusInternalServerError, models.ErrorResponse{Error: "erro ao salvar música no banco"})
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\Go\Claude\handlers\artist.go:66] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    65: 	if _, err := io.Copy(dst, file); err != nil {
+  > 66: 		os.Remove(filePath)
+    67: 		writeJSON(w, http.StatusInternalServerError, models.ErrorResponse{Error: "erro ao gravar arquivo"})
+
+Autofix:
+
+Summary:
+  Gosec  : dev
+  Files  : 8
+  Lines  : 745
+  Nosec  : 0
+  Issues : 12
+

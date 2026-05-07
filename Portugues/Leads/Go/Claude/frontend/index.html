@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lead Manager — Entrar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #080c12;
+    --surface:  #0d1420;
+    --border:   #1e2d45;
+    --amber:    #f59e0b;
+    --amber-dim:#7c4e05;
+    --text:     #e2e8f0;
+    --muted:    #64748b;
+    --error:    #ef4444;
+    --success:  #22c55e;
+    --mono:     'IBM Plex Mono', monospace;
+    --sans:     'IBM Plex Sans', sans-serif;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    display: flex;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Left panel ── */
+  .left-panel {
+    width: 45%;
+    min-height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 60px 64px;
+    position: relative;
+    overflow: hidden;
+  }
+  .left-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(245,158,11,.06) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .grid-lines {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: .25;
+    pointer-events: none;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--amber);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 16px; font-weight: 600;
+    color: #000;
+  }
+  .logo-text {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .logo-sub {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+  }
+  .hero-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 20px;
+  }
+  .hero-title {
+    font-size: 42px;
+    font-weight: 300;
+    line-height: 1.2;
+    color: var(--text);
+    margin-bottom: 24px;
+  }
+  .hero-title strong {
+    font-weight: 600;
+    color: #fff;
+  }
+  .hero-desc {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 360px;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 32px;
+    position: relative;
+    z-index: 1;
+  }
+  .stat-item {
+    border-left: 2px solid var(--amber-dim);
+    padding-left: 16px;
+  }
+  .stat-num {
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--amber);
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* ── Right panel ── */
+  .right-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 80px;
+    position: relative;
+  }
+
+  .form-container {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    padding: 12px 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all .2s;
+  }
+  .tab-btn.active {
+    color: var(--amber);
+    border-bottom-color: var(--amber);
+  }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+
+  .form-panel { display: none; }
+  .form-panel.active { display: block; }
+
+  .form-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .form-subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 32px;
+  }
+
+  .field { margin-bottom: 20px; }
+  .field label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .field input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 16px;
+    font-family: var(--sans);
+    font-size: 14px;
+    outline: none;
+    transition: border-color .2s;
+    border-radius: 0;
+  }
+  .field input:focus {
+    border-color: var(--amber);
+    box-shadow: 0 0 0 3px rgba(245,158,11,.08);
+  }
+  .field input::placeholder { color: var(--muted); }
+
+  .btn-primary {
+    width: 100%;
+    background: var(--amber);
+    color: #000;
+    border: none;
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all .2s;
+    margin-top: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary:hover { background: #fbbf24; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .alert {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    border-left: 3px solid;
+    display: none;
+  }
+  .alert.show { display: block; }
+  .alert-error { background: #450a0a; color: #fca5a5; border-color: var(--error); }
+  .alert-success { background: #14532d; color: #86efac; border-color: var(--success); }
+
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0; color: var(--muted); font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* Decorative corner */
+  .corner-deco {
+    position: absolute;
+    bottom: 40px; right: 40px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--border);
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Left Panel -->
+<div class="left-panel">
+  <div class="grid-lines"></div>
+
+  <div class="logo">
+    <div class="logo-icon">LM</div>
+    <div>
+      <div class="logo-text">Lead Manager</div>
+      <div class="logo-sub">TECH LEADS SYSTEM</div>
+    </div>
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-label">// Plataforma de Captação</div>
+    <h1 class="hero-title">Gerencie seus<br><strong>leads de tecnologia</strong><br>com precisão</h1>
+    <p class="hero-desc">
+      Centralize, qualifique e acompanhe toda a jornada dos seus leads em um único painel. 
+      Importação em lote, filtros avançados e histórico completo de interações.
+    </p>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-item">
+      <div class="stat-num">CRUD</div>
+      <div class="stat-label">Completo</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">JWT</div>
+      <div class="stat-label">Seguro</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">CSV</div>
+      <div class="stat-label">Importação</div>
+    </div>
+  </div>
+</div>
+
+<!-- Right Panel -->
+<div class="right-panel">
+  <div class="form-container">
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('login')">Entrar</button>
+      <button class="tab-btn" onclick="switchTab('register')">Cadastrar</button>
+    </div>
+
+    <!-- Login Form -->
+    <div class="form-panel active" id="panel-login">
+      <div class="form-title">Bem-vindo de volta</div>
+      <div class="form-subtitle">Acesse sua conta para continuar</div>
+
+      <div class="alert alert-error" id="login-error"></div>
+
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+
+      <button class="btn-primary" id="btn-login" onclick="doLogin()">
+        Entrar na Plataforma
+      </button>
+    </div>
+
+    <!-- Register Form -->
+    <div class="form-panel" id="panel-register">
+      <div class="form-title">Criar conta</div>
+      <div class="form-subtitle">Cadastre sua empresa para começar a capturar leads</div>
+
+      <div class="alert alert-error" id="register-error"></div>
+      <div class="alert alert-success" id="register-success"></div>
+
+      <div class="field">
+        <label>Nome / Empresa</label>
+        <input type="text" id="reg-name" placeholder="Sua empresa ou nome" autocomplete="name">
+      </div>
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="reg-email" placeholder="seu@email.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+      </div>
+
+      <button class="btn-primary" id="btn-register" onclick="doRegister()">
+        Criar Conta Grátis
+      </button>
+    </div>
+
+  </div>
+
+  <div class="corner-deco">v1.0.0 · lead-manager-54595</div>
+</div>
+
+<script>
+  // Redireciona se já logado
+  if (localStorage.getItem('lm_token')) {
+    window.location.href = '/app/dashboard.html';
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+    });
+    document.getElementById('panel-login').classList.toggle('active', tab === 'login');
+    document.getElementById('panel-register').classList.toggle('active', tab === 'register');
+  }
+
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function hideAlerts(prefix) {
+    ['error', 'success'].forEach(t => {
+      const el = document.getElementById(prefix + '-' + t);
+      if (el) el.classList.remove('show');
+    });
+  }
+
+  async function doLogin() {
+    hideAlerts('login');
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) { showError('login-error', 'Preencha e-mail e senha'); return; }
+
+    const btn = document.getElementById('btn-login');
+    btn.disabled = true;
+    btn.textContent = 'Entrando...';
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao fazer login');
+      localStorage.setItem('lm_token', data.token);
+      localStorage.setItem('lm_user', JSON.stringify(data.user));
+      window.location.href = '/app/dashboard.html';
+    } catch (err) {
+      showError('login-error', err.message);
+      btn.disabled = false;
+      btn.textContent = 'Entrar na Plataforma';
+    }
+  }
+
+  async function doRegister() {
+    hideAlerts('register');
+    const name = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    if (!name || !email || !password) { showError('register-error', 'Preencha todos os campos'); return; }
+    if (password.length < 6) { showError('register-error', 'Senha deve ter pelo menos 6 caracteres'); return; }
+
+    const btn = document.getElementById('btn-register');
+    btn.disabled = true;
+    btn.textContent = 'Criando conta...';
+
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao criar conta');
+      localStorage.setItem('lm_token', data.token);
+      localStorage.setItem('lm_user', JSON.stringify(data.user));
+      window.location.href = '/app/dashboard.html';
+    } catch (err) {
+      showError('register-error', err.message);
+      btn.disabled = false;
+      btn.textContent = 'Criar Conta Grátis';
+    }
+  }
+
+  // Enter key
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const loginActive = document.getElementById('panel-login').classList.contains('active');
+    if (loginActive) doLogin(); else doRegister();
+  });
+</script>
+</body>
+</html>

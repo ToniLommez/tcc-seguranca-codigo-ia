@@ -1,0 +1,59 @@
+Results:
+
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\GPT\internal\config\config.go:12] - G101 (CWE-798): Potential hardcoded credentials (Confidence: LOW, Severity: HIGH)
+    11: const (
+  > 12: 	defaultFirebaseCredentials = `C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json`
+    13: 	defaultJWTSecret           = "replace-this-secret-in-production"
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\GPT\internal\repository\song_repository.go:79] - G202 (CWE-89): SQL string concatenation (Confidence: HIGH, Severity: MEDIUM)
+    78: 	if len(conditions) > 0 {
+  > 79: 		query += " WHERE " + strings.Join(conditions, " AND ")
+    80: 	}
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\GPT\internal\storage\local_music.go:40] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    39:
+  > 40: 	dst, err := os.Create(filePath)
+    41: 	if err != nil {
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\GPT\internal\config\config.go:65] - G304 (CWE-22): Potential file inclusion via variable (Confidence: HIGH, Severity: MEDIUM)
+    64: func resolveProjectID(credentialsPath string) (string, error) {
+  > 65: 	raw, err := os.ReadFile(credentialsPath)
+    66: 	if err != nil {
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\GPT\internal\storage\local_music.go:23] - G301 (CWE-276): Expect directory permissions to be 0750 or less (Confidence: HIGH, Severity: MEDIUM)
+    22: func (s *LocalMusicStorage) SaveMP3(fileHeader *multipart.FileHeader) (string, error) {
+  > 23: 	if err := os.MkdirAll(s.uploadDir, 0o755); err != nil {
+    24: 		return "", err
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\GPT\internal\database\sqlite.go:12] - G301 (CWE-276): Expect directory permissions to be 0750 or less (Confidence: HIGH, Severity: MEDIUM)
+    11: func OpenSQLite(dbPath string) (*sql.DB, error) {
+  > 12: 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
+    13: 		return nil, err
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Stream\Go\GPT\internal\database\sqlite.go:39] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    38: 	if _, err := db.Exec(schema); err != nil {
+  > 39: 		db.Close()
+    40: 		return nil, err
+
+Autofix:
+
+Summary:
+  Gosec  : dev
+  Files  : 13
+  Lines  : 1057
+  Nosec  : 0
+  Issues : 7
+

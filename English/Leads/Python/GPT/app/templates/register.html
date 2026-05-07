@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="auth-card">
+    <div class="section-copy">
+        <span class="eyebrow">New Workspace</span>
+        <h2>Create an account for your lead operation</h2>
+        <p>Register your team lead or company manager profile to start storing and qualifying leads securely.</p>
+    </div>
+    <form id="registerForm" class="panel form-grid">
+        <label>
+            <span>Name</span>
+            <input type="text" name="name" placeholder="Company or manager name" required>
+        </label>
+        <label>
+            <span>Email</span>
+            <input type="email" name="email" placeholder="manager@company.com" required>
+        </label>
+        <label>
+            <span>Password</span>
+            <input type="password" name="password" placeholder="Minimum 8 characters" required>
+        </label>
+        <button class="primary-button" type="submit">Create account</button>
+        <p class="form-message" id="registerMessage"></p>
+        <p class="aux-link">Already registered? <a href="/login">Log in</a></p>
+    </form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/register.js"></script>
+{% endblock %}

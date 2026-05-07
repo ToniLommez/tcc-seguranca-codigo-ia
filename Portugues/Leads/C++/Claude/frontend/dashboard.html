@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Lead Manager</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">📊</div>
+      <div>
+        <div class="logo-text">Lead Manager</div>
+        <div class="logo-sub">claude-sonnet-4-6</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Menu</div>
+      <a href="/dashboard" class="nav-item active">
+        <span class="nav-icon">🏠</span> Dashboard
+      </a>
+      <a href="/leads" class="nav-item">
+        <span class="nav-icon">👥</span> Leads
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="sidebar-user-avatar">U</div>
+        <div>
+          <div class="user-name"  id="sidebar-user-name">Carregando...</div>
+          <div class="user-email" id="sidebar-user-email"></div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="Auth.logout()">
+        <span>⏻</span> Sair
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-content">
+    <header class="topbar">
+      <span class="topbar-title">Dashboard</span>
+      <div class="topbar-actions">
+        <a href="/leads" class="btn btn-primary btn-sm">
+          <span>+</span> Novo Lead
+        </a>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Loading -->
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Carregando dados...</p>
+      </div>
+
+      <!-- Content (hidden until loaded) -->
+      <div id="dashboard-content" class="hidden">
+        <!-- Stats -->
+        <div class="stat-grid">
+          <div class="stat-card blue">
+            <div class="stat-label">Total de Leads</div>
+            <div class="stat-value" id="stat-total">0</div>
+            <div class="stat-sub">todos os registros</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Qualificados</div>
+            <div class="stat-value" id="stat-qualified">0</div>
+            <div class="stat-sub">prontos para conversão</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-label">Em Contato</div>
+            <div class="stat-value" id="stat-in-contact">0</div>
+            <div class="stat-sub">em negociação</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-label">Perdidos</div>
+            <div class="stat-value" id="stat-lost">0</div>
+            <div class="stat-sub">não convertidos</div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+          <!-- Status chart -->
+          <div class="chart-card">
+            <div class="chart-title">📊 Leads por Status</div>
+            <div class="bar-chart" id="status-chart"></div>
+          </div>
+
+          <!-- Source chart -->
+          <div class="chart-card">
+            <div class="chart-title">📡 Leads por Fonte</div>
+            <div class="bar-chart" id="source-chart"></div>
+          </div>
+        </div>
+
+        <!-- Monthly trend -->
+        <div class="card" style="margin-top:20px">
+          <div class="chart-title" style="margin-bottom:16px">📅 Capturas Mensais</div>
+          <div class="bar-chart" id="monthly-chart"></div>
+        </div>
+
+        <!-- Recent leads table -->
+        <div style="margin-top:20px">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+            <h2 style="font-size:1rem;font-weight:700">Últimos Leads Capturados</h2>
+            <a href="/leads" class="btn btn-outline btn-sm">Ver todos →</a>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Empresa</th>
+                  <th>Status</th>
+                  <th>Fonte</th>
+                  <th>Data Captura</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="recent-leads-body">
+                <tr><td colspan="6" class="loading" style="padding:30px;text-align:center">
+                  <div class="spinner" style="margin:0 auto 8px"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/dashboard.js"></script>
+</body>
+</html>

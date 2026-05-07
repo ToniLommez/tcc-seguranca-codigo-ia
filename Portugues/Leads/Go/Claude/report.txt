@@ -1,0 +1,73 @@
+Results:
+
+
+[C:\Users\tonil\Desktop\tcc\Leads\Go\Claude\config\firebase.go:30] - G101 (CWE-798): Potential hardcoded credentials (Confidence: LOW, Severity: HIGH)
+    29: 		// Caminho padrão baseado nas credenciais fornecidas
+  > 30: 		credPath = `C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json`
+    31: 	}
+
+Autofix: 
+
+[C:\Users\tonil\Desktop\tcc\Leads\Go\Claude\main.go:94] - G706 (CWE-117): Log injection via taint analysis (Confidence: HIGH, Severity: LOW)
+    93: 	log.Printf("║   http://localhost:%s                     ║", port)
+  > 94: 	log.Printf("║   Frontend: http://localhost:%s/app/        ║", port)
+    95: 	log.Printf("╚══════════════════════════════════════════════╝")
+
+Autofix: 
+
+[C:\Users\tonil\Desktop\tcc\Leads\Go\Claude\main.go:93] - G706 (CWE-117): Log injection via taint analysis (Confidence: HIGH, Severity: LOW)
+    92: 	log.Printf("║   Lead Manager - Servidor iniciado           ║")
+  > 93: 	log.Printf("║   http://localhost:%s                     ║", port)
+    94: 	log.Printf("║   Frontend: http://localhost:%s/app/        ║", port)
+
+Autofix: 
+
+[C:\Users\tonil\Desktop\tcc\Leads\Go\Claude\utils\export.go:113] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    112: 		for j, v := range values {
+  > 113: 			f.SetCellValue(sheet, cols[j]+row, v)
+    114: 		}
+
+Autofix: 
+
+[C:\Users\tonil\Desktop\tcc\Leads\Go\Claude\utils\export.go:94] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    93: 	for col, width := range widths {
+  > 94: 		f.SetColWidth(sheet, col, col, width)
+    95: 	}
+
+Autofix: 
+
+[C:\Users\tonil\Desktop\tcc\Leads\Go\Claude\utils\export.go:85] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    84: 		f.SetCellValue(sheet, cell, h)
+  > 85: 		f.SetCellStyle(sheet, cell, cell, headerStyle)
+    86: 	}
+
+Autofix: 
+
+[C:\Users\tonil\Desktop\tcc\Leads\Go\Claude\utils\export.go:84] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    83: 		cell := cols[i] + "1"
+  > 84: 		f.SetCellValue(sheet, cell, h)
+    85: 		f.SetCellStyle(sheet, cell, cell, headerStyle)
+
+Autofix: 
+
+[C:\Users\tonil\Desktop\tcc\Leads\Go\Claude\utils\export.go:60] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    59: 	sheet := "Leads"
+  > 60: 	f.SetSheetName("Sheet1", sheet)
+    61: 
+
+Autofix: 
+
+[C:\Users\tonil\Desktop\tcc\Leads\Go\Claude\handlers\leads.go:183] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    182: 	var updated models.Lead
+  > 183: 	updatedDoc.DataTo(&updated)
+    184: 	if updated.Interactions == nil { updated.Interactions = []models.Interaction{} }
+
+Autofix: 
+
+Summary:
+  Gosec  : dev
+  Files  : 10
+  Lines  : 1228
+  Nosec  : 0
+  Issues : 9
+

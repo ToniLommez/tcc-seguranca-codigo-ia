@@ -1,0 +1,61 @@
+# Firebase credentials (NEVER commit)
+*.json
+!package.json
+!package-lock.json
+!vcpkg.json
+*adminsdk*.json
+firebase-credentials.json
+
+# Environment files with secrets
+.env
+.env.local
+.env.production
+# Keep examples
+!.env.example
+
+# C++ build artifacts
+build/
+build-*/
+CMakeFiles/
+CMakeCache.txt
+*.exe
+*.dll
+*.obj
+*.o
+*.a
+*.lib
+vcpkg_installed/
+
+# Go build artifacts
+*.exe
+vendor/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Node / Frontend
+node_modules/
+dist/
+.next/
+
+# Databases and user-uploaded content
+*.db
+*.sqlite
+*.sqlite3
+uploads/*.mp3
+uploads/*.wav
+uploads/*.flac
+
+# IDE and OS
+.idea/
+.vscode/
+*.DS_Store
+Thumbs.db
+
+# Local Claude Code settings
+.claude/settings.local.json

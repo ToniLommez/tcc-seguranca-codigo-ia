@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lead Manager C++</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-badge">LM</span>
+        <div>
+          <p class="eyebrow">Lead Management</p>
+          <h1>Lead Manager C++</h1>
+        </div>
+      </div>
+
+      <section class="panel auth-panel" id="auth-panel">
+        <div class="panel-header">
+          <h2>Acesso</h2>
+          <p>Entre com seu usuário ou crie uma conta gestora.</p>
+        </div>
+
+        <div class="auth-tabs">
+          <button class="tab active" data-auth-tab="login">Login</button>
+          <button class="tab" data-auth-tab="register">Cadastro</button>
+        </div>
+
+        <form id="login-form" class="auth-form">
+          <label>
+            <span>E-mail</span>
+            <input type="email" name="email" placeholder="gestor@empresa.com" required>
+          </label>
+          <label>
+            <span>Senha</span>
+            <input type="password" name="password" placeholder="Sua senha" required>
+          </label>
+          <button type="submit" class="primary">Entrar</button>
+        </form>
+
+        <form id="register-form" class="auth-form hidden">
+          <label>
+            <span>Nome</span>
+            <input type="text" name="name" placeholder="Nome do gestor" required>
+          </label>
+          <label>
+            <span>E-mail</span>
+            <input type="email" name="email" placeholder="gestor@empresa.com" required>
+          </label>
+          <label>
+            <span>Senha</span>
+            <input type="password" name="password" placeholder="Minimo de 6 caracteres" required>
+          </label>
+          <button type="submit" class="primary">Criar conta</button>
+        </form>
+      </section>
+
+      <section class="panel user-panel hidden" id="user-panel">
+        <div class="panel-header">
+          <h2>Sessao</h2>
+          <p id="user-greeting">Conectado</p>
+        </div>
+        <div class="session-meta">
+          <div>
+            <span class="meta-label">Colecao de leads</span>
+            <strong>gpt_5_cpp_leads</strong>
+          </div>
+          <div>
+            <span class="meta-label">Colecao de usuarios</span>
+            <strong>gpt_5_cpp_users</strong>
+          </div>
+        </div>
+        <button id="logout-button" class="secondary">Sair</button>
+      </section>
+
+      <div id="message-box" class="message-box hidden"></div>
+    </aside>
+
+    <main class="workspace">
+      <header class="workspace-header">
+        <div>
+          <p class="eyebrow">Operacao comercial</p>
+          <h2>Dashboard de Leads</h2>
+        </div>
+        <div class="header-actions">
+          <button id="refresh-button" class="secondary">Atualizar</button>
+          <button id="new-lead-button" class="primary">Novo lead</button>
+        </div>
+      </header>
+
+      <section class="stats-grid" id="stats-grid">
+        <article class="stat-card">
+          <span>Total de leads</span>
+          <strong id="stat-total">0</strong>
+        </article>
+        <article class="stat-card">
+          <span>Qualificados</span>
+          <strong id="stat-qualified">0</strong>
+        </article>
+        <article class="stat-card">
+          <span>Conversao</span>
+          <strong id="stat-conversion">0%</strong>
+        </article>
+        <article class="stat-card">
+          <span>Capturas recentes</span>
+          <strong id="stat-latest">0</strong>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <section class="panel chart-panel">
+          <div class="panel-header">
+            <h3>Capturas por periodo</h3>
+            <p>Volume de entradas registradas por data.</p>
+          </div>
+          <div id="capture-chart" class="chart-bars"></div>
+        </section>
+
+        <section class="panel summary-panel">
+          <div class="panel-header">
+            <h3>Status</h3>
+            <p>Distribuicao atual da carteira.</p>
+          </div>
+          <div id="status-summary" class="summary-list"></div>
+        </section>
+      </section>
+
+      <section class="panel filters-panel">
+        <div class="panel-header">
+          <h3>Filtros e operacoes</h3>
+          <p>Busque, importe e exporte seus leads.</p>
+        </div>
+
+        <form id="filters-form" class="filters-form">
+          <input type="search" name="q" placeholder="Buscar por nome, e-mail ou empresa">
+          <select name="status">
+            <option value="">Todos os status</option>
+            <option value="novo">Novo</option>
+            <option value="em contato">Em contato</option>
+            <option value="qualificado">Qualificado</option>
+            <option value="perdido">Perdido</option>
+          </select>
+          <input type="text" name="source" placeholder="Fonte">
+          <input type="date" name="dateFrom">
+          <input type="date" name="dateTo">
+          <select name="sortBy">
+            <option value="updatedAt">Ultima atualizacao</option>
+            <option value="captureDate">Data de captura</option>
+            <option value="fullName">Nome</option>
+            <option value="company">Empresa</option>
+            <option value="status">Status</option>
+          </select>
+          <select name="sortDir">
+            <option value="desc">Decrescente</option>
+            <option value="asc">Crescente</option>
+          </select>
+          <button type="submit" class="primary">Aplicar</button>
+          <button type="button" id="reset-filters-button" class="secondary">Limpar</button>
+          <button type="button" id="export-csv-button" class="secondary">Exportar CSV</button>
+          <button type="button" id="export-excel-button" class="secondary">Exportar Excel</button>
+          <label class="file-button secondary">
+            <input type="file" id="import-csv-input" accept=".csv,text/csv">
+            Importar CSV
+          </label>
+          <label class="file-button secondary">
+            <input type="file" id="import-excel-input" accept=".xlsx,.xls">
+            Importar Excel
+          </label>
+        </form>
+      </section>
+
+      <section class="panel table-panel">
+        <div class="panel-header">
+          <h3>Base de leads</h3>
+          <p id="table-meta">Nenhum lead carregado.</p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Lead</th>
+                <th>Empresa</th>
+                <th>Fonte</th>
+                <th>Status</th>
+                <th>Captura</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody id="leads-table-body"></tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <button id="previous-page" class="secondary">Anterior</button>
+          <span id="pagination-label">Pagina 1</span>
+          <button id="next-page" class="secondary">Proxima</button>
+        </div>
+      </section>
+    </main>
+
+    <aside class="detail-panel" id="detail-panel">
+      <div class="panel-header">
+        <h3>Detalhes do lead</h3>
+        <button id="close-detail-button" class="secondary">Fechar</button>
+      </div>
+
+      <div id="lead-detail-content" class="detail-content">
+        <p>Selecione um lead na tabela para visualizar o historico.</p>
+      </div>
+
+      <form id="interaction-form" class="interaction-form hidden">
+        <h4>Nova interacao</h4>
+        <label>
+          <span>Tipo</span>
+          <input type="text" name="type" placeholder="Ligacao, e-mail, reuniao">
+        </label>
+        <label>
+          <span>Descricao</span>
+          <textarea name="note" rows="4" placeholder="Descreva o contato realizado"></textarea>
+        </label>
+        <button type="submit" class="primary">Registrar interacao</button>
+      </form>
+    </aside>
+  </div>
+
+  <dialog id="lead-dialog">
+    <form method="dialog" id="lead-form" class="lead-form">
+      <div class="panel-header">
+        <h3 id="lead-dialog-title">Novo lead</h3>
+        <button type="button" id="close-dialog-button" class="secondary">Cancelar</button>
+      </div>
+
+      <input type="hidden" name="id">
+      <div class="form-grid">
+        <label>
+          <span>Nome completo</span>
+          <input type="text" name="fullName" required>
+        </label>
+        <label>
+          <span>E-mail</span>
+          <input type="email" name="email" required>
+        </label>
+        <label>
+          <span>Telefone</span>
+          <input type="text" name="phone">
+        </label>
+        <label>
+          <span>Empresa</span>
+          <input type="text" name="company">
+        </label>
+        <label>
+          <span>Cargo</span>
+          <input type="text" name="jobTitle">
+        </label>
+        <label>
+          <span>Fonte</span>
+          <input type="text" name="source" placeholder="Site, evento, indicacao">
+        </label>
+        <label>
+          <span>Status</span>
+          <select name="status" required>
+            <option value="novo">Novo</option>
+            <option value="em contato">Em contato</option>
+            <option value="qualificado">Qualificado</option>
+            <option value="perdido">Perdido</option>
+          </select>
+        </label>
+        <label>
+          <span>Data de captura</span>
+          <input type="date" name="captureDate" required>
+        </label>
+      </div>
+      <label>
+        <span>Observacoes</span>
+        <textarea name="notes" rows="4"></textarea>
+      </label>
+      <button type="submit" class="primary">Salvar lead</button>
+    </form>
+  </dialog>
+
+  <script src="/xlsx.full.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

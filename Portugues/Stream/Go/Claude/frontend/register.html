@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StreamMusic — Cadastro</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <span class="logo-icon">🎵</span>
+        <h1>Criar conta</h1>
+        <p>Escolha como deseja usar a plataforma</p>
+      </div>
+
+      <div class="alert" id="registerAlert"></div>
+
+      <form id="registerForm">
+        <div class="form-group">
+          <label for="name">Nome completo</label>
+          <input type="text" id="name" placeholder="Seu nome" required autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" placeholder="seu@email.com" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label for="password">Senha</label>
+          <input type="password" id="password" placeholder="Mínimo 6 caracteres" required autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label>Tipo de conta</label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="type" value="USUARIO" required>
+              🎧 Ouvinte
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="type" value="ARTISTA">
+              🎤 Artista
+            </label>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" id="registerBtn">Criar conta</button>
+      </form>
+
+      <div class="auth-footer">
+        Já tem conta? <a href="/">Entrar</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+</body>
+</html>

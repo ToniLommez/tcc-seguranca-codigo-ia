@@ -1,0 +1,12 @@
+{
+  "name": "soundstream",
+  "version": "1.0.0",
+  "description": "Music streaming REST service with JWT authentication",
+  "dependencies": [
+    "cpp-httplib",
+    "nlohmann-json",
+    "jwt-cpp",
+    "openssl",
+    "curl"
+  ]
+}

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stream Studio</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="hero">
+        <div class="brand-chip">Streaming de Musica</div>
+        <h1>Plataforma moderna para artistas cadastrarem e usuarios ouvirem.</h1>
+        <p>
+          Backend REST em C++, autenticacao JWT, usuarios no Firebase e arquivos MP3
+          armazenados localmente no servidor.
+        </p>
+
+        <div class="hero-card">
+          <h2>Fluxo do sistema</h2>
+          <ul>
+            <li>Artistas fazem upload e catalogam musicas.</li>
+            <li>Usuarios comuns pesquisam por nome, artista e genero.</li>
+            <li>A reproducao acontece no navegador via endpoint de streaming.</li>
+          </ul>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <section id="auth-view" class="panel auth-panel">
+          <div class="panel-header">
+            <div>
+              <span class="eyebrow">Acesso</span>
+              <h2>Entrar ou criar conta</h2>
+            </div>
+          </div>
+
+          <div class="auth-grid">
+            <form id="login-form" class="form-card">
+              <h3>Login</h3>
+              <label>
+                <span>E-mail</span>
+                <input type="email" name="email" required />
+              </label>
+              <label>
+                <span>Senha</span>
+                <input type="password" name="password" required />
+              </label>
+              <button type="submit" class="primary">Entrar</button>
+            </form>
+
+            <form id="register-form" class="form-card">
+              <h3>Novo cadastro</h3>
+              <label>
+                <span>Nome</span>
+                <input type="text" name="name" required />
+              </label>
+              <label>
+                <span>E-mail</span>
+                <input type="email" name="email" required />
+              </label>
+              <label>
+                <span>Senha</span>
+                <input type="password" name="password" required />
+              </label>
+              <label>
+                <span>Tipo</span>
+                <select name="type">
+                  <option value="ARTISTA">ARTISTA</option>
+                  <option value="USUARIO">USUARIO</option>
+                </select>
+              </label>
+              <button type="submit" class="secondary">Cadastrar</button>
+            </form>
+          </div>
+        </section>
+
+        <section id="dashboard-view" class="panel hidden">
+          <div class="panel-header">
+            <div>
+              <span class="eyebrow">Painel</span>
+              <h2 id="welcome-title">Bem-vindo</h2>
+            </div>
+            <div class="header-actions">
+              <span id="user-badge" class="badge"></span>
+              <button id="logout-button" class="ghost">Sair</button>
+            </div>
+          </div>
+
+          <div id="artist-area" class="hidden">
+            <div class="content-grid artist-grid">
+              <form id="upload-form" class="form-card wide">
+                <h3>Cadastro de musica</h3>
+                <label>
+                  <span>Titulo</span>
+                  <input type="text" name="title" required />
+                </label>
+                <label>
+                  <span>Genero</span>
+                  <input type="text" name="genre" required />
+                </label>
+                <label>
+                  <span>Descricao</span>
+                  <textarea name="description" rows="5"></textarea>
+                </label>
+                <label>
+                  <span>Arquivo MP3</span>
+                  <input type="file" name="audio" accept=".mp3,audio/mpeg" required />
+                </label>
+                <button type="submit" class="primary">Enviar musica</button>
+              </form>
+
+              <div class="list-card">
+                <div class="card-header">
+                  <h3>Musicas cadastradas por voce</h3>
+                </div>
+                <div id="artist-song-list" class="song-list empty-state">
+                  Nenhuma musica cadastrada ainda.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="user-area" class="hidden">
+            <div class="content-grid">
+              <form id="search-form" class="form-card wide">
+                <h3>Buscar musicas</h3>
+                <div class="search-grid">
+                  <label>
+                    <span>Nome</span>
+                    <input type="text" name="nome" />
+                  </label>
+                  <label>
+                    <span>Artista</span>
+                    <input type="text" name="artista" />
+                  </label>
+                  <label>
+                    <span>Genero</span>
+                    <input type="text" name="genero" />
+                  </label>
+                </div>
+                <button type="submit" class="primary">Buscar</button>
+              </form>
+
+              <div class="player-card">
+                <div class="card-header">
+                  <h3>Player</h3>
+                  <p id="player-caption">Selecione uma musica para iniciar a reproducao.</p>
+                </div>
+                <audio id="audio-player" controls preload="metadata"></audio>
+              </div>
+
+              <div class="list-card full-width">
+                <div class="card-header">
+                  <h3>Catalogo</h3>
+                </div>
+                <div id="user-song-list" class="song-list empty-state">
+                  Nenhuma musica encontrada.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div id="toast" class="toast hidden"></div>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

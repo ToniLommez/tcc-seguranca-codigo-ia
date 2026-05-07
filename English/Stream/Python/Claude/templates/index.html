@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoundStream - Music Streaming</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- AUTH PAGE -->
+<div id="auth-page">
+    <div class="auth-container">
+        <div class="auth-logo">
+            <h1>SoundStream</h1>
+            <p>Music Streaming Platform</p>
+        </div>
+
+        <div id="auth-alert"></div>
+
+        <div class="auth-tabs">
+            <button class="auth-tab active" id="tab-login">Login</button>
+            <button class="auth-tab" id="tab-register">Register</button>
+        </div>
+
+        <form id="login-form">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="login-email" required placeholder="your@email.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-password" required placeholder="Enter your password">
+            </div>
+            <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+
+        <form id="register-form" class="hidden">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="reg-name" required placeholder="Your name">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="reg-email" required placeholder="your@email.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="reg-password" required minlength="6" placeholder="At least 6 characters">
+            </div>
+            <div class="form-group">
+                <label>Account Type</label>
+                <select id="reg-type" required>
+                    <option value="USER">Listener (USER)</option>
+                    <option value="ARTIST">Artist (ARTIST)</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Create Account</button>
+        </form>
+    </div>
+</div>
+
+<!-- APP PAGE -->
+<div id="app-page" class="hidden">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <h2>SoundStream</h2>
+            <span>Music Platform</span>
+        </div>
+        <nav class="sidebar-nav">
+            <button class="nav-item" id="nav-browse" onclick="navigateTo('browse')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                Browse Music
+            </button>
+            <button class="nav-item" id="nav-upload" onclick="navigateTo('upload')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Upload Song
+            </button>
+            <button class="nav-item" id="nav-my-songs" onclick="navigateTo('my-songs')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                My Songs
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar"><span id="user-avatar-letter">U</span></div>
+                <div class="user-details">
+                    <h4 id="user-name">User</h4>
+                    <span id="user-type">USER</span>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <!-- Browse Section (USER) -->
+        <section id="section-browse" class="content-section hidden">
+            <div class="page-header">
+                <h1>Browse Music</h1>
+                <p>Discover and listen to songs from our artists</p>
+            </div>
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Search by song name or artist...">
+                <select id="genre-filter">
+                    <option value="">All Genres</option>
+                </select>
+            </div>
+            <div id="songs-container"></div>
+        </section>
+
+        <!-- Upload Section (ARTIST) -->
+        <section id="section-upload" class="content-section hidden">
+            <div class="page-header">
+                <h1>Upload Song</h1>
+                <p>Share your music with the world</p>
+            </div>
+            <div id="upload-alert"></div>
+            <div class="upload-card">
+                <form id="upload-form">
+                    <div class="form-group">
+                        <label>Song Title</label>
+                        <input type="text" id="upload-title" required placeholder="Enter song title">
+                    </div>
+                    <div class="form-group">
+                        <label>Genre</label>
+                        <input type="text" id="upload-genre" required placeholder="e.g. Rock, Pop, Jazz, Electronic">
+                    </div>
+                    <div class="form-group">
+                        <label>Description (optional)</label>
+                        <textarea id="upload-desc" placeholder="Tell listeners about this song..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Music File (MP3)</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="upload-file" accept=".mp3" required>
+                            <div class="file-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                Click to select MP3 file
+                            </div>
+                            <div class="file-name" id="file-name"></div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upload Song</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- My Songs Section (ARTIST) -->
+        <section id="section-my-songs" class="content-section hidden">
+            <div class="page-header">
+                <h1>My Songs</h1>
+                <p>Manage your uploaded music</p>
+            </div>
+            <div id="my-songs-container"></div>
+        </section>
+
+    </main>
+</div>
+
+<!-- Player Bar (USER only) -->
+<div id="player-bar" class="hidden">
+    <div class="player-info">
+        <h4 id="player-title">No song selected</h4>
+        <span id="player-artist">-</span>
+    </div>
+    <div class="player-controls">
+        <button class="player-btn" onclick="togglePlayPause()">
+            <svg id="play-pause-icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+    </div>
+    <div class="player-progress">
+        <span class="player-time" id="player-current">0:00</span>
+        <input type="range" id="player-seek" value="0" min="0" max="100" step="0.1">
+        <span class="player-time" id="player-duration">0:00</span>
+    </div>
+    <div class="player-volume">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
+        <input type="range" id="player-volume" value="70" min="0" max="100">
+    </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>

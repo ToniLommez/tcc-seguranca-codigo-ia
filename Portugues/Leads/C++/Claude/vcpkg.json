@@ -1,0 +1,10 @@
+{
+  "name": "lead-manager",
+  "version": "1.0.0",
+  "dependencies": [
+    "crow",
+    "nlohmann-json",
+    "curl",
+    "openssl"
+  ]
+}

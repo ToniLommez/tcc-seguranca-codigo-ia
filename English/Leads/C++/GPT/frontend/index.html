@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lead Manager</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <section id="auth-view" class="auth-view">
+        <div class="auth-card">
+          <div class="auth-copy">
+            <p class="eyebrow">Lead Intelligence Workspace</p>
+            <h1>Manage tech leads with a clean, fast operating hub.</h1>
+            <p>
+              Sign up your company team, track every lead from capture to outcome, and keep a searchable history of
+              each interaction.
+            </p>
+          </div>
+
+          <div class="auth-panel">
+            <div class="tab-row">
+              <button class="tab-button active" data-auth-tab="login">Login</button>
+              <button class="tab-button" data-auth-tab="register">Register</button>
+            </div>
+
+            <form id="login-form" class="auth-form active">
+              <label>
+                <span>Email</span>
+                <input type="email" name="email" required />
+              </label>
+              <label>
+                <span>Password</span>
+                <input type="password" name="password" required />
+              </label>
+              <button type="submit" class="primary-button">Access Dashboard</button>
+            </form>
+
+            <form id="register-form" class="auth-form">
+              <label>
+                <span>Manager / Company Name</span>
+                <input type="text" name="name" required />
+              </label>
+              <label>
+                <span>Email</span>
+                <input type="email" name="email" required />
+              </label>
+              <label>
+                <span>Password</span>
+                <input type="password" name="password" minlength="8" required />
+              </label>
+              <button type="submit" class="primary-button">Create Account</button>
+            </form>
+
+            <p id="auth-message" class="message"></p>
+          </div>
+        </div>
+      </section>
+
+      <section id="app-view" class="app-view hidden">
+        <aside class="sidebar">
+          <div>
+            <p class="eyebrow">Lead Manager</p>
+            <h2>Operations Center</h2>
+            <p id="welcome-text" class="sidebar-copy"></p>
+          </div>
+
+          <nav class="nav-list">
+            <button class="nav-item active" data-view="dashboard">Dashboard</button>
+            <button class="nav-item" data-view="leads">Leads</button>
+          </nav>
+
+          <button id="logout-button" class="secondary-button full-width">Logout</button>
+        </aside>
+
+        <main class="content">
+          <header class="topbar">
+            <div>
+              <p class="eyebrow">Desktop-first CRM</p>
+              <h1 id="view-title">Dashboard</h1>
+            </div>
+            <p id="global-message" class="message"></p>
+          </header>
+
+          <section id="dashboard-view" class="view-section">
+            <div class="metrics-grid" id="metric-cards"></div>
+
+            <div class="panel-grid">
+              <article class="panel">
+                <div class="panel-head">
+                  <h3>Status Overview</h3>
+                </div>
+                <div id="status-summary" class="stack-list"></div>
+              </article>
+
+              <article class="panel">
+                <div class="panel-head">
+                  <h3>Sources</h3>
+                </div>
+                <div id="source-summary" class="stack-list"></div>
+              </article>
+            </div>
+
+            <article class="panel">
+              <div class="panel-head">
+                <h3>Captures Over Time</h3>
+              </div>
+              <div id="capture-chart" class="chart-list"></div>
+            </article>
+          </section>
+
+          <section id="leads-view" class="view-section hidden">
+            <article class="panel">
+              <div class="panel-head leads-header">
+                <div>
+                  <h3>Lead Pipeline</h3>
+                  <p>Search, sort, import, export, and maintain every lead in one place.</p>
+                </div>
+                <div class="toolbar-actions">
+                  <button id="open-create-lead" class="primary-button">New Lead</button>
+                  <label class="file-button">
+                    Import File
+                    <input id="import-file" type="file" accept=".csv,.xls,.xml" />
+                  </label>
+                  <button id="export-csv" class="secondary-button">Export CSV</button>
+                  <button id="export-excel" class="secondary-button">Export Excel</button>
+                </div>
+              </div>
+
+              <form id="filters-form" class="filters-grid">
+                <label>
+                  <span>Search</span>
+                  <input type="text" name="search" placeholder="Name, email, company" />
+                </label>
+                <label>
+                  <span>Status</span>
+                  <select name="status">
+                    <option value="">All</option>
+                    <option value="new">New</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="qualified">Qualified</option>
+                    <option value="lost">Lost</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Source</span>
+                  <input type="text" name="source" placeholder="website, referral, event" />
+                </label>
+                <label>
+                  <span>From</span>
+                  <input type="date" name="captureDateFrom" />
+                </label>
+                <label>
+                  <span>To</span>
+                  <input type="date" name="captureDateTo" />
+                </label>
+                <label>
+                  <span>Sort By</span>
+                  <select name="sortBy">
+                    <option value="captureDate">Capture Date</option>
+                    <option value="createdAt">Created At</option>
+                    <option value="fullName">Full Name</option>
+                    <option value="company">Company</option>
+                    <option value="status">Status</option>
+                    <option value="source">Source</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Direction</span>
+                  <select name="sortDir">
+                    <option value="desc">Descending</option>
+                    <option value="asc">Ascending</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Page Size</span>
+                  <select name="pageSize">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                  </select>
+                </label>
+                <div class="filter-actions">
+                  <button type="submit" class="primary-button">Apply</button>
+                  <button type="button" id="reset-filters" class="secondary-button">Reset</button>
+                </div>
+              </form>
+
+              <div class="table-shell">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Company</th>
+                      <th>Email</th>
+                      <th>Status</th>
+                      <th>Source</th>
+                      <th>Capture Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="leads-table-body"></tbody>
+                </table>
+              </div>
+
+              <div class="pagination-row">
+                <button id="prev-page" class="secondary-button">Previous</button>
+                <span id="pagination-label">Page 1</span>
+                <button id="next-page" class="secondary-button">Next</button>
+              </div>
+            </article>
+
+            <aside id="lead-detail-panel" class="panel detail-panel hidden">
+              <div class="panel-head">
+                <div>
+                  <h3 id="detail-name">Lead Details</h3>
+                  <p id="detail-company"></p>
+                </div>
+                <button id="close-detail" class="ghost-button">Close</button>
+              </div>
+
+              <div id="lead-detail-content" class="detail-content"></div>
+
+              <div class="divider"></div>
+
+              <div class="panel-head">
+                <h3>Interaction History</h3>
+              </div>
+              <form id="interaction-form" class="inline-form">
+                <label>
+                  <span>Type</span>
+                  <select name="type">
+                    <option value="note">Note</option>
+                    <option value="call">Call</option>
+                    <option value="email">Email</option>
+                    <option value="meeting">Meeting</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Notes</span>
+                  <textarea name="notes" rows="4" required></textarea>
+                </label>
+                <button type="submit" class="primary-button">Add Interaction</button>
+              </form>
+
+              <div id="interaction-list" class="timeline"></div>
+            </aside>
+          </section>
+        </main>
+      </section>
+    </div>
+
+    <dialog id="lead-modal" class="lead-modal">
+      <form id="lead-form" class="modal-card" method="dialog">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Lead Record</p>
+            <h3 id="lead-form-title">Create Lead</h3>
+          </div>
+          <button id="close-modal" type="button" class="ghost-button">Close</button>
+        </div>
+
+        <div class="form-grid">
+          <label>
+            <span>Full Name</span>
+            <input type="text" name="fullName" required />
+          </label>
+          <label>
+            <span>Email</span>
+            <input type="email" name="email" required />
+          </label>
+          <label>
+            <span>Phone</span>
+            <input type="text" name="phone" />
+          </label>
+          <label>
+            <span>Company</span>
+            <input type="text" name="company" />
+          </label>
+          <label>
+            <span>Position</span>
+            <input type="text" name="position" />
+          </label>
+          <label>
+            <span>Source</span>
+            <input type="text" name="source" placeholder="website, referral, event" required />
+          </label>
+          <label>
+            <span>Status</span>
+            <select name="status" required>
+              <option value="new">New</option>
+              <option value="contacted">Contacted</option>
+              <option value="qualified">Qualified</option>
+              <option value="lost">Lost</option>
+            </select>
+          </label>
+          <label>
+            <span>Capture Date</span>
+            <input type="date" name="captureDate" />
+          </label>
+        </div>
+
+        <button type="submit" class="primary-button">Save Lead</button>
+      </form>
+    </dialog>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

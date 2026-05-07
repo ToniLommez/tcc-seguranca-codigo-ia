@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pulse Stream</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <aside class="hero-panel">
+        <p class="eyebrow">Streaming Platform</p>
+        <h1>Pulse Stream</h1>
+        <p class="hero-copy">
+          Plataforma desktop-first para autenticação, upload local de MP3 e
+          reprodução segura via backend em Go.
+        </p>
+        <div class="hero-card">
+          <span>Stack</span>
+          <strong>Go + JWT + Firestore + SQLite + Filesystem</strong>
+        </div>
+      </aside>
+
+      <main class="content-panel">
+        <section id="authView" class="card auth-card">
+          <div class="tabs">
+            <button class="tab active" data-tab="login">Entrar</button>
+            <button class="tab" data-tab="register">Cadastrar</button>
+          </div>
+
+          <form id="loginForm" class="stack">
+            <h2>Acesse a plataforma</h2>
+            <label>
+              <span>E-mail</span>
+              <input type="email" name="email" placeholder="voce@empresa.com" required />
+            </label>
+            <label>
+              <span>Senha</span>
+              <input type="password" name="password" placeholder="******" required />
+            </label>
+            <button type="submit" class="primary-btn">Entrar</button>
+          </form>
+
+          <form id="registerForm" class="stack hidden">
+            <h2>Crie uma conta</h2>
+            <label>
+              <span>Nome</span>
+              <input type="text" name="name" placeholder="Seu nome" required />
+            </label>
+            <label>
+              <span>E-mail</span>
+              <input type="email" name="email" placeholder="voce@empresa.com" required />
+            </label>
+            <label>
+              <span>Senha</span>
+              <input type="password" name="password" minlength="6" placeholder="Minimo 6 caracteres" required />
+            </label>
+            <label>
+              <span>Tipo</span>
+              <select name="type" required>
+                <option value="USUARIO">Usuario</option>
+                <option value="ARTISTA">Artista</option>
+              </select>
+            </label>
+            <button type="submit" class="primary-btn">Cadastrar</button>
+          </form>
+        </section>
+
+        <section id="dashboardView" class="hidden">
+          <header class="dashboard-header">
+            <div>
+              <p class="eyebrow">Painel</p>
+              <h2 id="welcomeTitle">Bem-vindo</h2>
+            </div>
+            <button id="logoutButton" class="ghost-btn">Sair</button>
+          </header>
+
+          <section id="artistPanel" class="card hidden">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Artista</p>
+                <h3>Enviar nova musica</h3>
+              </div>
+              <p class="muted">A conta de artista apenas cadastra faixas, sem reproduzi-las.</p>
+            </div>
+
+            <form id="uploadForm" class="grid-form" enctype="multipart/form-data">
+              <label>
+                <span>Titulo</span>
+                <input type="text" name="title" required />
+              </label>
+              <label>
+                <span>Genero</span>
+                <input type="text" name="genre" required />
+              </label>
+              <label class="full">
+                <span>Descricao</span>
+                <textarea name="description" rows="4" placeholder="Opcional"></textarea>
+              </label>
+              <label class="full">
+                <span>Arquivo MP3</span>
+                <input type="file" name="file" accept=".mp3,audio/mpeg" required />
+              </label>
+              <button type="submit" class="primary-btn">Enviar musica</button>
+            </form>
+
+            <div class="table-shell">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Titulo</th>
+                    <th>Genero</th>
+                    <th>Descricao</th>
+                    <th>Cadastro</th>
+                  </tr>
+                </thead>
+                <tbody id="artistSongsTable"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="userPanel" class="card hidden">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Usuario</p>
+                <h3>Catalogo de musicas</h3>
+              </div>
+              <p class="muted">Busque por nome, artista ou genero e reproduza no navegador.</p>
+            </div>
+
+            <form id="searchForm" class="grid-form compact">
+              <label>
+                <span>Nome</span>
+                <input type="text" name="name" placeholder="Buscar titulo" />
+              </label>
+              <label>
+                <span>Artista</span>
+                <input type="text" name="artist" placeholder="Buscar artista" />
+              </label>
+              <label>
+                <span>Genero</span>
+                <input type="text" name="genre" placeholder="Buscar genero" />
+              </label>
+              <button type="submit" class="primary-btn">Pesquisar</button>
+            </form>
+
+            <div id="songsGrid" class="songs-grid"></div>
+
+            <div class="player-card">
+              <div>
+                <p class="eyebrow">Reprodutor</p>
+                <h4 id="playerTitle">Nenhuma musica selecionada</h4>
+                <p id="playerSubtitle" class="muted">Escolha uma faixa da lista.</p>
+              </div>
+              <audio id="audioPlayer" controls preload="metadata"></audio>
+            </div>
+          </section>
+        </section>
+
+        <div id="toast" class="toast hidden"></div>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

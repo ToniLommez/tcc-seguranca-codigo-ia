@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+backend/.env
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/stream_catalog.db
+

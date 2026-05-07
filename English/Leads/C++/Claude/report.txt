@@ -1,0 +1,26 @@
+Results:
+
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\Claude\src\firebase_client.h:10] - noExplicitConstructor (CWE-398): Class 'FirebaseClient' has a constructor with 1 argument that is not explicit. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\Claude\src\auth_controller.h:8] - noExplicitConstructor (CWE-398): Class 'AuthController' has a constructor with 1 argument that is not explicit. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\Claude\src\firebase_client.h:46] - returnByReference (CWE-0): Function 'project_id()' should return member 'project_id_' by const reference. (Confidence: HIGH, Severity: PERFORMANCE)
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\Claude\src\csv_utils.cpp:31] - constVariableReference (CWE-398): Variable 'lead' can be declared as reference to const (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\Claude\src\firebase_client.cpp:201] - constVariableReference (CWE-398): Variable 'doc' can be declared as reference to const (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\Claude\src\firebase_client.cpp:182] - unreadVariable (CWE-563): Variable 'response' is assigned a value that is never used. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\Claude\src\lead_controller.h:8] - noExplicitConstructor (CWE-398): Class 'LeadController' has a constructor with 1 argument that is not explicit. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\Claude\src\lead_controller.cpp:296] - constVariableReference (CWE-398): Variable 'file' can be declared as reference to const (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\C++\Claude\src\main.cpp:11] - constParameter (CWE-398): Parameter 'argv' can be declared as const array (Confidence: HIGH, Severity: STYLE)
+
+Summary:
+  Cppcheck : 2.18.0
+  Files    : 7
+  Issues   : 9
+

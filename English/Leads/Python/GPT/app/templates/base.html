@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} | LeadFlow Command Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body data-page="{{ page_title|lower|replace(' ', '-') }}">
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="app-frame">
+        {% if page_title not in ['Login', 'Register'] %}
+        <aside class="sidebar">
+            <div class="brand-block">
+                <span class="eyebrow">Lead Intelligence</span>
+                <h1>LeadFlow</h1>
+                <p>Command center for high-volume tech prospecting teams.</p>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/leads">Lead Pipeline</a>
+                <a href="/leads/new">New Lead</a>
+            </nav>
+            <div class="sidebar-footer">
+                <div id="currentUserName" class="user-chip">Not signed in</div>
+                <button id="logoutButton" class="ghost-button" type="button">Sign out</button>
+            </div>
+        </aside>
+        {% endif %}
+        <main class="content-shell {% if page_title in ['Login', 'Register'] %}auth-shell{% endif %}">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        window.PAGE_DATA = {{ page_data | tojson }};
+    </script>
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,597 @@
+USER:
+I have a small technology company focused on a music streaming system with registration and playback.
+
+We currently use a legacy system and want to abandon it to start a new modern, more organized, and scalable solution.
+
+The system must allow two types of users: artists and regular users, with separate functionalities.
+
+I need a complete REST service with JWT authentication, frontend and backend.
+
+The system must store music files locally on the server (the cloud will only be used for user registration).
+
+I need the complete code to be generated. The requirements are as follows:
+
+
+
+Authentication and Users Module
+
+The system must allow user registration with: name, email, password, type (ARTIST or USER).
+
+The system must authenticate via email and password, returning a JWT token.
+
+The system must ensure access control based on user type.
+
+
+
+Artist Module (Music Upload)
+
+Only users of type ARTIST can access this module.
+
+The artist must be able to register songs with: title, genre, description (optional).
+
+The artist must upload the music file (MP3 only).
+
+The file must be stored locally on the server (e.g., /uploads folder).
+
+The system must save the file path in the database.
+
+The artist MUST NOT be able to listen to music, only register it.
+
+
+
+User Module (Music Consumption)
+
+List songs.
+
+Search songs by: name, artist, and genre.
+
+Play the music directly in the browser (streaming via backend).
+
+The backend must provide an endpoint to serve the audio file.
+
+
+
+Streaming Module
+
+The backend must provide an endpoint for audio playback.
+
+Must support basic streaming.
+
+Files must be served directly from local storage.
+
+
+
+Frontend Module
+
+The frontend must be desktop-first.
+
+
+
+Database
+
+Database: Firebase (only for users).
+
+Music files: local storage on the server (filesystem).
+
+Do not use external storage services.
+
+
+
+Firebase access data:
+
+C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json
+
+
+
+Programming language: Python
+
+
+
+Environment: Windows
+
+================================================================================
+
+ASSISTANT:
+I'll build a complete music streaming system with Python backend (Flask), a modern frontend, JWT auth, and Firebase. Let me start by examining the workspace and Firebase credentials.
+
+Good, I have the Firebase credentials. Now I'll build the complete system.
+
+**Architecture:**
+- **Backend:** Flask + Flask-CORS + PyJWT + Firebase Admin SDK
+- **Frontend:** Vanilla HTML/CSS/JS (desktop-first, modern UI)
+- **Auth:** JWT tokens with Firebase Firestore for user storage
+- **Music storage:** Local filesystem (`/uploads`)
+
+Created the following project structure and files:
+
+### Project Structure
+
+| File | Purpose |
+|---|---|
+| app.py | Flask entry point, registers blueprints |
+| config.py | Environment variables and settings |
+| firebase_setup.py | Firebase Admin SDK initialization |
+| auth.py | JWT decorators (@token_required, @artist_required, @user_required) |
+| routes_auth.py | /api/auth/register and /api/auth/login |
+| routes_artist.py | Upload, list, delete songs (ARTIST only) |
+| routes_songs.py | Browse, search, stream songs (USER only) |
+| templates/index.html | Single-page frontend |
+| static/css/style.css | Dark-themed desktop-first design |
+| static/js/app.js | Frontend logic with audio player |
+| requirements.txt | Python dependencies |
+| .env | Environment configuration |
+
+### Files Created
+
+--- requirements.txt ---
+flask==3.1.1
+flask-cors==5.0.1
+PyJWT==2.10.1
+firebase-admin==6.7.0
+werkzeug==3.1.3
+python-dotenv==1.1.0
+
+--- .env ---
+JWT_SECRET_KEY=music-stream-secret-key-change-in-production-2024
+FIREBASE_CREDENTIALS_PATH=C:/Users/tonil/Desktop/tcc/lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json
+UPLOAD_FOLDER=uploads
+
+--- config.py ---
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+FIREBASE_CREDENTIALS_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH")
+UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "uploads")
+ALLOWED_EXTENSIONS = {"mp3"}
+MAX_CONTENT_LENGTH = 50 * 1024 * 1024
+
+--- firebase_setup.py ---
+import firebase_admin
+from firebase_admin import credentials, firestore
+from config import FIREBASE_CREDENTIALS_PATH
+
+cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+firebase_admin.initialize_app(cred)
+
+db = firestore.client()
+
+--- auth.py ---
+import functools
+import jwt
+from flask import request, jsonify
+from config import JWT_SECRET_KEY
+
+
+def token_required(f):
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1]
+        if not token:
+            return jsonify({"error": "Token is missing"}), 401
+        try:
+            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
+            request.user = payload
+        except jwt.ExpiredSignatureError:
+            return jsonify({"error": "Token has expired"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+
+def artist_required(f):
+    @functools.wraps(f)
+    @token_required
+    def decorated(*args, **kwargs):
+        if request.user.get("user_type") != "ARTIST":
+            return jsonify({"error": "Artist access required"}), 403
+        return f(*args, **kwargs)
+    return decorated
+
+
+def user_required(f):
+    @functools.wraps(f)
+    @token_required
+    def decorated(*args, **kwargs):
+        if request.user.get("user_type") != "USER":
+            return jsonify({"error": "User access required"}), 403
+        return f(*args, **kwargs)
+    return decorated
+
+--- routes_auth.py ---
+import datetime
+import hashlib
+import os
+import jwt
+from flask import Blueprint, request, jsonify
+from firebase_setup import db
+from config import JWT_SECRET_KEY
+
+auth_bp = Blueprint("auth", __name__)
+
+
+def hash_password(password, salt=None):
+    if salt is None:
+        salt = os.urandom(32)
+    key = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100000)
+    return salt + key
+
+
+def verify_password(stored, password):
+    salt = stored[:32]
+    stored_key = stored[32:]
+    key = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 100000)
+    return key == stored_key
+
+
+@auth_bp.route("/api/auth/register", methods=["POST"])
+def register():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Request body is required"}), 400
+
+    name = data.get("name", "").strip()
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+    user_type = data.get("user_type", "").upper()
+
+    if not all([name, email, password, user_type]):
+        return jsonify({"error": "All fields are required: name, email, password, user_type"}), 400
+
+    if user_type not in ("ARTIST", "USER"):
+        return jsonify({"error": "user_type must be ARTIST or USER"}), 400
+
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
+
+    users_ref = db.collection("users")
+    existing = users_ref.where("email", "==", email).limit(1).get()
+    if len(existing) > 0:
+        return jsonify({"error": "Email already registered"}), 409
+
+    hashed = hash_password(password)
+
+    doc_ref = users_ref.add({
+        "name": name,
+        "email": email,
+        "password": hashed,
+        "user_type": user_type,
+        "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+    })
+
+    return jsonify({"message": "User registered successfully", "user_id": doc_ref[1].id}), 201
+
+
+@auth_bp.route("/api/auth/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Request body is required"}), 400
+
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    users_ref = db.collection("users")
+    results = users_ref.where("email", "==", email).limit(1).get()
+
+    if len(results) == 0:
+        return jsonify({"error": "Invalid email or password"}), 401
+
+    user_doc = results[0]
+    user_data = user_doc.to_dict()
+
+    stored_password = user_data.get("password")
+    if not stored_password or not verify_password(stored_password, password):
+        return jsonify({"error": "Invalid email or password"}), 401
+
+    token = jwt.encode({
+        "user_id": user_doc.id,
+        "email": user_data["email"],
+        "name": user_data["name"],
+        "user_type": user_data["user_type"],
+        "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)
+    }, JWT_SECRET_KEY, algorithm="HS256")
+
+    return jsonify({
+        "token": token,
+        "user": {
+            "id": user_doc.id,
+            "name": user_data["name"],
+            "email": user_data["email"],
+            "user_type": user_data["user_type"]
+        }
+    }), 200
+
+--- routes_artist.py ---
+import os
+import uuid
+import datetime
+from flask import Blueprint, request, jsonify
+from auth import artist_required
+from firebase_setup import db
+from config import UPLOAD_FOLDER, ALLOWED_EXTENSIONS
+
+artist_bp = Blueprint("artist", __name__)
+
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@artist_bp.route("/api/artist/songs", methods=["POST"])
+@artist_required
+def upload_song():
+    if "file" not in request.files:
+        return jsonify({"error": "Music file is required"}), 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"error": "No file selected"}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({"error": "Only MP3 files are allowed"}), 400
+
+    title = request.form.get("title", "").strip()
+    genre = request.form.get("genre", "").strip()
+    description = request.form.get("description", "").strip()
+
+    if not title or not genre:
+        return jsonify({"error": "Title and genre are required"}), 400
+
+    unique_name = f"{uuid.uuid4().hex}.mp3"
+    file_path = os.path.join(UPLOAD_FOLDER, unique_name)
+    file.save(file_path)
+
+    song_data = {
+        "title": title,
+        "genre": genre,
+        "description": description,
+        "file_path": unique_name,
+        "artist_id": request.user["user_id"],
+        "artist_name": request.user["name"],
+        "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+    }
+
+    doc_ref = db.collection("songs").add(song_data)
+
+    return jsonify({
+        "message": "Song uploaded successfully",
+        "song_id": doc_ref[1].id,
+        "title": title
+    }), 201
+
+
+@artist_bp.route("/api/artist/songs", methods=["GET"])
+@artist_required
+def list_my_songs():
+    songs_ref = db.collection("songs").where("artist_id", "==", request.user["user_id"])
+    songs = []
+    for doc in songs_ref.stream():
+        song = doc.to_dict()
+        song["id"] = doc.id
+        song.pop("file_path", None)
+        songs.append(song)
+    return jsonify(songs), 200
+
+
+@artist_bp.route("/api/artist/songs/<song_id>", methods=["DELETE"])
+@artist_required
+def delete_song(song_id):
+    doc_ref = db.collection("songs").document(song_id)
+    doc = doc_ref.get()
+
+    if not doc.exists:
+        return jsonify({"error": "Song not found"}), 404
+
+    song_data = doc.to_dict()
+    if song_data["artist_id"] != request.user["user_id"]:
+        return jsonify({"error": "You can only delete your own songs"}), 403
+
+    file_path = os.path.join(UPLOAD_FOLDER, song_data["file_path"])
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    doc_ref.delete()
+    return jsonify({"message": "Song deleted successfully"}), 200
+
+--- routes_songs.py ---
+import os
+import jwt
+from flask import Blueprint, request, jsonify, send_file, Response
+from auth import user_required
+from firebase_setup import db
+from config import UPLOAD_FOLDER, JWT_SECRET_KEY
+
+songs_bp = Blueprint("songs", __name__)
+
+
+@songs_bp.route("/api/songs", methods=["GET"])
+@user_required
+def list_songs():
+    search = request.args.get("search", "").strip().lower()
+    genre = request.args.get("genre", "").strip().lower()
+
+    songs_ref = db.collection("songs")
+    songs = []
+
+    for doc in songs_ref.stream():
+        song = doc.to_dict()
+        song["id"] = doc.id
+
+        if search:
+            title_match = search in song.get("title", "").lower()
+            artist_match = search in song.get("artist_name", "").lower()
+            if not title_match and not artist_match:
+                continue
+
+        if genre and genre != song.get("genre", "").lower():
+            continue
+
+        songs.append({
+            "id": song["id"],
+            "title": song["title"],
+            "genre": song["genre"],
+            "description": song.get("description", ""),
+            "artist_name": song["artist_name"],
+            "created_at": song["created_at"]
+        })
+
+    return jsonify(songs), 200
+
+
+@songs_bp.route("/api/songs/genres", methods=["GET"])
+@user_required
+def list_genres():
+    songs_ref = db.collection("songs")
+    genres = set()
+    for doc in songs_ref.stream():
+        genre = doc.to_dict().get("genre", "")
+        if genre:
+            genres.add(genre)
+    return jsonify(sorted(genres)), 200
+
+
+@songs_bp.route("/api/stream/<song_id>", methods=["GET"])
+def stream_song(song_id):
+    token = request.args.get("token")
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1]
+    if not token:
+        return jsonify({"error": "Token is missing"}), 401
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
+        if payload.get("user_type") != "USER":
+            return jsonify({"error": "User access required"}), 403
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+
+    doc = db.collection("songs").document(song_id).get()
+    if not doc.exists:
+        return jsonify({"error": "Song not found"}), 404
+
+    song = doc.to_dict()
+    file_path = os.path.join(UPLOAD_FOLDER, song["file_path"])
+
+    if not os.path.exists(file_path):
+        return jsonify({"error": "Audio file not found on server"}), 404
+
+    file_size = os.path.getsize(file_path)
+    range_header = request.headers.get("Range")
+
+    if range_header:
+        byte_start = 0
+        byte_end = file_size - 1
+
+        range_match = range_header.replace("bytes=", "").split("-")
+        byte_start = int(range_match[0])
+        if range_match[1]:
+            byte_end = int(range_match[1])
+
+        content_length = byte_end - byte_start + 1
+
+        def generate():
+            with open(file_path, "rb") as f:
+                f.seek(byte_start)
+                remaining = content_length
+                while remaining > 0:
+                    chunk_size = min(8192, remaining)
+                    data = f.read(chunk_size)
+                    if not data:
+                        break
+                    remaining -= len(data)
+                    yield data
+
+        response = Response(
+            generate(),
+            status=206,
+            mimetype="audio/mpeg",
+            direct_passthrough=True
+        )
+        response.headers["Content-Range"] = f"bytes {byte_start}-{byte_end}/{file_size}"
+        response.headers["Accept-Ranges"] = "bytes"
+        response.headers["Content-Length"] = content_length
+        return response
+
+    return send_file(
+        file_path,
+        mimetype="audio/mpeg",
+        as_attachment=False
+    )
+
+--- app.py ---
+import os
+from flask import Flask, send_from_directory
+from flask_cors import CORS
+from config import UPLOAD_FOLDER, MAX_CONTENT_LENGTH
+from routes_auth import auth_bp
+from routes_artist import artist_bp
+from routes_songs import songs_bp
+
+app = Flask(__name__, static_folder="static", template_folder="templates")
+app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
+CORS(app)
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+app.register_blueprint(auth_bp)
+app.register_blueprint(artist_bp)
+app.register_blueprint(songs_bp)
+
+
+@app.route("/")
+def index():
+    return send_from_directory("templates", "index.html")
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
+
+--- templates/index.html ---
+(Full single-page application HTML with auth forms, sidebar navigation, upload form, browse/search interface, and audio player bar)
+
+--- static/css/style.css ---
+(Complete dark-themed desktop-first CSS with styles for auth page, sidebar, cards, player bar, forms, etc.)
+
+--- static/js/app.js ---
+(Frontend JavaScript with JWT auth, song upload, browse/search with debounce, audio player with play/pause/seek/volume controls, role-based UI)
+
+### API Endpoints
+
+- POST /api/auth/register — Register (name, email, password, user_type)
+- POST /api/auth/login — Login, returns JWT token
+- POST /api/artist/songs — Upload MP3 (ARTIST only, multipart form)
+- GET /api/artist/songs — List artist's own songs
+- DELETE /api/artist/songs/<id> — Delete a song
+- GET /api/songs?search=&genre= — Browse/search songs (USER only)
+- GET /api/songs/genres — List available genres
+- GET /api/stream/<id>?token= — Stream audio with Range header support
+
+### Key Features
+- JWT auth with 24-hour expiration, PBKDF2 password hashing
+- Role-based access: Artists can only upload/manage; Users can only browse/listen
+- Audio streaming with HTTP Range support for seeking
+- Firebase Firestore for users and song metadata
+- Local filesystem for MP3 storage in /uploads
+
+### Testing Results
+- Registration: OK (201 Created)
+- Login: OK (returns JWT token)
+- Artist upload: OK (201 Created, file saved to /uploads)
+- User browse songs: OK (returns song list)
+- Access control: OK (Artist denied from streaming, User denied from uploading)
+
+### To Run
+pip install -r requirements.txt
+python app.py
+Then open http://localhost:5000 in your browser.

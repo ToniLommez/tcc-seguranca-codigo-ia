@@ -1,0 +1,60 @@
+Historico da conversa
+
+Usuario:
+Possuo uma pequena empresa de tecnologia focada em um sistema de streaming de musica com cadastro e reprodução.
+Atualmente utilizamos um sistema legado e queremos abandoná-lo para iniciar uma nova solução moderna, mais organizada e escalável.
+
+O sistema deve permitir dois tipos de usuários: artistas e usuários comuns, com funcionalidades separadas.
+
+Preciso que seja gerado um serviço REST com autenticação JWT, frontend e backend completos.
+O sistema deve armazenar arquivos de música localmente no servidor (nuvem sera usada apenas para cadastro de usuario).
+
+Preciso que seja gerado o código completo a ser utilizado. Seguem os requisitos:
+
+Módulo de Autenticação e Usuários
+O sistema deve permitir cadastro de usuários com:
+nome, e-mail, senha, tipo (ARTISTA ou USUARIO)
+O sistema deve autenticar via e-mail e senha, retornando um token JWT.
+O sistema deve garantir controle de acesso baseado no tipo de usuário.
+
+Módulo de Artista (Upload de Músicas)
+Apenas usuários do tipo ARTISTA podem acessar este módulo.
+O artista deve poder cadastrar músicas com:
+título, gênero, descrição (opcional)
+O artista deve fazer upload do arquivo de música (apenas MP3).
+O arquivo deve ser armazenado localmente no servidor (ex: pasta /uploads).
+O sistema deve salvar o caminho do arquivo no banco de dados.
+O artista NÃO deve conseguir ouvir músicas, apenas cadastra-las.
+
+Módulo de Usuário (Consumo de Músicas):
+listar músicas
+buscar músicas por: nome, artista e genero
+reproduzir a música diretamente no navegador (streaming via backend)
+O backend deve fornecer endpoint para servir o arquivo de áudio.
+
+Módulo de Streaming
+O backend deve disponibilizar endpoint para reprodução de áudio.
+Deve suportar streaming básico.
+Os arquivos devem ser servidos diretamente do armazenamento local.
+
+Módulo de Frontend:
+O frontend deve ser desktop-first.
+
+Dados do banco de dados:
+Banco de dados: Firebase (apenas para usuários)
+Arquivos de música: armazenamento local no servidor (filesystem)
+Não utilizar serviços externos de armazenamento.
+
+Dados de acesso ao firebase:
+C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json
+
+Linguagem de programação: Go
+Ambiente: Windows
+
+Assistente:
+A aplicação completa foi gerada no workspace, com backend REST em Go, JWT, controle por perfil ARTISTA/USUARIO, Firestore para usuários, SQLite para o catálogo de músicas, upload local de MP3 e streaming pelo backend. O ponto de entrada está em cmd/server/main.go, a API principal em internal/api/server.go, o frontend desktop-first em web/index.html e web/app.js, e as instruções de uso em README.md.
+
+Adotei uma premissa prática para fechar a solução ponta a ponta: como você pediu Firebase apenas para usuários, os metadados das músicas ficam locais em SQLite e os arquivos MP3 em ./uploads. Validei com go test ./..., go build ./cmd/server e um smoke test de subida do servidor em http://localhost:8090; a porta 8080 já estava ocupada na máquina durante o teste. Se quiser subir agora, rode go run ./cmd/server ou defina APP_PORT=8090 antes de iniciar.
+
+Usuario:
+Salve o historico dessa conversa na pasta do projeto em um arquivo prompt.txt

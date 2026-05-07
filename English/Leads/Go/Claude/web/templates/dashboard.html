@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — LeadManager</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <h2>LeadManager</h2>
+            <span>Tech Lead Generation</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/dashboard">📊 Dashboard</a>
+            <a href="/leads">👥 Leads</a>
+        </nav>
+        <div class="sidebar-footer" id="sidebar-user"></div>
+    </aside>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>Dashboard</h1>
+            <span id="dashboard-date" style="color:var(--gray-500);font-size:14px;"></span>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card new">
+                <div class="stat-label">New Leads</div>
+                <div class="stat-value" id="stat-new">—</div>
+            </div>
+            <div class="stat-card contacted">
+                <div class="stat-label">Contacted</div>
+                <div class="stat-value" id="stat-contacted">—</div>
+            </div>
+            <div class="stat-card qualified">
+                <div class="stat-label">Qualified</div>
+                <div class="stat-value" id="stat-qualified">—</div>
+            </div>
+            <div class="stat-card lost">
+                <div class="stat-label">Lost</div>
+                <div class="stat-value" id="stat-lost">—</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-container">
+                <h3>Captures Over Time (Last 6 Months)</h3>
+                <div id="monthly-chart" class="bar-chart"></div>
+            </div>
+            <div class="chart-container">
+                <h3>Leads by Source</h3>
+                <div id="source-chart" class="donut-chart">
+                    <canvas id="donut-canvas" width="160" height="160"></canvas>
+                    <div class="donut-legend" id="donut-legend"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                <h3 style="font-size:16px;color:var(--gray-700);">Recent Leads</h3>
+                <a href="/leads" class="btn btn-outline btn-sm">View All</a>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Company</th>
+                        <th>Source</th>
+                        <th>Status</th>
+                        <th>Captured</th>
+                    </tr>
+                </thead>
+                <tbody id="recent-leads"></tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/utils.js"></script>
+<script>
+if (!requireAuth()) throw new Error('not auth');
+populateSidebar();
+
+document.getElementById('dashboard-date').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+const SOURCE_COLORS = ['#2563eb','#16a34a','#d97706','#dc2626','#0891b2','#7c3aed','#db2777'];
+
+async function loadDashboard() {
+    try {
+        const stats = await leads.stats();
+        document.getElementById('stat-new').textContent = stats.by_status.new || 0;
+        document.getElementById('stat-contacted').textContent = stats.by_status.contacted || 0;
+        document.getElementById('stat-qualified').textContent = stats.by_status.qualified || 0;
+        document.getElementById('stat-lost').textContent = stats.by_status.lost || 0;
+
+        renderMonthlyChart(stats.monthly_captures || {});
+        renderSourceChart(stats.by_source || {});
+    } catch (e) {
+        showToast('Failed to load stats: ' + e.message, 'error');
+    }
+
+    try {
+        const res = await leads.list({ page: 1, page_size: 5, sort_by: 'created_at', sort_order: 'desc' });
+        renderRecentLeads(res.data || []);
+    } catch (e) {
+        showToast('Failed to load recent leads', 'error');
+    }
+}
+
+function renderMonthlyChart(monthly) {
+    const now = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        const label = d.toLocaleDateString('en-US', { month: 'short' });
+        months.push({ key, label, value: monthly[key] || 0 });
+    }
+
+    const max = Math.max(...months.map(m => m.value), 1);
+    const container = document.getElementById('monthly-chart');
+    container.innerHTML = months.map(m => `
+        <div class="bar-item">
+            <div class="bar-value">${m.value}</div>
+            <div class="bar" style="height:${Math.max((m.value/max)*160, 4)}px"></div>
+            <div class="bar-label">${m.label}</div>
+        </div>
+    `).join('');
+}
+
+function renderSourceChart(bySource) {
+    const entries = Object.entries(bySource).filter(([,v]) => v > 0);
+    const total = entries.reduce((s, [,v]) => s + v, 0);
+    if (total === 0) {
+        document.getElementById('source-chart').innerHTML = '<p style="color:var(--gray-400);text-align:center;">No data yet</p>';
+        return;
+    }
+
+    const canvas = document.getElementById('donut-canvas');
+    const ctx = canvas.getContext('2d');
+    let startAngle = -Math.PI / 2;
+    const cx = 80, cy = 80, r = 60, inner = 35;
+
+    entries.forEach(([key, value], i) => {
+        const slice = (value / total) * 2 * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, startAngle, startAngle + slice);
+        ctx.closePath();
+        ctx.fillStyle = SOURCE_COLORS[i % SOURCE_COLORS.length];
+        ctx.fill();
+        startAngle += slice;
+    });
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, inner, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+
+    ctx.fillStyle = '#374151';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(total, cx, cy);
+
+    const legend = document.getElementById('donut-legend');
+    legend.innerHTML = entries.map(([key, value], i) => `
+        <div class="legend-item">
+            <div class="legend-dot" style="background:${SOURCE_COLORS[i % SOURCE_COLORS.length]}"></div>
+            <span>${key || 'unknown'} (${value})</span>
+        </div>
+    `).join('');
+}
+
+function renderRecentLeads(data) {
+    const tbody = document.getElementById('recent-leads');
+    if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state" style="padding:40px;text-align:center;color:var(--gray-400);">No leads yet. <a href="/leads">Create your first lead →</a></td></tr>';
+        return;
+    }
+    tbody.innerHTML = data.map(l => `
+        <tr onclick="window.location='/leads/${l.id}'" style="cursor:pointer">
+            <td><strong>${l.full_name}</strong><br><span style="color:var(--gray-400);font-size:12px">${l.email}</span></td>
+            <td>${l.company || '—'}</td>
+            <td>${l.source || '—'}</td>
+            <td>${statusBadge(l.status)}</td>
+            <td>${formatDate(l.capture_date)}</td>
+        </tr>
+    `).join('');
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

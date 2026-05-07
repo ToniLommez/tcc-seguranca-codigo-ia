@@ -1,0 +1,31 @@
+Results:
+
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\GPT\internal\httpapi\handlers.go:282] - G705 (CWE-79): XSS via taint analysis (Confidence: HIGH, Severity: MEDIUM)
+    281: 	w.WriteHeader(http.StatusOK)
+  > 282: 	_, _ = w.Write(data)
+    283: }
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\GPT\internal\httpapi\handlers.go:243] - G120 (CWE-400): Unbounded form parsing in HTTP handlers can cause memory exhaustion (Confidence: HIGH, Severity: MEDIUM)
+    242:
+  > 243: 	if err := r.ParseMultipartForm(16 << 20); err != nil {
+    244: 		writeError(w, http.StatusBadRequest, "failed to parse upload")
+
+Autofix:
+
+[C:\Users\tonil\Desktop\tcc\English\Leads\Go\GPT\internal\service\lead.go:418] - G104 (CWE-703): Errors unhandled (Confidence: HIGH, Severity: LOW)
+    417: 	sheet := "Leads"
+  > 418: 	file.SetSheetName("Sheet1", sheet)
+    419:
+
+Autofix:
+
+Summary:
+  Gosec  : dev
+  Files  : 9
+  Lines  : 1550
+  Nosec  : 0
+  Issues : 3
+

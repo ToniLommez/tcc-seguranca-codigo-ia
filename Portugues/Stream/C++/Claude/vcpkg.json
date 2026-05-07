@@ -1,0 +1,11 @@
+{
+  "name": "music-streaming-server",
+  "version": "1.0.0",
+  "dependencies": [
+    "openssl",
+    "curl",
+    "sqlite3",
+    "nlohmann-json",
+    "cpp-httplib"
+  ]
+}

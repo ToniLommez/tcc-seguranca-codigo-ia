@@ -1,0 +1,9 @@
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\Claude\src\leads\leads_routes.cpp:286:24: style: Variable 'lead' can be declared as reference to const [constVariableReference]
+            for (auto& lead : leads) rows.push_back(leadToCsvRow(lead));
+                       ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\Claude\src\leads\leads_routes.cpp:286:43: style: Consider using std::transform algorithm instead of a raw loop. [useStlAlgorithm]
+            for (auto& lead : leads) rows.push_back(leadToCsvRow(lead));
+                                          ^
+C:\Users\tonil\Desktop\tcc\Portugues\Leads\C++\Claude\src\main.cpp:44:39: style: Parameter 'req' can be declared as reference to const [constParameterReference]
+    void before_handle(crow::request& req, crow::response& res, context&) {
+                                      ^

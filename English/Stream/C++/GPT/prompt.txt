@@ -1,0 +1,155 @@
+User:
+I have a small technology company focused on a music streaming system with registration and playback.
+
+We currently use a legacy system and want to abandon it to start a new modern, more organized, and scalable solution.
+
+The system must allow two types of users: artists and regular users, with separate functionalities.
+
+I need a complete REST service with JWT authentication, frontend and backend.
+
+The system must store music files locally on the server (the cloud will only be used for user registration).
+
+I need the complete code to be generated. The requirements are as follows:
+
+Authentication and Users Module
+
+The system must allow user registration with: name, email, password, type (ARTIST or USER).
+
+The system must authenticate via email and password, returning a JWT token.
+
+The system must ensure access control based on user type.
+
+Artist Module (Music Upload)
+
+Only users of type ARTIST can access this module.
+
+The artist must be able to register songs with: title, genre, description (optional).
+
+The artist must upload the music file (MP3 only).
+
+The file must be stored locally on the server (e.g., /uploads folder).
+
+The system must save the file path in the database.
+
+The artist MUST NOT be able to listen to music, only register it.
+
+User Module (Music Consumption)
+
+List songs.
+
+Search songs by: name, artist, and genre.
+
+Play the music directly in the browser (streaming via backend).
+
+The backend must provide an endpoint to serve the audio file.
+
+Streaming Module
+
+The backend must provide an endpoint for audio playback.
+
+Must support basic streaming.
+
+Files must be served directly from local storage.
+
+Frontend Module
+
+The frontend must be desktop-first.
+
+Database
+
+Database: Firebase (only for users).
+
+Music files: local storage on the server (filesystem).
+
+Do not use external storage services.
+
+Firebase access data:
+
+C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json
+
+Programming language: C++
+
+Environment: Windows
+
+Assistant:
+I inspected the workspace, confirmed the available Windows C++ toolchain, and generated a complete greenfield solution for the requested music streaming platform.
+
+The delivered project includes:
+- A C++20 REST backend using `cpp-httplib`
+- JWT authentication with role-based access for `ARTIST` and `USER`
+- Firebase-backed user storage using the provided service account JSON
+- Local MP3 upload and storage on the server filesystem
+- Local JSON persistence for song metadata
+- Artist-only upload endpoints
+- User-only list, search, and playback endpoints
+- MP3 streaming with basic HTTP range support
+- A desktop-first frontend served by the backend
+
+Main generated files:
+- `CMakeLists.txt`
+- `appsettings.json`
+- `appsettings.example.json`
+- `README.md`
+- `include/`
+- `src/`
+- `frontend/`
+- `storage/uploads/`
+
+Key backend files:
+- `src/main.cpp`
+- `src/firebase_client.cpp`
+- `src/jwt_service.cpp`
+- `src/password_service.cpp`
+- `src/song_repository.cpp`
+
+Key frontend files:
+- `frontend/index.html`
+- `frontend/styles.css`
+- `frontend/app.js`
+
+What was implemented:
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/me`
+- `POST /api/artist/songs`
+- `GET /api/artist/songs`
+- `GET /api/songs?title=&artist=&genre=`
+- `GET /api/songs/{id}/stream`
+
+Business rules enforced:
+- Only `ARTIST` users can upload songs
+- Only `USER` users can list and stream songs
+- Artists cannot consume music through the streaming endpoint
+- Only `.mp3` files are accepted
+- Music files remain on local server storage
+
+Verification performed:
+- `cmake -S . -B build -G Ninja`
+- `cmake --build build`
+- Health-check smoke test on `/api/health`
+
+Environment note:
+Port `8080` is already in use on this machine by another application (`soundstream.exe`), so this project should use a different port such as `8081`, either in `appsettings.json` or via the `STREAM_APP_PORT` environment variable.
+
+Assistant:
+The complete C++ project is generated in `CMakeLists.txt`, with the main backend in `src/main.cpp`, Firebase/JWT/password services under `src/firebase_client.cpp`, `src/jwt_service.cpp`, and `src/password_service.cpp`. The desktop-first frontend is in `frontend/index.html`, `frontend/styles.css`, and `frontend/app.js`. I also added a runnable config in `appsettings.json` and setup notes in `README.md`.
+
+What’s implemented:
+- JWT auth with `ARTIST` and `USER` access control
+- Firebase-backed user storage using your service account JSON
+- Artist-only MP3 upload to local server storage in `storage/uploads`
+- Local song metadata persistence in `storage/data/songs.json`
+- User-only song listing, search, and browser playback
+- Backend audio streaming endpoint with basic `Range` support
+- Frontend served directly by the C++ backend
+
+Verification:
+- `cmake -S . -B build -G Ninja` succeeded
+- `cmake --build build` succeeded
+- The server returned `200 OK` on `/api/health` during a smoke test on an alternate port
+
+Note:
+I did not execute real register/login requests against Firebase to avoid writing test users into the live project.
+
+User:
+now, save the chat history in "prompt.txt"

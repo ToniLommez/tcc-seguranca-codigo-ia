@@ -1,0 +1,15 @@
+Results:
+
+
+>> Issue: [B201:flask_debug_true] A Flask app appears to be run with debug=True, which exposes the Werkzeug debugger and allows the execution of arbitrary code.
+   Severity: High   Confidence: Medium
+   CWE: CWE-94 (https://cwe.mitre.org/data/definitions/94.html)
+   Location: C:/Users/tonil/Desktop/tcc/English/Stream/Python/Claude\app.py:26:4
+25	if __name__ == "__main__":
+26	    app.run(debug=True, port=5000)
+
+Summary:
+  Bandit   : 1.9.4
+  Lines    : 321
+  Issues   : 1
+

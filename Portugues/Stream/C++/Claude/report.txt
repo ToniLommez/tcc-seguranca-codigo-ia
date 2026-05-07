@@ -1,0 +1,24 @@
+Results:
+
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\C++\Claude\backend\firebase\firebase_service.cpp:37] - constVariableReference (CWE-398): Variable 'h' can be declared as reference to const (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\C++\Claude\backend\firebase\firebase_service.cpp:60] - constVariableReference (CWE-398): Variable 'h' can be declared as reference to const (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\C++\Claude\backend\handlers\music_handler.cpp:158] - constVariableReference (CWE-398): Variable 's' can be declared as reference to const (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\C++\Claude\backend\handlers\music_handler.cpp:177] - constVariableReference (CWE-398): Variable 's' can be declared as reference to const (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\C++\Claude\backend\handlers\music_handler.cpp:192] - constVariableReference (CWE-398): Variable 's' can be declared as reference to const (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\C++\Claude\backend\handlers\music_handler.cpp:158] - useStlAlgorithm (CWE-398): Consider using std::transform algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\C++\Claude\backend\handlers\music_handler.cpp:177] - useStlAlgorithm (CWE-398): Consider using std::transform algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+[C:\Users\tonil\Desktop\tcc\Portugues\Stream\C++\Claude\backend\handlers\music_handler.cpp:192] - useStlAlgorithm (CWE-398): Consider using std::transform algorithm instead of a raw loop. (Confidence: HIGH, Severity: STYLE)
+
+Summary:
+  Cppcheck : 2.18.0
+  Files    : 7
+  Issues   : 8
+

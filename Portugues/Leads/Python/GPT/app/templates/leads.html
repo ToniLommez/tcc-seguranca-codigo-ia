@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="page-header">
+    <div>
+        <p class="eyebrow">Gestão de leads</p>
+        <h2>Base completa com filtros, paginação e exportação</h2>
+        <p>Use texto livre, período, status e origem para localizar qualquer lead com rapidez.</p>
+    </div>
+    <div class="header-actions">
+        <button class="button ghost" id="importButton" type="button">Importar CSV/Excel</button>
+        <button class="button ghost" id="exportCsvButton" type="button">Exportar CSV</button>
+        <button class="button secondary" id="exportXlsxButton" type="button">Exportar Excel</button>
+        <a class="button primary" href="/leads/new">Novo lead</a>
+    </div>
+</section>
+
+<section class="panel">
+    <form id="filtersForm" class="filters-grid">
+        <label>
+            Busca livre
+            <input type="text" name="search" placeholder="Nome, e-mail, empresa ou telefone">
+        </label>
+        <label>
+            Status
+            <select name="status">
+                <option value="">Todos</option>
+                <option value="novo">Novo</option>
+                <option value="em_contato">Em contato</option>
+                <option value="qualificado">Qualificado</option>
+                <option value="perdido">Perdido</option>
+            </select>
+        </label>
+        <label>
+            Fonte
+            <input type="text" name="source" placeholder="Site, evento, indicação...">
+        </label>
+        <label>
+            De
+            <input type="date" name="captured_from">
+        </label>
+        <label>
+            Até
+            <input type="date" name="captured_to">
+        </label>
+        <label>
+            Ordenar por
+            <select name="sort_by">
+                <option value="captured_at">Data de captura</option>
+                <option value="full_name">Nome</option>
+                <option value="company">Empresa</option>
+                <option value="status">Status</option>
+                <option value="source">Fonte</option>
+                <option value="updated_at">Atualização</option>
+            </select>
+        </label>
+        <label>
+            Direção
+            <select name="sort_direction">
+                <option value="desc">Descendente</option>
+                <option value="asc">Ascendente</option>
+            </select>
+        </label>
+        <label>
+            Por página
+            <select name="page_size">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+        </label>
+        <div class="filters-actions">
+            <button class="button primary" type="submit">Aplicar filtros</button>
+            <button class="button ghost" id="clearFiltersButton" type="button">Limpar</button>
+        </div>
+    </form>
+    <input id="importInput" type="file" accept=".csv,.xlsx,.xls" hidden>
+</section>
+
+<section class="panel">
+    <div class="table-header">
+        <div>
+            <p class="eyebrow">Resultados</p>
+            <h3 id="tableSummary">0 leads encontrados</h3>
+        </div>
+    </div>
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Empresa</th>
+                    <th>Fonte</th>
+                    <th>Status</th>
+                    <th>Capturado em</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="leadsTableBody"></tbody>
+        </table>
+    </div>
+    <div class="pagination">
+        <button class="button ghost" id="prevPageButton" type="button">Página anterior</button>
+        <span id="paginationLabel">Página 1</span>
+        <button class="button ghost" id="nextPageButton" type="button">Próxima página</button>
+    </div>
+</section>
+{% endblock %}

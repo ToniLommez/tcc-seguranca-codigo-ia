@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalhe do Lead — Lead Manager</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">📊</div>
+      <div>
+        <div class="logo-text">Lead Manager</div>
+        <div class="logo-sub">claude-sonnet-4-6</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Menu</div>
+      <a href="/dashboard" class="nav-item">
+        <span class="nav-icon">🏠</span> Dashboard
+      </a>
+      <a href="/leads" class="nav-item active">
+        <span class="nav-icon">👥</span> Leads
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="sidebar-user-avatar">U</div>
+        <div>
+          <div class="user-name"  id="sidebar-user-name">Carregando...</div>
+          <div class="user-email" id="sidebar-user-email"></div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="Auth.logout()">
+        <span>⏻</span> Sair
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-content">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <a href="/leads" class="btn btn-outline btn-sm">← Voltar</a>
+        <span class="topbar-title" id="topbar-name">Carregando...</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm" onclick="openEditModal()">✏ Editar</button>
+        <button class="btn btn-danger btn-sm"  onclick="confirmDelete()">🗑 Excluir</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Loading -->
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Carregando lead...</p>
+      </div>
+
+      <!-- Content -->
+      <div id="detail-content" class="hidden">
+        <div class="detail-grid">
+
+          <!-- Left: lead info -->
+          <div>
+            <!-- Header card -->
+            <div class="card" style="margin-bottom:20px">
+              <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+                <div style="width:56px;height:56px;border-radius:50%;background:var(--primary);
+                     color:#fff;display:flex;align-items:center;justify-content:center;
+                     font-size:1.4rem;font-weight:800" id="detail-avatar">?</div>
+                <div>
+                  <h2 id="detail-name" style="font-size:1.3rem;font-weight:800"></h2>
+                  <div id="detail-position-company" style="color:var(--text-secondary);font-size:.875rem"></div>
+                  <div style="margin-top:6px;display:flex;gap:8px">
+                    <span id="detail-status-badge"></span>
+                    <span id="detail-source-badge"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+                <div class="detail-field">
+                  <div class="label">E-mail</div>
+                  <div class="value" id="detail-email">—</div>
+                </div>
+                <div class="detail-field">
+                  <div class="label">Telefone</div>
+                  <div class="value" id="detail-phone">—</div>
+                </div>
+                <div class="detail-field">
+                  <div class="label">Data de Captura</div>
+                  <div class="value" id="detail-capture-date">—</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Notes card -->
+            <div class="card" id="notes-card" style="margin-bottom:20px">
+              <div style="font-size:.875rem;font-weight:700;margin-bottom:10px">📝 Observações</div>
+              <p id="detail-notes" style="color:var(--text-secondary);font-size:.875rem;line-height:1.6">—</p>
+            </div>
+
+            <!-- Add interaction -->
+            <div class="card">
+              <div style="font-size:.875rem;font-weight:700;margin-bottom:14px">➕ Registrar Interação</div>
+              <div class="form-row" style="align-items:flex-end">
+                <div class="form-group" style="margin-bottom:0">
+                  <label class="form-label">Tipo</label>
+                  <select id="interaction-type" class="form-control">
+                    <option value="call">Ligação</option>
+                    <option value="email">E-mail</option>
+                    <option value="meeting">Reunião</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="note">Anotação</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0;flex:2">
+                  <label class="form-label">Descrição</label>
+                  <input id="interaction-desc" type="text" class="form-control"
+                         placeholder="Descreva a interação...">
+                </div>
+                <button class="btn btn-primary" style="white-space:nowrap;flex-shrink:0"
+                        onclick="addInteraction()">Registrar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: timeline -->
+          <div>
+            <div class="card">
+              <div style="font-size:.875rem;font-weight:700;margin-bottom:16px">🕐 Histórico de Interações</div>
+              <div id="timeline-container">
+                <div class="empty-state" style="padding:30px 10px">
+                  <div class="empty-icon">💬</div>
+                  <p style="font-size:.8rem">Nenhuma interação registrada ainda.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Metadata card -->
+            <div class="card" style="margin-top:16px">
+              <div style="font-size:.875rem;font-weight:700;margin-bottom:12px">ℹ Informações</div>
+              <div class="detail-field">
+                <div class="label">ID do Lead</div>
+                <div class="value text-sm text-muted" id="detail-id">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="label">Criado em</div>
+                <div class="value" id="detail-created">—</div>
+              </div>
+              <div class="detail-field" style="margin-bottom:0">
+                <div class="label">Última atualização</div>
+                <div class="value" id="detail-updated">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay hidden" id="edit-modal-overlay" onclick="closeEditOnBackdrop(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Editar Lead</h2>
+      <button class="btn-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="edit-alert" class="alert alert-danger hidden"></div>
+      <form id="edit-form" onsubmit="saveEdit(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nome completo *</label>
+            <input id="e-full-name" type="text" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail *</label>
+            <input id="e-email" type="email" class="form-control" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Telefone</label>
+            <input id="e-phone" type="text" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Empresa</label>
+            <input id="e-company" type="text" class="form-control">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Cargo</label>
+            <input id="e-position" type="text" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Data de captura</label>
+            <input id="e-capture-date" type="date" class="form-control">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Fonte</label>
+            <select id="e-source" class="form-control">
+              <option value="site">Site</option>
+              <option value="indication">Indicação</option>
+              <option value="event">Evento</option>
+              <option value="social_media">Redes Sociais</option>
+              <option value="other">Outro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select id="e-status" class="form-control">
+              <option value="new">Novo</option>
+              <option value="in_contact">Em Contato</option>
+              <option value="qualified">Qualificado</option>
+              <option value="lost">Perdido</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Observações</label>
+          <textarea id="e-notes" class="form-control" rows="3"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="document.getElementById('edit-form').requestSubmit()">
+        Salvar alterações
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm -->
+<div class="modal-overlay hidden" id="delete-modal-overlay">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h2>Confirmar exclusão</h2>
+      <button class="btn-close" onclick="document.getElementById('delete-modal-overlay').classList.add('hidden')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Tem certeza que deseja excluir este lead? Esta ação não pode ser desfeita.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('delete-modal-overlay').classList.add('hidden')">
+        Cancelar
+      </button>
+      <button class="btn btn-danger" onclick="deleteLead()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/lead-detail.js"></script>
+</body>
+</html>
