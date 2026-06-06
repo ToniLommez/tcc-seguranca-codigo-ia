@@ -9,23 +9,10 @@ Date:        2026-05-06
 
 SUMMARY
 -------
-Files analyzed:
-  - cmd/server/main.go
-  - internal/config/config.go
-  - internal/models/models.go
-  - internal/service/auth.go
-  - internal/middleware/auth.go
-  - internal/service/lead.go
-  - internal/httpapi/handlers.go
-  - internal/app/app.go
-  - internal/repository/firestore.go
+Total vulnerabilities found: 4
 
-Total vulnerabilities found: 12
-
-  Critical: 2
-  High:     4
-  Medium:   4
-  Low:      2
+  Critical: 1
+  High:     3
 
 ================================================================================
 DETAILED FINDINGS
@@ -34,8 +21,7 @@ DETAILED FINDINGS
 ------------------------------------------------------------------------------
 VULNERABILITY 1
 ------------------------------------------------------------------------------
-CWE ID:       CWE-1078 (Inappropriate Source Code Style or Formatting) /
-              CWE-798 (Use of Hard-coded Credentials)
+CWE ID:       CWE-798 (Use of Hard-coded Credentials)
 Name:         Hardcoded Default JWT Secret
 Severity:     CRITICAL
 File:         internal/config/config.go
@@ -44,37 +30,14 @@ Description:  The JWT secret has a hardcoded default value of
               "change-me-in-production". If the JWT_SECRET environment variable
               is not set, the application will use this trivially guessable
               secret to sign and verify all authentication tokens.
-Exploitation: An attacker who knows or guesses this default secret (which is
-              visible in the source code) can forge valid JWT tokens for any
-              user, gaining full unauthorized access to any account. The
-              attacker simply crafts a JWT with an arbitrary userID claim,
-              signs it with "change-me-in-production", and sends it in the
-              Authorization header.
+Exploitation: An attacker who knows or guesses this default secret can forge
+              valid JWT tokens for any user, gaining full unauthorized access to
+              any account. The attacker crafts a JWT with an arbitrary userID
+              claim, signs it with "change-me-in-production", and sends it in
+              the Authorization header.
 
 ------------------------------------------------------------------------------
 VULNERABILITY 2
-------------------------------------------------------------------------------
-CWE ID:       CWE-798 (Use of Hard-coded Credentials)
-Name:         Hardcoded Firebase Credentials File Path
-Severity:     CRITICAL
-File:         internal/config/config.go
-Line:         29
-Description:  The Firebase service account credentials file path is hardcoded
-              as a default value pointing to a specific local path:
-              "C:/Users/tonil/Desktop/tcc/lead-manager-54595-firebase-adminsdk-
-              fbsvc-375221693a.json". This reveals the Firebase project ID and
-              the existence of a service account key file on disk. If this
-              code is committed to a repository, it exposes infrastructure
-              details.
-Exploitation: An attacker with access to the source code learns the exact
-              Firebase project ID ("lead-manager-54595") and the service
-              account key filename. Combined with any file disclosure
-              vulnerability or access to the development machine, the
-              attacker could obtain the full service account key and gain
-              administrative access to the Firebase project and all its data.
-
-------------------------------------------------------------------------------
-VULNERABILITY 3
 ------------------------------------------------------------------------------
 CWE ID:       CWE-942 (Permissive Cross-domain Policy)
 Name:         Overly Permissive CORS Configuration
@@ -86,225 +49,49 @@ Lines:        37-43
 Description:  The default CORS allowed origins is set to ["*"] (wildcard),
               which permits any website to make cross-origin requests to
               the API. Combined with AllowCredentials: true in app.go line 41,
-              this is a dangerous combination. Although browsers block
-              "Access-Control-Allow-Origin: *" when credentials are included,
-              some CORS libraries may echo back the requesting Origin header
-              instead, effectively allowing any origin with credentials.
+              this is a dangerous combination. Some CORS libraries echo back the
+              requesting Origin header when AllowedOrigins is ["*"], effectively
+              allowing any origin with credentials.
 Exploitation: A malicious website can make authenticated cross-origin requests
               to the API on behalf of a logged-in user. If the CORS library
-              reflects the Origin header when AllowedOrigins is ["*"], the
-              attacker's site can read responses containing sensitive lead
-              data, user information, and JWT tokens.
+              reflects the Origin header, the attacker's site can read responses
+              containing sensitive lead data, user information, and JWT tokens.
 
 ------------------------------------------------------------------------------
-VULNERABILITY 4
+VULNERABILITY 3
 ------------------------------------------------------------------------------
-CWE ID:       CWE-22 (Improper Limitation of a Pathname to a Restricted
-              Directory - Path Traversal)
+CWE ID:       CWE-22 (Improper Limitation of a Pathname to a Restricted Directory)
 Name:         Path Traversal in Static File Serving
 Severity:     HIGH
 File:         internal/app/app.go
 Lines:        86-89
 Description:  The fileAwareHandler function constructs a file path by joining
-              the staticDir with the cleaned URL path:
-              target := filepath.Join(staticDir, filepath.Clean(
-                strings.TrimPrefix(r.URL.Path, "/")))
-              While filepath.Clean provides some protection, the combination
-              of TrimPrefix and Join on user-controlled URL paths may allow
-              traversal on certain platforms. On Windows, paths like
-              "/..\..\etc\passwd" or URL-encoded variants may bypass the
-              cleaning. Additionally, os.Stat is called and if the file
-              exists, http.ServeFile serves it directly.
+              the staticDir with the cleaned URL path. While filepath.Clean
+              removes ".." sequences, the combination of TrimPrefix and Join on
+              user-controlled URL paths may allow traversal on certain platforms.
+              On Windows, paths like "/..\..\etc\passwd" or URL-encoded variants
+              (%5c) may bypass the cleaning.
 Exploitation: An attacker may craft URL paths with encoded traversal sequences
-              (e.g., %5c for backslash on Windows) to read arbitrary files
-              from the server's filesystem outside the intended static
-              directory. This could expose configuration files, source code,
-              or the Firebase credentials JSON file.
+              to read arbitrary files from the server's filesystem outside the
+              intended static directory. This could expose configuration files,
+              source code, or the Firebase credentials JSON file.
 
 ------------------------------------------------------------------------------
-VULNERABILITY 5
-------------------------------------------------------------------------------
-CWE ID:       CWE-200 (Exposure of Sensitive Information to an
-              Unauthorized Actor)
-Name:         Internal Error Messages Exposed to Clients
-Severity:     MEDIUM
-File:         internal/httpapi/handlers.go
-Lines:        118-119, 133-134, 166, 203-204
-Description:  Multiple handler functions return internal error messages
-              directly to clients via err.Error(). For example, the dashboard
-              handler (line 119) and listLeads handler (line 134) pass
-              internal error details in HTTP 500 responses. These messages may
-              contain Firestore connection details, internal paths, or stack
-              information.
-Exploitation: An attacker can trigger error conditions to extract internal
-              implementation details such as database structure, collection
-              names, connection strings, and internal file paths. This
-              information facilitates further targeted attacks.
-
-------------------------------------------------------------------------------
-VULNERABILITY 6
+VULNERABILITY 4
 ------------------------------------------------------------------------------
 CWE ID:       CWE-770 (Allocation of Resources Without Limits or Throttling)
 Name:         No Rate Limiting on Authentication Endpoints
 Severity:     HIGH
 File:         internal/httpapi/handlers.go
 Lines:        53, 77
-              internal/app/app.go
-Lines:        51-52
 Description:  The /api/auth/login and /api/auth/register endpoints have no
               rate limiting. The application uses chi middleware for logging
               and recovery but does not implement any throttling mechanism.
 Exploitation: An attacker can perform unlimited brute-force attempts against
               the login endpoint to guess user passwords. The minimum password
-              length is only 6 characters (auth.go line 44), making brute
-              force feasible. Additionally, unlimited registration requests
-              can be used for denial-of-service by filling the Firestore
-              database with spam accounts.
-
-------------------------------------------------------------------------------
-VULNERABILITY 7
-------------------------------------------------------------------------------
-CWE ID:       CWE-352 (Cross-Site Request Forgery)
-Name:         No CSRF Protection for State-Changing Operations
-Severity:     HIGH
-File:         internal/app/app.go
-Lines:        37-43
-              internal/httpapi/handlers.go (all POST/PUT/DELETE handlers)
-Description:  The application relies solely on JWT Bearer tokens for
-              authentication but has no CSRF protection mechanism. If tokens
-              are stored in cookies (a common frontend pattern) or if the
-              CORS misconfiguration allows cross-origin requests with
-              credentials, state-changing operations (creating, updating,
-              deleting leads) are vulnerable to CSRF attacks.
-Exploitation: If a user is authenticated and their token is accessible via
-              cookies, a malicious site can submit forged POST/PUT/DELETE
-              requests to create, modify, or delete leads without the user's
-              knowledge or consent.
-
-------------------------------------------------------------------------------
-VULNERABILITY 8
-------------------------------------------------------------------------------
-CWE ID:       CWE-400 (Uncontrolled Resource Consumption)
-Name:         Unbounded Request Body Size on JSON Endpoints
-Severity:     MEDIUM
-File:         internal/httpapi/handlers.go
-Lines:        60, 83, 219, 340
-Description:  The JSON decoding in register, login, addInteraction, and
-              decodeLeadPayload functions uses json.NewDecoder(r.Body).Decode()
-              without limiting the size of the request body. While the import
-              endpoint limits multipart forms to 16 MB (line 243), JSON
-              endpoints have no such limit.
-Exploitation: An attacker can send extremely large JSON payloads to any of
-              these endpoints, consuming server memory and potentially causing
-              denial of service. Sending a multi-gigabyte JSON body would
-              force the server to attempt to parse it entirely in memory.
-
-------------------------------------------------------------------------------
-VULNERABILITY 9
-------------------------------------------------------------------------------
-CWE ID:       CWE-326 (Inadequate Encryption Strength)
-Name:         Weak Minimum Password Policy
-Severity:     MEDIUM
-File:         internal/service/auth.go
-Line:         44
-Description:  The minimum password length requirement is only 6 characters.
-              There are no requirements for password complexity (uppercase,
-              lowercase, digits, special characters). This allows extremely
-              weak passwords.
-Exploitation: Users may choose easily guessable passwords such as "123456"
-              or "abcdef". Combined with the lack of rate limiting (see
-              Vulnerability 6), an attacker can efficiently brute-force
-              short, low-complexity passwords.
-
-------------------------------------------------------------------------------
-VULNERABILITY 10
-------------------------------------------------------------------------------
-CWE ID:       CWE-918 (Server-Side Request Forgery) /
-              CWE-400 (Uncontrolled Resource Consumption)
-Name:         Unrestricted File Import Without Size or Content Validation
-Severity:     MEDIUM
-File:         internal/service/lead.go
-Lines:        188-233
-              internal/httpapi/handlers.go
-Line:         243
-Description:  The import endpoint accepts CSV and XLSX files up to 16 MB but
-              does not validate the number of rows. A crafted file could
-              contain hundreds of thousands of rows, causing the application
-              to attempt to create that many Firestore documents in a single
-              request, exhausting Firestore write quotas and server resources.
-              Additionally, there is no validation of file content type beyond
-              the extension check (line 189), meaning a malicious file with
-              a .csv extension could contain arbitrary content.
-Exploitation: An attacker can upload a CSV file with millions of rows to
-              overwhelm the server and Firestore, causing denial of service
-              and potentially incurring significant cloud billing costs for
-              Firestore writes.
-
-------------------------------------------------------------------------------
-VULNERABILITY 11
-------------------------------------------------------------------------------
-CWE ID:       CWE-208 (Observable Timing Discrepancy)
-Name:         User Enumeration via Registration Error
-Severity:     LOW
-File:         internal/service/auth.go
-Lines:        48-50
-Description:  The Register function returns a distinct error message "email
-              is already registered" when a user attempts to register with an
-              existing email address. This allows an attacker to determine
-              whether a specific email address has an account in the system.
-Exploitation: An attacker can systematically probe the /api/auth/register
-              endpoint with different email addresses to build a list of
-              valid user accounts. This information can be used for targeted
-              phishing, credential stuffing, or social engineering attacks.
-
-------------------------------------------------------------------------------
-VULNERABILITY 12
-------------------------------------------------------------------------------
-CWE ID:       CWE-319 (Cleartext Transmission of Sensitive Information)
-Name:         No TLS/HTTPS Enforcement
-Severity:     LOW
-File:         cmd/server/main.go
-Line:         20
-              internal/app/app.go
-Lines:        67-71
-Description:  The HTTP server is configured to listen on plain HTTP without
-              TLS. There is no HTTPS redirect or HSTS header configuration.
-              The log message at main.go line 19 explicitly shows
-              "http://localhost". JWT tokens and user credentials (passwords
-              during login/registration) are transmitted in cleartext.
-Exploitation: An attacker on the same network can perform a man-in-the-middle
-              attack to intercept JWT tokens, login credentials, and all lead
-              data in transit. This is especially critical for any deployment
-              beyond localhost.
-
-================================================================================
-ADDITIONAL OBSERVATIONS (NOT VULNERABILITIES)
-================================================================================
-
-1. POSITIVE: Password hashing uses bcrypt with DefaultCost (auth.go line 54),
-   which is a secure choice for password storage.
-
-2. POSITIVE: The PasswordHash field is tagged with json:"-" (models.go
-   line 16), preventing it from being serialized in JSON responses.
-
-3. POSITIVE: JWT validation properly checks token validity and expiration
-   (auth.go lines 102-116).
-
-4. POSITIVE: Lead data is scoped per user via Firestore subcollections
-   (firestore.go line 188-189), providing basic data isolation between users.
-
-5. POSITIVE: The middleware extracts the bearer token correctly and validates
-   it before setting the user context (middleware/auth.go).
-
-6. NOTE: The Firestore repository uses document IDs from user input (leadID)
-   in Doc() calls (e.g., firestore.go line 100). While Firestore handles
-   this safely (no injection risk), the lack of format validation means
-   malformed IDs could cause unexpected Firestore errors.
-
-7. NOTE: The sortBy parameter in lead filtering (lead.go line 316) accepts
-   arbitrary user input but only matches against a whitelist of field names
-   in the switch statement, falling through to a safe default. This is
-   acceptable but could be more explicitly validated.
+              length is only 6 characters, making brute force feasible.
+              Unlimited registration requests enable denial-of-service via spam
+              accounts.
 
 ================================================================================
 END OF REPORT

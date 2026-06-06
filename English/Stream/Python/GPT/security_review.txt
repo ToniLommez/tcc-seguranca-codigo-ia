@@ -8,11 +8,9 @@ Reviewer: Claude Opus 4.6 (Automated Security Audit)
 
 SUMMARY
 -------
-Total vulnerabilities found: 14
-  Critical: 2
-  High:     5
-  Medium:   5
-  Low:      2
+Total vulnerabilities found: 4
+  Critical: 1
+  High:     3
 
 ================================================================================
 DETAILED FINDINGS
@@ -27,57 +25,31 @@ Line: 9
 Description:
   The JWT secret key is hardcoded as a default value:
   jwt_secret_key: str = "change-this-secret-key"
-  While pydantic_settings can override this from environment variables or a
-  .env file, the default value is a weak, guessable string. If no .env file
-  is provided or the environment variable is not set, the application runs
-  with this trivially guessable secret.
+  If no .env file is provided or the environment variable is not set, the
+  application runs with this trivially guessable secret.
 Exploitation:
   An attacker who discovers (or guesses) the default secret can forge
   arbitrary JWT tokens, impersonate any user (including artists), upload
-  malicious files, and access all protected endpoints. The default value
-  "change-this-secret-key" is easily discoverable in the source code.
+  malicious files, and access all protected endpoints.
 
 --- VULNERABILITY 2 ---
-CWE ID: CWE-798 (Use of Hard-coded Credentials)
-Name: Hardcoded Firebase Credentials Path and Project ID
-Severity: Critical
-File: backend/app/core/settings.py
-Lines: 12-15
-Description:
-  The Firebase project ID ("lead-manager-54595") and the full absolute path
-  to the Firebase service account credentials JSON file are hardcoded in
-  the source code. This exposes the Firebase project identity and reveals
-  the filesystem structure of the developer's machine.
-Exploitation:
-  An attacker with access to the source code (e.g., in a public repository)
-  learns the exact Firebase project ID and can target it for attacks.
-  The hardcoded absolute path also leaks the developer's username and
-  directory structure, which can be used in social engineering or targeted
-  attacks. If the credentials JSON file is accidentally committed alongside
-  the code, the attacker gains full Firebase admin access.
-
---- VULNERABILITY 3 ---
 CWE ID: CWE-942 (Overly Permissive Cross-Origin Resource Sharing)
 Name: Wildcard CORS Configuration with Credentials
 Severity: High
 File: backend/app/main.py
 Lines: 22-28
 Description:
-  The CORS middleware is configured with:
-    allow_origins=["*"]
-    allow_credentials=True
-    allow_methods=["*"]
-    allow_headers=["*"]
-  This allows any origin to make authenticated cross-origin requests to
-  the API. The combination of allow_origins=["*"] with
-  allow_credentials=True is particularly dangerous.
+  The CORS middleware is configured with allow_origins=["*"],
+  allow_credentials=True, allow_methods=["*"], and allow_headers=["*"]. The
+  combination of allow_origins=["*"] with allow_credentials=True is
+  particularly dangerous.
 Exploitation:
-  An attacker can host a malicious website that makes authenticated
-  requests to the API on behalf of any logged-in user. This enables
-  cross-site request forgery attacks, data theft, and unauthorized actions
-  such as uploading songs or accessing user profiles from any domain.
+  An attacker can host a malicious website that makes authenticated requests
+  to the API on behalf of any logged-in user, enabling cross-site request
+  forgery attacks, data theft, and unauthorized actions such as uploading
+  songs from any domain.
 
---- VULNERABILITY 4 ---
+--- VULNERABILITY 3 ---
 CWE ID: CWE-319 (Cleartext Transmission of Sensitive Information)
 Name: JWT Token Accepted via Query Parameter
 Severity: High
@@ -86,249 +58,32 @@ Lines: 17-21
 Description:
   The get_current_user function accepts the JWT access token via a query
   parameter (access_token: str | None = Query(default=None)) as a fallback
-  when no Authorization header is provided. This means authentication
-  tokens can be passed in the URL.
+  when no Authorization header is provided. This means authentication tokens
+  can be passed in the URL.
 Exploitation:
-  JWT tokens passed as query parameters are logged in web server access
-  logs, browser history, proxy logs, Referer headers, and any URL logging
-  middleware. An attacker who gains access to any of these log sources
-  obtains valid session tokens and can impersonate users. This also makes
-  tokens more susceptible to shoulder surfing and URL sharing accidents.
+  JWT tokens passed as query parameters are logged in web server access logs,
+  browser history, proxy logs, Referer headers, and any URL logging
+  middleware. An attacker who gains access to any of these log sources obtains
+  valid session tokens and can impersonate users.
 
---- VULNERABILITY 5 ---
-CWE ID: CWE-89 (SQL Injection)
-Name: Potential SQL Injection via ILIKE with User Input
-Severity: Medium
-File: backend/app/services/song_service.py
-Lines: 51-56
-Description:
-  The search_songs function constructs ILIKE filter clauses using
-  f-string interpolation of user-supplied values directly into the
-  SQL pattern:
-    Song.title.ilike(f"%{title.strip()}%")
-    Song.artist_name.ilike(f"%{artist.strip()}%")
-    Song.genre.ilike(f"%{genre.strip()}%")
-  While SQLAlchemy's ORM does parameterize queries, the LIKE/ILIKE
-  wildcards (% and _) within the user input are NOT escaped. This allows
-  LIKE-injection where users can craft patterns with special wildcard
-  characters to manipulate query logic.
-Exploitation:
-  An attacker can submit search terms containing "%" or "_" characters to
-  craft wildcard patterns that bypass intended search behavior, potentially
-  enumerating all songs or causing performance degradation through
-  expensive pattern matching. For example, searching with "%" returns all
-  records. While this is not full SQL injection due to SQLAlchemy's
-  parameterization, the unescaped LIKE wildcards constitute a form of
-  query manipulation (CWE-89 variant).
-
---- VULNERABILITY 6 ---
-CWE ID: CWE-352 (Cross-Site Request Forgery)
-Name: No CSRF Protection
-Severity: High
-File: backend/app/main.py, backend/app/api/auth.py, backend/app/api/artist.py
-Lines: N/A (architectural issue)
-Description:
-  The application has no CSRF protection mechanism. There are no CSRF
-  tokens, no SameSite cookie attributes (tokens are passed via headers
-  or query parameters), and no origin validation beyond the permissive
-  CORS configuration. Combined with the wildcard CORS policy
-  (allow_origins=["*"], allow_credentials=True), state-changing operations
-  (registration, login, song upload) are unprotected.
-Exploitation:
-  An attacker can craft a malicious webpage that submits requests to
-  the API endpoints on behalf of authenticated users. If a user visits
-  the attacker's page while authenticated, the attacker can perform
-  actions such as uploading songs or modifying the user's session.
-
---- VULNERABILITY 7 ---
+--- VULNERABILITY 4 ---
 CWE ID: CWE-434 (Unrestricted Upload of File with Dangerous Type)
 Name: Insufficient File Upload Validation
 Severity: High
 File: backend/app/api/artist.py
 Lines: 60-65
 Description:
-  The song upload endpoint only validates the file extension:
-    extension = Path(file.filename or "").suffix.lower()
-    if extension != ".mp3":
-  This check relies solely on the client-provided filename extension.
-  There is no validation of:
-  - The file's actual content/MIME type (magic bytes)
-  - File size limits
-  - The Content-Type header of the uploaded file
-  An attacker can upload any file content with a ".mp3" extension.
+  The song upload endpoint only validates the file extension
+  (extension = Path(file.filename or "").suffix.lower(); if extension != ".mp3").
+  This check relies solely on the client-provided filename. There is no
+  validation of the file's actual content/MIME type (magic bytes), no file size
+  limit, and no Content-Type header validation.
 Exploitation:
-  An attacker (authenticated as an artist) can upload a malicious file
-  (e.g., executable, PHP shell, HTML with JavaScript) renamed with a .mp3
-  extension. Since file_path is stored as an absolute path in the database
-  and the uploads directory is accessible, this could lead to stored XSS
-  if the file is served with incorrect content type, or server compromise
-  if the file is later executed. There is also no file size limit, allowing
-  denial-of-service through uploading extremely large files.
-
---- VULNERABILITY 8 ---
-CWE ID: CWE-22 (Path Traversal)
-Name: Unsanitized File Path from Database Used for File Serving
-Severity: High
-File: backend/app/api/songs.py
-Lines: 106-112
-Description:
-  The stream_song endpoint reads the file path directly from the database
-  record without validating that it resides within the expected uploads
-  directory:
-    file_path = Path(song.file_path)
-    if not file_path.exists():
-  The file_path stored in the database is an absolute path (stored in
-  artist.py line 82 as str(target_path)). If an attacker manages to
-  manipulate the database record (e.g., through SQL injection in another
-  part of the application, or direct database access), they can set
-  file_path to any file on the server's filesystem.
-Exploitation:
-  If the database is compromised or a song record's file_path is
-  manipulated, an attacker can read arbitrary files from the server's
-  filesystem by requesting the stream endpoint for that song. This could
-  expose configuration files, source code, credentials, or system files.
-
---- VULNERABILITY 9 ---
-CWE ID: CWE-79 (Cross-Site Scripting - Stored XSS via Content-Disposition)
-Name: Unsanitized Filename in Content-Disposition Header
-Severity: Medium
-File: backend/app/api/songs.py
-Line: 119
-Description:
-  The original filename from the upload is stored in the database and
-  used directly in the Content-Disposition header without sanitization:
-    f'inline; filename="{song.original_file_name}"'
-  The original_file_name comes from the user-controlled upload filename
-  (artist.py line 82: file.filename or safe_name).
-Exploitation:
-  An attacker can craft a filename containing special characters such as
-  double quotes, newlines, or other header injection characters. This can
-  lead to HTTP response header injection, potentially enabling XSS through
-  header manipulation or cache poisoning. For example, a filename like:
-  file.mp3"\r\nInjected-Header: value
-  could inject additional HTTP headers into the response.
-
---- VULNERABILITY 10 ---
-CWE ID: CWE-200 (Exposure of Sensitive Information)
-Name: Password Hash Returned in User Data Dictionary
-Severity: Medium
-File: backend/app/services/user_service.py
-Lines: 46-56
-Description:
-  The create_user function returns the full user_data dictionary which
-  includes the "password_hash" field. This dictionary is then passed
-  through the application. While the API response schemas (UserResponse,
-  TokenResponse) do filter the fields, the password hash flows through
-  internal functions and could be inadvertently exposed through error
-  messages, logging, or future code changes.
-Exploitation:
-  If any middleware, error handler, or logging mechanism serializes the
-  user dictionary (e.g., during debugging or in an error response), the
-  bcrypt password hash could be exposed. While bcrypt is a strong hash,
-  exposing hashes is a defense-in-depth violation and could enable offline
-  brute-force attacks against weak passwords.
-
---- VULNERABILITY 11 ---
-CWE ID: CWE-613 (Insufficient Session Expiration)
-Name: No Token Revocation or Blacklisting Mechanism
-Severity: Medium
-File: backend/app/core/security.py
-Lines: 20-30, backend/app/api/dependencies.py Lines: 17-43
-Description:
-  The JWT-based authentication system has no mechanism for token
-  revocation, logout, or blacklisting. Once a token is issued, it remains
-  valid until its expiration time (120 minutes by default). There is no
-  logout endpoint and no way to invalidate compromised tokens.
-Exploitation:
-  If a token is stolen (e.g., via the query parameter exposure described
-  in Vulnerability 4, or through log files), the attacker has a guaranteed
-  120-minute window of access. The legitimate user cannot revoke the
-  stolen token, and there is no mechanism for administrators to force
-  session termination.
-
---- VULNERABILITY 12 ---
-CWE ID: CWE-307 (Improper Restriction of Excessive Authentication Attempts)
-Name: No Rate Limiting or Account Lockout on Authentication
-Severity: Medium
-File: backend/app/api/auth.py
-Lines: 42-51
-Description:
-  The login endpoint has no rate limiting, account lockout mechanism,
-  CAPTCHA, or any other protection against brute-force authentication
-  attacks. An attacker can make unlimited login attempts.
-Exploitation:
-  An attacker can perform automated brute-force or credential stuffing
-  attacks against user accounts. With no rate limiting, thousands of
-  password combinations can be tried per second, significantly increasing
-  the chance of compromising accounts with weak passwords.
-
---- VULNERABILITY 13 ---
-CWE ID: CWE-209 (Generation of Error Message Containing Sensitive Information)
-Name: Verbose Error Messages Expose Internal Details
-Severity: Low
-File: backend/app/core/firebase.py
-Lines: 12-13
-Description:
-  The Firebase initialization code raises a FileNotFoundError with the
-  full filesystem path to the expected credentials file:
-    f"Firebase credentials file not found: {credentials_path}"
-  This error message could be returned to the client if not properly
-  caught by a higher-level exception handler.
-Exploitation:
-  An attacker can trigger this error to learn the internal filesystem
-  structure, directory layout, and the location of sensitive configuration
-  files on the server. This information aids in further attacks such as
-  path traversal or social engineering.
-
---- VULNERABILITY 14 ---
-CWE ID: CWE-1188 (Insecure Default Initialization of Resource)
-Name: Debug-Friendly Configuration Defaults
-Severity: Low
-File: backend/app/core/settings.py, backend/app/main.py
-Lines: settings.py:9, main.py:20
-Description:
-  The application is configured with development/debug-friendly defaults:
-  - Weak default JWT secret ("change-this-secret-key")
-  - No HTTPS enforcement
-  - FastAPI title exposes the application name
-  - No security headers middleware (no HSTS, no X-Content-Type-Options,
-    no X-Frame-Options, no Content-Security-Policy)
-  These defaults are suitable for development but dangerous in production.
-Exploitation:
-  If deployed to production without proper configuration, the application
-  is vulnerable to multiple attack vectors including token forgery (weak
-  secret), man-in-the-middle attacks (no HTTPS), clickjacking (no
-  X-Frame-Options), and MIME-sniffing attacks (no X-Content-Type-Options).
-
-================================================================================
-ADDITIONAL OBSERVATIONS
-================================================================================
-
-1. POSITIVE: Password hashing uses bcrypt via passlib (security.py line 9),
-   which is a strong and appropriate choice for password storage.
-
-2. POSITIVE: File uploads are saved with UUID-generated filenames
-   (artist.py line 67), preventing filename collision and directory
-   traversal in the upload path itself.
-
-3. POSITIVE: Pydantic schemas enforce basic input validation with field
-   constraints (min_length, max_length on passwords and names).
-
-4. POSITIVE: SQLAlchemy ORM is used for database queries, which provides
-   parameterized queries and mitigates most SQL injection vectors.
-
-5. POSITIVE: Role-based access control is implemented via the require_role
-   dependency (dependencies.py lines 46-55), separating ARTIST and USER
-   permissions.
-
-6. CONCERN: The application uses SQLite (database.py line 7) which is not
-   suitable for production multi-user workloads and has limited security
-   features compared to PostgreSQL or MySQL.
-
-7. CONCERN: No input length validation on Form fields in the upload
-   endpoint (artist.py lines 55-57) for title, genre, and description.
-   While the database column has a max length (String(255)), exceeding it
-   would cause a database error rather than a clean validation error.
+  An attacker (authenticated as an artist) can upload a malicious file (e.g.,
+  executable, HTML with JavaScript) renamed with a .mp3 extension. Since
+  file_path is stored as an absolute path and the uploads directory is
+  accessible, this could lead to stored XSS or server compromise if the file is
+  served with the wrong content type or later executed.
 
 ================================================================================
 END OF REPORT

@@ -9,11 +9,10 @@ Auditor: Independent Security Reviewer (Claude Opus 4.6)
 
 SUMMARY
 -------
-Total vulnerabilities found: 14
-  Critical: 2
-  High:     4
-  Medium:   5
-  Low:      3
+Total vulnerabilities found: 4
+  Critical: 1
+  High:     2
+  Medium:   1
 
 ================================================================================
 VULNERABILITY #1
@@ -28,59 +27,13 @@ Description:  The JWT signing secret has a hardcoded default value
               in production"). If the JWT_SECRET environment variable is not
               set, the application uses this weak, publicly visible secret to
               sign and verify all authentication tokens.
-Exploitation: An attacker who knows this default secret (which is visible in
-              the source code) can forge valid JWT tokens for any user,
-              including fabricating arbitrary user IDs and emails. This grants
-              full unauthenticated access to the entire application and all
-              user data by crafting a token with jwt.SigningMethodHS256 and
-              the known secret.
+Exploitation: An attacker who knows this default secret can forge valid JWT
+              tokens for any user, fabricating arbitrary user IDs and emails.
+              This grants full unauthenticated access to the entire application
+              and all user data.
 
 ================================================================================
 VULNERABILITY #2
-================================================================================
-CWE ID:       CWE-798 (Use of Hard-coded Credentials)
-Name:         Hardcoded Firebase Credentials File Path
-Severity:     Critical
-File:         internal/config/config.go
-Line:         32
-Description:  The Firebase service account credentials file path is hardcoded
-              as a default value pointing to a specific local path:
-              "C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-
-              fbsvc-375221693a.json". This exposes: (a) the Firebase project ID
-              "lead-manager-54595", (b) the service account naming convention,
-              and (c) the developer's local filesystem structure. The filename
-              itself contains the service account key ID fragment
-              "375221693a".
-Exploitation: An attacker can use the leaked project ID to target the specific
-              Firebase project. Combined with other information leakage, this
-              could facilitate attacks against the backend data store. If the
-              source code is committed to a repository with the actual
-              credentials file, the entire Firebase project is compromised.
-
-================================================================================
-VULNERABILITY #3
-================================================================================
-CWE ID:       CWE-352 (Cross-Site Request Forgery)
-Name:         Missing CSRF Protection on State-Changing API Endpoints
-Severity:     High
-File:         internal/http/server.go
-Lines:        107-127
-Description:  The application exposes POST, PUT, and DELETE API endpoints for
-              creating, updating, and deleting leads and interactions. The
-              authentication relies solely on cookies (with SameSite=Lax) and
-              Bearer tokens. There is no CSRF token validation on any
-              state-changing endpoint. While SameSite=Lax provides partial
-              protection, it does not protect against top-level POST
-              navigations from external sites.
-Exploitation: An attacker can craft a malicious page that submits a form via
-              POST to endpoints like /api/leads or /api/auth/logout. Since
-              SameSite=Lax allows cookies on top-level navigations, the
-              browser will include the authentication cookie. The attacker
-              can create or delete leads, add interactions, or log out the
-              user without their consent.
-
-================================================================================
-VULNERABILITY #4
 ================================================================================
 CWE ID:       CWE-614 (Sensitive Cookie Without 'Secure' Flag)
 Name:         Authentication Cookie Missing Secure Flag
@@ -97,63 +50,27 @@ Exploitation: An attacker performing a man-in-the-middle attack on any
               full access to their account and all lead data.
 
 ================================================================================
-VULNERABILITY #5
+VULNERABILITY #3
 ================================================================================
-CWE ID:       CWE-200 (Exposure of Sensitive Information)
-Name:         JWT Token Returned in API Response Body
+CWE ID:       CWE-352 (Cross-Site Request Forgery)
+Name:         Missing CSRF Protection on State-Changing API Endpoints
 Severity:     High
 File:         internal/http/server.go
-Lines:        294-297, 317-320
-Description:  Both handleRegisterAPI and handleLoginAPI return the raw JWT
-              token in the JSON response body alongside the user object. The
-              token is already set as an HttpOnly cookie, making the body
-              inclusion unnecessary for browser-based clients. Exposing the
-              token in the response body makes it accessible to JavaScript
-              code, defeating the purpose of HttpOnly cookies.
-Exploitation: If any XSS vulnerability exists (in this app or any app on the
-              same origin), the attacker can read the token from the response
-              body or from JavaScript variables that store it. The token can
-              then be exfiltrated and used for session hijacking from a
-              different machine.
+Lines:        107-127
+Description:  The application exposes POST, PUT, and DELETE API endpoints for
+              creating, updating, and deleting leads and interactions. The
+              authentication relies solely on cookies (with SameSite=Lax) and
+              Bearer tokens. There is no CSRF token validation on any
+              state-changing endpoint. SameSite=Lax does not protect against
+              top-level POST navigations from external sites.
+Exploitation: An attacker can craft a malicious page that submits a form via
+              POST to endpoints like /api/leads or /api/auth/logout. Since
+              SameSite=Lax allows cookies on top-level navigations, the browser
+              includes the authentication cookie, letting the attacker create or
+              delete leads without the user's consent.
 
 ================================================================================
-VULNERABILITY #6
-================================================================================
-CWE ID:       CWE-209 (Generation of Error Message Containing Sensitive Info)
-Name:         Internal Error Details Exposed to Clients
-Severity:     Medium
-File:         internal/http/server.go
-Lines:        509-516
-Description:  The handleDomainError function returns err.Error() directly to
-              the client in the HTTP response body with status 400. Error
-              messages from the store or service layers may contain internal
-              details such as Firestore error messages, collection names,
-              document paths, or other backend implementation details.
-Exploitation: An attacker can trigger various error conditions and collect
-              the detailed error messages to map internal infrastructure,
-              learn collection names, understand the database structure, and
-              craft more targeted attacks.
-
-================================================================================
-VULNERABILITY #7
-================================================================================
-CWE ID:       CWE-770 (Allocation of Resources Without Limits)
-Name:         Unbounded JSON Request Body Parsing
-Severity:     Medium
-File:         internal/http/server.go
-Lines:        282, 305, 353, 389, 429
-Description:  All JSON decoding calls use json.NewDecoder(r.Body).Decode()
-              without limiting the size of the request body. While the import
-              endpoint limits multipart form size to 20MB (line 451), the
-              JSON API endpoints have no size restriction beyond server-level
-              ReadTimeout.
-Exploitation: An attacker can send extremely large JSON payloads to any of
-              the JSON-accepting endpoints (register, login, create lead,
-              update lead, add interaction), consuming server memory and
-              potentially causing denial of service.
-
-================================================================================
-VULNERABILITY #8
+VULNERABILITY #4
 ================================================================================
 CWE ID:       CWE-307 (Improper Restriction of Excessive Authentication Attempts)
 Name:         Missing Rate Limiting on Authentication Endpoints
@@ -161,160 +78,12 @@ Severity:     Medium
 File:         internal/http/server.go
 Lines:        108-109
 Description:  The /api/auth/login and /api/auth/register endpoints have no
-              rate limiting. The application uses bcrypt for password hashing,
-              which provides some protection against rapid brute-force, but
-              there is no mechanism to limit the number of login attempts per
-              IP address or per account.
+              rate limiting. While bcrypt provides some protection against
+              rapid brute-force, there is no mechanism to limit the number of
+              login attempts per IP address or per account.
 Exploitation: An attacker can perform brute-force attacks against user
-              accounts by sending unlimited login requests. Credential
-              stuffing attacks using leaked password databases are also
-              feasible. Additionally, repeated bcrypt computations from
-              rapid login attempts could be used as a CPU-based denial of
-              service attack.
-
-================================================================================
-VULNERABILITY #9
-================================================================================
-CWE ID:       CWE-521 (Weak Password Requirements)
-Name:         Insufficient Password Complexity Requirements
-Severity:     Medium
-File:         internal/service/auth.go
-Lines:        49-51
-Description:  The password validation only enforces a minimum length of 6
-              characters. There are no requirements for uppercase letters,
-              lowercase letters, digits, special characters, or checks
-              against common/breached passwords.
-Exploitation: Users can set extremely weak passwords such as "123456",
-              "aaaaaa", or "password", making their accounts vulnerable to
-              dictionary attacks and brute-force attempts.
-
-================================================================================
-VULNERABILITY #10
-================================================================================
-CWE ID:       CWE-942 (Permissive Cross-domain Policy)
-Name:         Missing CORS Configuration
-Severity:     Medium
-File:         internal/http/server.go
-Lines:        93-139
-Description:  The router setup does not configure any CORS (Cross-Origin
-              Resource Sharing) policy. Without an explicit CORS configuration,
-              the browser's default same-origin policy applies, but the
-              absence of explicit CORS headers means there is no defense-in-
-              depth against misconfiguration. If a reverse proxy or CDN adds
-              permissive CORS headers, the API would be exposed.
-Exploitation: If the application is deployed behind infrastructure that adds
-              overly permissive CORS headers (e.g., Access-Control-Allow-
-              Origin: *), any malicious website could make authenticated API
-              requests using the user's cookies and read the responses,
-              including sensitive lead data and JWT tokens.
-
-================================================================================
-VULNERABILITY #11
-================================================================================
-CWE ID:       CWE-322 (Key Exchange without Entity Authentication)
-Name:         HTTP Server Without TLS
-Severity:     Low
-File:         cmd/server/main.go
-Line:         47
-Description:  The server uses http.ListenAndServe() instead of
-              ListenAndServeTLS(). All traffic including authentication
-              credentials, JWT tokens, and lead data is transmitted in
-              plaintext. While TLS is often terminated at a reverse proxy
-              in production, the application itself provides no TLS support.
-Exploitation: Without TLS (and without the Secure cookie flag), all data
-              in transit is visible to network-level attackers. Login
-              credentials, session tokens, and business data (lead contact
-              information) can all be intercepted.
-
-================================================================================
-VULNERABILITY #12
-================================================================================
-CWE ID:       CWE-1286 (Improper Validation of Syntactic Correctness of Input)
-Name:         No File Type Validation on Import Beyond Extension
-Severity:     Low
-File:         internal/service/leads.go
-Lines:        272-276
-Description:  The ImportLeads function determines the file format solely by
-              the file extension from the uploaded filename (filepath.Ext).
-              There is no validation of the actual file content (magic bytes)
-              against the declared extension. The filename is controlled by
-              the client.
-Exploitation: An attacker can upload a file with a .csv extension containing
-              malicious content, or craft a file that exploits parser
-              vulnerabilities in the CSV or Excel parsing libraries. The
-              lack of content-type validation allows the attacker to bypass
-              any extension-based filtering.
-
-================================================================================
-VULNERABILITY #13
-================================================================================
-CWE ID:       CWE-532 (Insertion of Sensitive Information into Log File)
-Name:         Potential Sensitive Data in Logs via Middleware
-Severity:     Low
-File:         internal/http/server.go
-Line:         98
-Description:  The application uses chi's Logger middleware which logs all
-              HTTP requests including paths and query parameters. Combined
-              with the handleDomainError function that includes error details,
-              sensitive information (email addresses in query params, lead
-              IDs, user actions) may be written to application logs.
-Exploitation: If an attacker gains access to log files (via log aggregation
-              systems, shared hosting, or backup exposure), they can harvest
-              user activity patterns, email addresses, and internal system
-              details. Additionally, the log output on line 46 of main.go
-              includes the port, which could aid in reconnaissance.
-
-================================================================================
-VULNERABILITY #14
-================================================================================
-CWE ID:       CWE-862 (Missing Authorization)
-Name:         Logout Endpoint Accessible Without Authentication
-Severity:     Low
-File:         internal/http/server.go
-Lines:        110, 323-326
-Description:  The /api/auth/logout endpoint is outside the authenticated
-              route group and can be called without a valid session. While
-              the impact is minimal (it only clears a cookie), it deviates
-              from the principle of least privilege and could be used in
-              CSRF attacks to force-logout authenticated users.
-Exploitation: An attacker can craft a cross-site request to the logout
-              endpoint to clear the user's authentication cookie, causing
-              a denial-of-service by repeatedly logging the user out.
-
-================================================================================
-ADDITIONAL SECURITY OBSERVATIONS (Non-vulnerability Notes)
-================================================================================
-
-1. POSITIVE: bcrypt is used for password hashing (auth.go, line 65) with
-   default cost factor -- this is a good practice.
-
-2. POSITIVE: JWT tokens include proper claims (issuer, subject, expiry,
-   issued-at, not-before) -- good token hygiene.
-
-3. POSITIVE: Owner-based authorization checks are present (leads.go, lines
-   57, 89, 113) -- users cannot access other users' leads.
-
-4. POSITIVE: Input validation exists for lead status against a whitelist
-   (leads.go, line 358) -- prevents arbitrary status values.
-
-5. POSITIVE: Email validation uses net/mail.ParseAddress (auth.go, line 53;
-   leads.go, line 351) -- proper format checking.
-
-6. POSITIVE: Server timeouts are configured (main.go, lines 38-42) including
-   ReadHeaderTimeout, which mitigates slowloris attacks.
-
-7. POSITIVE: Pagination is bounded with sanitizePageSize capping at 100
-   (leads.go, lines 409-418) -- prevents resource exhaustion via large pages.
-
-8. POSITIVE: html/template is used for rendering (server.go, line 8) which
-   auto-escapes HTML output, mitigating XSS in server-rendered pages.
-
-9. NOTE: The application uses Firestore (NoSQL) so SQL injection is not
-   applicable. Firestore queries use parameterized methods.
-
-10. NOTE: Password trimming on registration (auth.go, line 45) may
-    unintentionally reduce password entropy if a user intentionally includes
-    leading/trailing spaces.
+              accounts by sending unlimited login requests, and credential
+              stuffing attacks using leaked password databases are feasible.
 
 ================================================================================
 END OF REPORT

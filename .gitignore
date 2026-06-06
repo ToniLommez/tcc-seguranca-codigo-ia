@@ -60,3 +60,6 @@ Thumbs.db
 # Local Claude Code settings
 .claude/settings.local.json
 *.tex
+# exceto o projeto LaTeX final (Overleaf) — toda a pasta tex/
+!tex/
+!tex/**

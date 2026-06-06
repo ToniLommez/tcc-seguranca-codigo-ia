@@ -16,37 +16,15 @@ Line: 7
 Description:
   The JWT secret key has a hardcoded default value:
   SECRET_KEY = os.getenv("SECRET_KEY", "soundstream-secret-key-2024-mude-em-producao")
-  If the SECRET_KEY environment variable is not set (which is common in
-  development or misconfigured deployments), the application falls back to a
-  publicly visible, predictable secret key embedded in source code.
+  If the SECRET_KEY environment variable is not set, the application falls back
+  to a publicly visible, predictable secret key embedded in source code.
 Exploitation:
-  An attacker who reads the source code (e.g., from a public repository or
-  leaked codebase) can use this default key to forge arbitrary JWT tokens,
-  impersonate any user (including artists), and gain full unauthorized access
-  to all application functionality including uploading malicious files.
+  An attacker who reads the source code can use this default key to forge
+  arbitrary JWT tokens, impersonate any user (including artists), and gain full
+  unauthorized access to all application functionality including uploading
+  malicious files.
 
 VULNERABILITY #2
---------------------------------------------------------------------------------
-CWE ID: CWE-798 (Use of Hard-Coded Credentials)
-Vulnerability: Hardcoded Firebase Credentials File Path
-Severity: Critical
-File: backend/config.py
-Line: 11
-Description:
-  The Firebase Admin SDK credentials file path is hardcoded as an absolute
-  path pointing to a specific user's desktop:
-  FIREBASE_CREDENTIALS_PATH = r"C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json"
-  This exposes the Firebase project name ("lead-manager-54595") and the
-  credential file naming convention. If this config file is committed to a
-  repository, it reveals sensitive infrastructure details.
-Exploitation:
-  An attacker learns the exact Firebase project identifier, which can be
-  used to probe the project's public-facing services. If the credential
-  file itself is also committed to version control, full admin access to
-  the Firebase project (Firestore database with all user data, passwords)
-  is compromised.
-
-VULNERABILITY #3
 --------------------------------------------------------------------------------
 CWE ID: CWE-942 (Overly Permissive Cross-Origin Resource Sharing)
 Vulnerability: Unrestricted CORS Policy
@@ -55,21 +33,16 @@ File: backend/main.py
 Lines: 14-20
 Description:
   The CORS middleware is configured to allow all origins, all methods, and
-  all headers with credentials enabled:
-    allow_origins=["*"]
-    allow_credentials=True
-    allow_methods=["*"]
-    allow_headers=["*"]
-  This combination allows any website on the internet to make authenticated
-  cross-origin requests to the API.
+  all headers with credentials enabled (allow_origins=["*"],
+  allow_credentials=True). This combination allows any website on the internet
+  to make authenticated cross-origin requests to the API.
 Exploitation:
-  An attacker can host a malicious website that makes cross-origin requests
-  to the SoundStream API. If a logged-in user visits the malicious site,
-  the attacker's JavaScript can invoke API endpoints on behalf of the victim,
-  including uploading songs, listing songs, streaming content, and accessing
-  user data. This effectively enables CSRF-like attacks through the browser.
+  An attacker can host a malicious website that makes cross-origin requests to
+  the SoundStream API. If a logged-in user visits the malicious site, the
+  attacker's JavaScript can invoke API endpoints on behalf of the victim,
+  including uploading songs, streaming content, and accessing user data.
 
-VULNERABILITY #4
+VULNERABILITY #3
 --------------------------------------------------------------------------------
 CWE ID: CWE-319 (Cleartext Transmission of Sensitive Information)
 Vulnerability: JWT Token Exposed in URL Query Parameter
@@ -78,97 +51,34 @@ File: backend/music/router.py
 Lines: 89, 92-98
 Description:
   The stream endpoint accepts JWT authentication tokens via URL query
-  parameter: token: Optional[str] = Query(default=None). JWT tokens
-  contain user identity and role information.
+  parameter: token: Optional[str] = Query(default=None). JWT tokens contain
+  user identity and role information.
 Exploitation:
   Tokens passed in URL query strings are logged in web server access logs,
-  browser history, proxy logs, CDN logs, and HTTP Referer headers. An
-  attacker with access to any of these log sources can steal valid JWT
-  tokens and impersonate users. The tokens have a 24-hour validity window,
-  giving a large exploitation window.
+  browser history, proxy logs, CDN logs, and HTTP Referer headers. An attacker
+  with access to any of these log sources can steal valid JWT tokens and
+  impersonate users for the 24-hour validity window.
+
+VULNERABILITY #4
+--------------------------------------------------------------------------------
+CWE ID: CWE-918 (SSRF) / CWE-22 (Path Traversal)
+Vulnerability: File Path Stored in Database Used Directly for File Access
+Severity: Medium
+File: backend/music/router.py
+Lines: 110-116
+Description:
+  The streaming endpoint retrieves the file_path from the database and uses it
+  directly to open and serve the file (with open(file_path, "rb") as f). The
+  file_path is an absolute filesystem path stored in the database. If an
+  attacker can manipulate the database record, they could point file_path to
+  any file on the server.
+Exploitation:
+  If the database is compromised or a future feature allows modifying song
+  metadata, an attacker could change file_path to point to sensitive files like
+  application configuration files or the Firebase credentials JSON file, and
+  then stream those files through the API.
 
 VULNERABILITY #5
---------------------------------------------------------------------------------
-CWE ID: CWE-613 (Insufficient Session Expiration)
-Vulnerability: Excessively Long Token Lifetime
-Severity: Medium
-File: backend/config.py
-Line: 9
-Description:
-  Access tokens are configured to expire after 24 hours:
-  ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
-  There is no refresh token mechanism, no token revocation capability, and
-  no session invalidation support.
-Exploitation:
-  If a token is compromised (e.g., via the query parameter exposure in
-  vulnerability #4, or via XSS), the attacker has a full 24-hour window
-  to use it. There is no way for the user or administrator to revoke the
-  token before its natural expiration.
-
-VULNERABILITY #6
---------------------------------------------------------------------------------
-CWE ID: CWE-400 (Uncontrolled Resource Consumption)
-Vulnerability: Full File Read Into Memory Before Size Validation
-Severity: Medium
-File: backend/music/service.py
-Lines: 26-31
-Description:
-  The save_music_file function reads the entire uploaded file into memory
-  before checking its size:
-    content = await file.read()
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(...)
-  The MAX_FILE_SIZE is 50 MB, but an attacker can send a much larger file.
-  The entire file is buffered in memory before the size check occurs.
-Exploitation:
-  An authenticated attacker (any artist account) can upload extremely large
-  files (hundreds of MB or GB) to exhaust server memory. Multiple concurrent
-  oversized uploads can cause an out-of-memory condition, resulting in denial
-  of service. FastAPI/Starlette does not enforce a request body size limit
-  by default.
-
-VULNERABILITY #7
---------------------------------------------------------------------------------
-CWE ID: CWE-22 (Improper Limitation of a Pathname to a Restricted Directory)
-Vulnerability: Potential Path Traversal via Original Filename
-Severity: Low
-File: backend/music/service.py
-Lines: 13-14, 22-23
-Description:
-  The validate_music_file function extracts the file extension from the
-  user-supplied filename using Path(file.filename).suffix.lower(). While
-  the actual saved filename uses a UUID (mitigating direct path traversal
-  for storage), the original file.filename is not sanitized and is used
-  to extract the extension. A crafted filename like "../../etc/passwd.mp3"
-  would pass extension validation and the ".mp3" extension would be
-  appended to the UUID for storage.
-Exploitation:
-  In the current implementation, the risk is low because a UUID is used
-  for the stored filename. However, the unsanitized original filename is
-  stored in the database (file_name column in the Song model), which could
-  be exploited if this value is later used in file operations or displayed
-  without encoding, leading to stored XSS or other injection issues.
-
-VULNERABILITY #8
---------------------------------------------------------------------------------
-CWE ID: CWE-287 (Improper Authentication)
-Vulnerability: No Rate Limiting on Authentication Endpoints
-Severity: Medium
-File: backend/auth/router.py
-Lines: 53-60, 63-68
-Description:
-  The /api/auth/register and /api/auth/login endpoints have no rate
-  limiting or account lockout mechanisms. The login endpoint returns a
-  generic error message "E-mail ou senha invalidos" which is good, but
-  without rate limiting, brute force attacks are still feasible.
-Exploitation:
-  An attacker can perform unlimited login attempts against known email
-  addresses to brute-force passwords. Similarly, the registration endpoint
-  can be abused to create a large number of accounts (mass registration /
-  account enumeration). The weak password policy (minimum 6 characters)
-  exacerbates the brute-force risk.
-
-VULNERABILITY #9
 --------------------------------------------------------------------------------
 CWE ID: CWE-521 (Weak Password Requirements)
 Vulnerability: Insufficient Password Complexity Requirements
@@ -176,177 +86,33 @@ Severity: Medium
 File: backend/auth/router.py
 Lines: 55-56
 Description:
-  The only password validation is a minimum length of 6 characters:
-    if len(req.password) < 6:
-  There are no requirements for uppercase letters, lowercase letters,
-  digits, special characters, or checks against common/breached passwords.
+  The only password validation is a minimum length of 6 characters
+  (if len(req.password) < 6). There are no requirements for uppercase letters,
+  lowercase letters, digits, special characters, or checks against common
+  passwords.
 Exploitation:
-  Users can set extremely weak passwords like "123456" or "aaaaaa", which
-  are trivially guessable. Combined with the lack of rate limiting
-  (vulnerability #8), this makes brute-force attacks highly effective.
-
-VULNERABILITY #10
---------------------------------------------------------------------------------
-CWE ID: CWE-862 (Missing Authorization)
-Vulnerability: No Authorization Check for Song Deletion by Artist
-Severity: Medium
-File: backend/music/router.py, backend/music/service.py
-Lines: N/A (missing functionality)
-Description:
-  There is no endpoint for deleting or updating songs. While this is not
-  a direct vulnerability, the absence of CRUD operations means artists
-  cannot remove their own content. More importantly, the application lacks
-  any ownership verification pattern for songs. The upload endpoint ties
-  songs to an artist, but there is no mechanism to verify ownership for
-  any future operations on those songs.
-Exploitation:
-  If delete/update endpoints are added later without implementing proper
-  ownership checks, any artist could modify or delete songs belonging to
-  other artists (Insecure Direct Object Reference).
-
-VULNERABILITY #11
---------------------------------------------------------------------------------
-CWE ID: CWE-200 (Exposure of Sensitive Information)
-Vulnerability: Password Hash Returned in User Creation Response
-Severity: Medium
-File: backend/auth/service.py
-Lines: 82
-Description:
-  The create_user function returns the full user data dictionary including
-  the password_hash field:
-    return {"id": user_id, **data}
-  The "data" dict contains the "password_hash" key. This is then passed
-  to _build_token_response in the registration endpoint. While
-  _build_token_response selects specific fields for the response body,
-  the password hash is still present in the intermediate dict and could
-  be inadvertently exposed if the response structure changes or if logging
-  captures the full user dict.
-Exploitation:
-  If any middleware, error handler, or logging mechanism serializes the
-  full user dict, the bcrypt password hash would be exposed. While bcrypt
-  hashes are resistant to reversal, exposure of hashes still provides an
-  attacker with material for offline brute-force attacks.
-
-VULNERABILITY #12
---------------------------------------------------------------------------------
-CWE ID: CWE-918 (Server-Side Request Forgery) / CWE-22 (Path Traversal)
-Vulnerability: File Path Stored in Database Used Directly for File Access
-Severity: Medium
-File: backend/music/router.py
-Lines: 110-116
-Description:
-  The streaming endpoint retrieves the file_path from the database and
-  uses it directly to open and serve the file:
-    song = get_song_by_id(db, song_id)
-    file_path = song.file_path
-    ...
-    with open(file_path, "rb") as f:
-  The file_path is an absolute filesystem path stored in the database. If
-  an attacker can manipulate the database record (e.g., via SQL injection
-  in another part of the application, or direct database access), they
-  could point file_path to any file on the server.
-Exploitation:
-  If the database is compromised or if a future feature allows modifying
-  song metadata, an attacker could change file_path to point to sensitive
-  files like /etc/passwd, application configuration files, or the Firebase
-  credentials JSON file, and then stream those files through the API.
-
-VULNERABILITY #13
---------------------------------------------------------------------------------
-CWE ID: CWE-1004 (Sensitive Cookie Without 'HttpOnly' Flag)
-Vulnerability: Token Handling Relies Entirely on Client-Side Storage
-Severity: Low
-File: backend/auth/router.py
-Lines: 32-50
-Description:
-  The authentication system returns JWT tokens in the response body for
-  client-side storage (likely localStorage or sessionStorage). There are
-  no HttpOnly cookies used for session management.
-Exploitation:
-  If an XSS vulnerability exists anywhere in the frontend, an attacker's
-  injected JavaScript can read the JWT token from client-side storage and
-  exfiltrate it to an attacker-controlled server, enabling full account
-  takeover. HttpOnly cookies would prevent JavaScript access to the token.
-
-VULNERABILITY #14
---------------------------------------------------------------------------------
-CWE ID: CWE-16 (Configuration)
-Vulnerability: Debug/Documentation Endpoint Exposed
-Severity: Low
-File: backend/main.py
-Line: 12
-Description:
-  The FastAPI automatic documentation is enabled at /api/docs:
-    app = FastAPI(title="SoundStream API", version="1.0.0", docs_url="/api/docs")
-  This exposes the complete API schema, all endpoints, request/response
-  models, and authentication requirements.
-Exploitation:
-  An attacker can use the Swagger UI documentation to map out all API
-  endpoints, understand the data models, and craft targeted attacks. In
-  production, API documentation should be disabled or restricted.
-
-VULNERABILITY #15
---------------------------------------------------------------------------------
-CWE ID: CWE-770 (Allocation of Resources Without Limits)
-Vulnerability: No Pagination Limit on Song Listing
-Severity: Low
-File: backend/music/router.py
-Lines: 61-68
-Description:
-  The /api/music/list endpoint accepts skip and limit parameters with a
-  default limit of 50, but there is no maximum cap on the limit value.
-  A user can request limit=999999 to retrieve all songs at once.
-Exploitation:
-  An attacker can request an extremely large number of records in a single
-  query, causing excessive database load and memory consumption on the
-  server, potentially leading to denial of service.
-
-VULNERABILITY #16
---------------------------------------------------------------------------------
-CWE ID: CWE-532 (Insertion of Sensitive Information into Log File)
-Vulnerability: Token in Query String Logged by Web Server
-Severity: Medium
-File: backend/music/router.py
-Lines: 86-98
-Description:
-  The streaming endpoint URL pattern /api/music/stream/{song_id}?token=<JWT>
-  includes the full JWT token as a query parameter. Web servers (uvicorn,
-  nginx, Apache) log the full request URL including query parameters by
-  default.
-Exploitation:
-  JWT tokens containing user identity, role, and expiration data are
-  written to access logs. Anyone with access to server logs (system
-  administrators, log aggregation services, backup systems) can extract
-  valid tokens and impersonate users.
+  Users can set extremely weak passwords like "123456" or "aaaaaa", which are
+  trivially guessable. Combined with the lack of rate limiting, this makes
+  brute-force attacks highly effective.
 
 ================================================================================
 SUMMARY
 ================================================================================
 
-Total vulnerabilities found: 16
+Total vulnerabilities found: 5
 
 By severity:
-  Critical: 2
+  Critical: 1
   High:     2
-  Medium:   7
-  Low:      5 (note: #10 is structural/design, not an active exploit)
+  Medium:   2
 
 Top priority remediations:
-1. Use a strong, randomly generated SECRET_KEY and never commit it to source
-   control. Remove the hardcoded default fallback entirely.
-2. Remove the hardcoded Firebase credentials path. Use environment variables
-   and ensure credential files are in .gitignore.
-3. Restrict CORS origins to specific trusted domains instead of "*".
-4. Implement an alternative to passing JWT tokens in URL query parameters
-   (e.g., use HttpOnly cookies for the streaming endpoint).
-5. Add rate limiting to authentication endpoints.
-6. Validate file size via streaming/chunked reads before buffering the
-   entire file in memory.
-7. Enforce a maximum value for the pagination limit parameter.
-8. Disable Swagger UI documentation in production.
-9. Implement token revocation and consider shorter token lifetimes with
-   refresh tokens.
-10. Strengthen password requirements.
+1. Use a strong, randomly generated SECRET_KEY and remove the hardcoded default.
+2. Restrict CORS origins to specific trusted domains instead of "*".
+3. Stop accepting JWT tokens in URL query parameters; use the Authorization
+   header or HttpOnly cookies for the streaming endpoint.
+4. Validate that the stored file_path resides within the uploads directory.
+5. Strengthen password requirements.
 
 ================================================================================
 END OF REPORT

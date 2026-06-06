@@ -13,19 +13,9 @@ Severity: Critical
 File: src/main.cpp
 Line: 19
 Description: The JWT signing secret is hardcoded directly in the source code as a string literal: "soundstream-secret-key-change-in-production-2024". This secret is used to sign and verify all authentication tokens. Anyone with access to the source code (or the compiled binary via string extraction) can forge valid JWT tokens for any user, including impersonating artists or administrators.
-Exploitation: An attacker who obtains the binary or source code can extract the secret string. Using this secret, they can craft arbitrary JWT tokens with any user_id, email, type, and name claims, granting them full access to the application as any user or role. The comment "change-in-production" suggests awareness of the issue but does not mitigate it, as the value is compiled into the binary.
+Exploitation: An attacker who obtains the binary or source code can extract the secret string and craft arbitrary JWT tokens with any user_id, email, type, and name claims, granting them full access to the application as any user or role.
 
 VULNERABILITY #2
---------------------------------------------------------------------------------
-CWE ID: CWE-916 (Use of Password Hash With Insufficient Computational Effort)
-Vulnerability Name: Weak Password Hashing Algorithm (Single SHA-256)
-Severity: High
-File: include/crypto_utils.h
-Lines: 31-33
-Description: Passwords are hashed using a single iteration of SHA-256 with a salt (salt + password + salt). SHA-256 is a general-purpose cryptographic hash function that is extremely fast to compute, making it unsuitable for password hashing. Modern password hashing algorithms such as bcrypt, scrypt, or Argon2 are specifically designed to be computationally expensive and resistant to brute-force attacks.
-Exploitation: An attacker who gains access to the Firebase database containing password hashes and salts can perform brute-force or dictionary attacks at extremely high speeds. Modern GPUs can compute billions of SHA-256 hashes per second, making it feasible to crack most passwords in a short time.
-
-VULNERABILITY #3
 --------------------------------------------------------------------------------
 CWE ID: CWE-942 (Permissive Cross-domain Policy with Untrusted Domains)
 Vulnerability Name: Overly Permissive CORS Configuration (Wildcard Origin)
@@ -33,19 +23,19 @@ Severity: High
 File: src/main.cpp
 Lines: 71-75
 Description: The setup_cors function sets Access-Control-Allow-Origin to "*", allowing any website on the internet to make authenticated requests to the API. Combined with allowing the Authorization header, this enables any malicious website to interact with the API on behalf of authenticated users whose browsers visit the malicious site.
-Exploitation: An attacker can create a malicious website that makes AJAX requests to the SoundStream API. If a logged-in user visits this malicious site, the attacker's JavaScript can perform actions on the API using the victim's credentials (if tokens are stored in a way accessible to JavaScript), such as uploading songs, accessing song lists, or streaming content.
+Exploitation: An attacker can create a malicious website that makes AJAX requests to the SoundStream API. If a logged-in user visits this malicious site, the attacker's JavaScript can perform actions on the API using the victim's credentials, such as uploading songs or accessing song lists.
 
-VULNERABILITY #4
+VULNERABILITY #3
 --------------------------------------------------------------------------------
 CWE ID: CWE-319 (Cleartext Transmission of Sensitive Information)
 Vulnerability Name: Server Listens on HTTP Without TLS/SSL
 Severity: High
 File: src/main.cpp
 Lines: 539-548
-Description: The server listens on plain HTTP (0.0.0.0:8080) without any TLS/SSL encryption. All data transmitted between the client and server, including JWT tokens, user credentials (email and password during login/registration), and audio streams, is sent in cleartext.
-Exploitation: An attacker on the same network (e.g., public Wi-Fi, corporate LAN, ISP-level) can perform a man-in-the-middle attack to intercept login credentials, steal JWT tokens, or eavesdrop on audio streams. Captured JWT tokens can be reused to impersonate users.
+Description: The server listens on plain HTTP (0.0.0.0:8080) without any TLS/SSL encryption. All data transmitted between the client and server, including JWT tokens, user credentials, and audio streams, is sent in cleartext.
+Exploitation: An attacker on the same network (e.g., public Wi-Fi, corporate LAN) can perform a man-in-the-middle attack to intercept login credentials, steal JWT tokens, or eavesdrop on audio streams. Captured JWT tokens can be reused to impersonate users.
 
-VULNERABILITY #5
+VULNERABILITY #4
 --------------------------------------------------------------------------------
 CWE ID: CWE-200 (Exposure of Sensitive Information to an Unauthorized Actor)
 Vulnerability Name: Token Accepted via Query Parameter
@@ -53,168 +43,34 @@ Severity: High
 File: src/main.cpp
 Lines: 57-59
 Description: The authenticate function accepts JWT tokens via the "token" query parameter as a fallback when no Authorization header is present. Query parameters are logged in web server access logs, proxy logs, browser history, and HTTP Referer headers, exposing the authentication token in multiple locations.
-Exploitation: An attacker with access to server logs, proxy logs, or network monitoring tools can extract valid JWT tokens from URL query strings. The tokens may also be leaked via the Referer header to third-party services, or cached in browser history. Once obtained, the attacker can use the token to authenticate as the victim user for up to 24 hours (the token expiry period).
+Exploitation: An attacker with access to server logs, proxy logs, or network monitoring tools can extract valid JWT tokens from URL query strings. Once obtained, the attacker can authenticate as the victim user for up to 24 hours (the token expiry period).
 
-VULNERABILITY #6
---------------------------------------------------------------------------------
-CWE ID: CWE-770 (Allocation of Resources Without Limits or Throttling)
-Vulnerability Name: Unrestricted File Upload Size
-Severity: High
-File: src/main.cpp
-Lines: 269-301
-Description: The song upload endpoint (/api/artist/songs) does not impose any limit on the size of uploaded files. An attacker with a valid ARTIST account can upload arbitrarily large files, limited only by available disk space and memory, since the entire file content is read into memory before being written to disk.
-Exploitation: An authenticated attacker with an ARTIST-type account can exhaust server disk space or memory by uploading extremely large files. This constitutes a denial-of-service (DoS) attack. Even a single multi-gigabyte upload could crash the server by exhausting available RAM, as the file content is buffered entirely in memory via the multipart form handler.
-
-VULNERABILITY #7
+VULNERABILITY #5
 --------------------------------------------------------------------------------
 CWE ID: CWE-22 (Improper Limitation of a Pathname to a Restricted Directory)
 Vulnerability Name: Potential Path Traversal via Database-Stored File Path
 Severity: Medium
 File: src/main.cpp
 Lines: 464-474
-Description: The streaming endpoint retrieves the file_path directly from the Firebase database and uses it to read and serve a file from the filesystem without validating that the path is within the expected uploads directory. While the upload endpoint correctly generates a safe filename (UUID + .mp3), if an attacker were to manipulate the database record (e.g., via a compromised Firebase account or another vulnerability), they could set file_path to an arbitrary filesystem path.
-Exploitation: If an attacker gains write access to the Firebase database (through a separate vulnerability, compromised credentials, or Firebase misconfiguration), they could modify a song's file_path to point to any file on the server (e.g., "/etc/passwd", "firebase-credentials.json", or application source files). The streaming endpoint would then serve that file to the attacker, leading to arbitrary file read.
-
-VULNERABILITY #8
---------------------------------------------------------------------------------
-CWE ID: CWE-400 (Uncontrolled Resource Consumption)
-Vulnerability Name: Memory Exhaustion via Range Request
-Severity: Medium
-File: src/main.cpp
-Lines: 486-519
-Description: The Range header parsing in the streaming endpoint does not validate that the requested range is reasonable. An attacker can craft a Range header requesting the entire file (or a very large range), causing the server to allocate a buffer of that size in memory (line 510: std::vector<char> buffer(content_length)). For large audio files, this could consume significant memory. Additionally, there is no validation that the start value is less than the end value, which could lead to an integer underflow on content_length, resulting in an extremely large allocation attempt.
-Exploitation: An attacker can send a crafted Range header such as "bytes=100-50" where start > end. The calculation "end - start + 1" would produce a very large value (due to unsigned integer behavior or negative value interpretation), potentially causing an allocation failure or crash. Even with valid ranges, requesting full large files repeatedly can exhaust server memory since the entire range is buffered before sending.
-
-VULNERABILITY #9
---------------------------------------------------------------------------------
-CWE ID: CWE-532 (Insertion of Sensitive Information into Log File)
-Vulnerability Name: User Email Logged to Console on Authentication Events
-Severity: Medium
-File: src/main.cpp
-Lines: 180, 241
-Description: The application logs user email addresses to the console/stdout during registration and login events. In production environments, these logs may be stored in log management systems, shipped to third-party log aggregation services, or written to persistent files, exposing user PII (personally identifiable information).
-Exploitation: An attacker with access to server logs (through a log management system compromise, shared hosting environment, or insider access) can harvest user email addresses. This information can be used for targeted phishing attacks, credential stuffing on other services, or sold as part of data breaches.
-
-VULNERABILITY #10
---------------------------------------------------------------------------------
-CWE ID: CWE-307 (Improper Restriction of Excessive Authentication Attempts)
-Vulnerability Name: No Rate Limiting or Brute-Force Protection on Login
-Severity: Medium
-File: src/main.cpp
-Lines: 183-242
-Description: The login endpoint (/api/auth/login) does not implement any rate limiting, account lockout mechanism, or CAPTCHA protection. An attacker can make unlimited login attempts to guess user passwords.
-Exploitation: An attacker can perform brute-force or credential-stuffing attacks against the login endpoint at maximum speed. Combined with the weak SHA-256 password hashing (Vulnerability #2) and the minimum password length of only 6 characters (line 136), this significantly increases the risk of account compromise.
-
-VULNERABILITY #11
---------------------------------------------------------------------------------
-CWE ID: CWE-613 (Insufficient Session Expiration)
-Vulnerability Name: No Token Revocation Mechanism
-Severity: Medium
-File: include/jwt_auth.h
-Lines: 14-27, 29-43
-Description: The JWT-based authentication system has no mechanism to revoke or invalidate tokens before their 24-hour expiry. Once a JWT is issued, it remains valid for the entire duration regardless of whether the user logs out, changes their password, or if the token is compromised.
-Exploitation: If an attacker obtains a valid JWT token (via network interception, log exposure, query parameter leakage, or XSS), they can use it for up to 24 hours even after the legitimate user becomes aware of the compromise. Password changes do not invalidate existing tokens, giving the attacker continued access.
-
-VULNERABILITY #12
---------------------------------------------------------------------------------
-CWE ID: CWE-346 (Origin Validation Error)
-Vulnerability Name: No CSRF Protection
-Severity: Medium
-File: src/main.cpp
-Lines: 71-75, 98-101
-Description: The application relies solely on JWT tokens for authentication and has no CSRF (Cross-Site Request Forgery) protection mechanisms. While JWT tokens in Authorization headers provide some CSRF protection (as they aren't automatically sent by browsers), the fallback to query parameter tokens (line 58) and the wildcard CORS policy undermine this.
-Exploitation: If a user has an active session where the token is accessible (e.g., stored in localStorage and used in query parameters for streaming endpoints), a malicious website could potentially initiate actions on behalf of the user, particularly for state-changing operations like song uploads.
-
-VULNERABILITY #13
---------------------------------------------------------------------------------
-CWE ID: CWE-252 (Unchecked Return Value)
-Vulnerability Name: Unchecked File Write Operations
-Severity: Medium
-File: src/main.cpp
-Lines: 294-301
-Description: After writing the uploaded file content to disk, the code does not verify that all bytes were successfully written. The write operation (ofs.write()) could fail silently (e.g., due to disk full conditions) without the application detecting the error. The application would then create a database record pointing to a corrupt or incomplete file.
-Exploitation: While not directly exploitable by an attacker, this can lead to data integrity issues. If the disk is near capacity, uploads may appear to succeed while producing corrupted files, potentially causing application crashes when the file is later streamed, or leading to inconsistencies between the database and filesystem state.
-
-VULNERABILITY #14
---------------------------------------------------------------------------------
-CWE ID: CWE-1188 (Initialization with Hard-Coded Network Resource Configuration)
-Vulnerability Name: Server Binds to All Network Interfaces
-Severity: Medium
-File: src/main.cpp
-Line: 539
-Description: The server binds to "0.0.0.0", accepting connections on all network interfaces. In production or development environments, this exposes the service to all reachable networks, including potentially public-facing interfaces that should not have direct access to the application.
-Exploitation: If deployed on a server with multiple network interfaces (e.g., one internal, one public), the application will accept connections from all networks. Without a reverse proxy or firewall, the application with its HTTP-only transport and hardcoded credentials would be directly accessible from the internet.
-
-VULNERABILITY #15
---------------------------------------------------------------------------------
-CWE ID: CWE-331 (Insufficient Entropy)
-Vulnerability Name: UUID Generation Using Non-Cryptographic PRNG
-Severity: Low
-File: include/crypto_utils.h
-Lines: 39-53
-Description: The generate_uuid function uses std::mt19937 (Mersenne Twister) seeded with std::random_device for UUID generation. While std::random_device provides initial entropy, std::mt19937 is not a cryptographically secure PRNG. After observing enough output, the internal state of mt19937 can be recovered, allowing prediction of future UUIDs. These UUIDs are used as user IDs and song IDs.
-Exploitation: If an attacker can observe multiple generated UUIDs (which are returned in API responses), they could potentially recover the internal state of the PRNG and predict future UUIDs. This could allow an attacker to predict the document ID of a newly created user or song, though the practical impact is limited since Firebase document access is controlled server-side.
-
-VULNERABILITY #16
---------------------------------------------------------------------------------
-CWE ID: CWE-209 (Generation of Error Message Containing Sensitive Information)
-Vulnerability Name: Firebase Credential Path Disclosed in Error Output
-Severity: Low
-File: src/main.cpp
-Lines: 86-88
-Description: When the Firebase credentials file is not found, the application prints the file path to stderr. While this is console output rather than an HTTP response, in containerized or cloud environments, stderr may be captured in logs accessible to broader audiences.
-Exploitation: Information about the filesystem layout and credential file locations could assist an attacker in planning further attacks, particularly if combined with a path traversal or local file inclusion vulnerability.
-
-VULNERABILITY #17
---------------------------------------------------------------------------------
-CWE ID: CWE-521 (Weak Password Requirements)
-Vulnerability Name: Insufficient Password Complexity Requirements
-Severity: Low
-File: src/main.cpp
-Lines: 136-139
-Description: The registration endpoint only requires passwords to be at least 6 characters long. There are no requirements for uppercase letters, lowercase letters, digits, or special characters. This allows users to set extremely weak passwords such as "123456" or "aaaaaa".
-Exploitation: Combined with the lack of brute-force protection (Vulnerability #10) and weak password hashing (Vulnerability #2), weak passwords can be easily guessed or cracked. Common 6-character passwords appear in widely available password dictionaries.
-
-VULNERABILITY #18
---------------------------------------------------------------------------------
-CWE ID: CWE-1104 (Use of Unmaintained Third Party Components)
-Vulnerability Name: No Dependency Version Pinning
-Severity: Low
-File: CMakeLists.txt
-Lines: 7-11
-Description: The CMakeLists.txt uses find_package without specifying version constraints for any dependency (httplib, nlohmann_json, jwt-cpp, OpenSSL, CURL). This means the application could be built against any version of these libraries, including outdated versions with known vulnerabilities.
-Exploitation: If built in an environment with outdated libraries (e.g., an older OpenSSL version with known CVEs), the application inherits those vulnerabilities. Without version pinning, there is no guarantee that security-critical libraries are at patched versions.
+Description: The streaming endpoint retrieves the file_path directly from the Firebase database and uses it to read and serve a file from the filesystem without validating that the path is within the expected uploads directory. If an attacker were to manipulate the database record, they could set file_path to an arbitrary filesystem path.
+Exploitation: If an attacker gains write access to the Firebase database (through a separate vulnerability, compromised credentials, or Firebase misconfiguration), they could modify a song's file_path to point to any file on the server (e.g., "firebase-credentials.json" or application source files), leading to arbitrary file read.
 
 ================================================================================
 SUMMARY
 ================================================================================
 
-Total Vulnerabilities Found: 18
+Total Vulnerabilities Found: 5
 
 By Severity:
   - Critical: 1
-  - High:     5
-  - Medium:   7
-  - Low:      5
+  - High:     3
+  - Medium:   1
 
 Most Critical Issues:
 1. Hardcoded JWT secret key allowing complete authentication bypass
-2. SHA-256 password hashing vulnerable to high-speed brute-force attacks
+2. Wildcard CORS policy enabling cross-origin attacks
 3. No TLS/HTTPS, exposing all credentials and tokens in transit
-4. Wildcard CORS policy enabling cross-origin attacks
-5. JWT token accepted in query parameters, leaking credentials in logs/URLs
-
-Recommendations:
-- Replace the hardcoded JWT secret with an environment variable or secure key management system
-- Replace SHA-256 password hashing with bcrypt, scrypt, or Argon2id
-- Deploy behind a TLS-terminating reverse proxy or add TLS support directly
-- Restrict CORS origins to specific trusted domains
-- Remove query parameter token authentication
-- Add rate limiting to authentication endpoints
-- Implement file size limits for uploads
-- Add path validation for file serving to restrict access to the uploads directory
-- Implement token revocation or use short-lived tokens with refresh token rotation
-- Pin dependency versions in CMakeLists.txt
+4. JWT token accepted in query parameters, leaking credentials in logs/URLs
 
 ================================================================================
 END OF SECURITY REVIEW

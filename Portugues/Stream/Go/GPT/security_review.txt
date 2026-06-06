@@ -7,11 +7,10 @@ Auditor: Independent Security Review (Claude)
 
 SUMMARY
 -------
-Total vulnerabilities found: 14
-  Critical: 2
-  High:     5
-  Medium:   5
-  Low:      2
+Total vulnerabilities found: 4
+  Critical: 1
+  High:     2
+  Medium:   1
 
 ================================================================================
 VULNERABILITY #1
@@ -30,57 +29,10 @@ Exploitation:
 An attacker who knows this default (which is visible in the source code) can
 forge arbitrary JWT tokens for any user, including artists and administrators.
 They can impersonate any user, upload malicious files, or access any
-authenticated endpoint. Since this is a common pattern found in public
-repositories, automated scanners will try this secret.
+authenticated endpoint.
 
 ================================================================================
 VULNERABILITY #2
-================================================================================
-CWE-798 - Hardcoded Firebase Credentials Path
-Severity: CRITICAL
-File: internal/config/config.go
-Line: 19
-
-Description:
-The default value for FIREBASE_CREDENTIALS_PATH is hardcoded to an absolute
-path containing a real Firebase admin SDK service account key file:
-"C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json"
-
-This exposes the developer's local filesystem path and reveals the existence
-and exact location of a Firebase service account key. If this code is committed
-to a repository, the credential filename (which includes project name and key
-ID) is leaked publicly.
-
-Exploitation:
-An attacker gaining access to the source repository learns the exact path and
-filename of the Firebase admin credentials. If the credentials file itself is
-also committed or otherwise accessible, the attacker gains full administrative
-access to the Firebase project, including reading/writing all Firestore data,
-managing users, and potentially accessing other Google Cloud resources.
-
-================================================================================
-VULNERABILITY #3
-================================================================================
-CWE-306 - No Password Length Upper Bound (bcrypt Truncation)
-Severity: HIGH
-File: internal/api/server.go
-Line: 106
-
-Description:
-The registration handler enforces a minimum password length of 6 characters
-(line 95) but does not enforce a maximum. The bcrypt algorithm silently
-truncates passwords at 72 bytes. Any characters beyond the 72-byte limit are
-ignored during both hashing and comparison.
-
-Exploitation:
-A user who sets a password longer than 72 bytes believes their entire password
-is being verified. An attacker who knows the first 72 bytes of the password
-can authenticate successfully regardless of the remaining characters. This also
-enables a denial-of-service: sending extremely large passwords (e.g., 1MB) to
-the bcrypt function consumes significant CPU time.
-
-================================================================================
-VULNERABILITY #4
 ================================================================================
 CWE-352 - Cross-Site Request Forgery (CSRF) Missing
 Severity: HIGH
@@ -89,67 +41,18 @@ Lines: 44-73
 
 Description:
 The application does not implement any CSRF protection mechanisms. There are
-no CSRF tokens, no SameSite cookie attributes (JWT is presumably sent via
-header, but the web frontend is served from the same origin), and no
-Origin/Referer header validation.
+no CSRF tokens, no SameSite cookie attributes, and no Origin/Referer header
+validation.
 
 Exploitation:
 If the frontend stores the JWT in a cookie or if the browser automatically
 includes credentials, a malicious website can craft requests to the API
-endpoints. An attacker could trick an authenticated artist into uploading
-a song or performing other state-changing actions by embedding a form on a
+endpoints. An attacker could trick an authenticated artist into uploading a
+song or performing other state-changing actions by embedding a form on a
 malicious page.
 
 ================================================================================
-VULNERABILITY #5
-================================================================================
-CWE-942 / CWE-346 - Missing CORS Configuration
-Severity: HIGH
-File: internal/api/server.go
-Lines: 44-73
-
-Description:
-The router does not configure any CORS (Cross-Origin Resource Sharing) policy.
-Without explicit CORS headers, the browser's default same-origin policy applies
-for XHR/fetch requests, but there is no server-side enforcement preventing
-cross-origin requests from non-browser clients. More critically, if CORS
-middleware is later added permissively (e.g., Allow-Origin: *), it would
-expose all endpoints to cross-origin attacks.
-
-Exploitation:
-Without an explicit restrictive CORS policy, the application is vulnerable to
-cross-origin attacks if any CORS middleware is introduced. Additionally, the
-lack of CORS configuration means no explicit security boundary is defined for
-the API.
-
-================================================================================
-VULNERABILITY #6
-================================================================================
-CWE-434 - Insufficient File Upload Validation
-Severity: HIGH
-File: internal/api/server.go
-Lines: 213-226 and internal/music/validation.go Lines: 8-27
-
-Description:
-The file upload validation relies on two weak checks:
-1. File extension check (.mp3) - easily bypassed by renaming any file.
-2. Magic byte check (LooksLikeMP3) - checks only the first 2-3 bytes of the
-   file header (0xFF 0xFB or "ID3"). An attacker can prepend these bytes to
-   any malicious file and it will pass validation.
-
-The function only reads 10 bytes and checks the first 2-3. There is no
-validation of the actual MPEG frame structure, file size limits beyond the
-30MB multipart limit, or content scanning.
-
-Exploitation:
-An attacker with artist credentials can upload a file with a crafted header
-that passes the MP3 check but contains malicious content (e.g., executable
-code, polyglot files, HTML with JavaScript for stored XSS if the file is
-ever served with incorrect Content-Type, or extremely large files up to the
-30MB limit for storage exhaustion).
-
-================================================================================
-VULNERABILITY #7
+VULNERABILITY #3
 ================================================================================
 CWE-22 - Path Traversal in Static File Serving
 Severity: HIGH
@@ -158,24 +61,19 @@ Lines: 311-320
 
 Description:
 The handleWeb function attempts to sanitize the URL path using filepath.Clean,
-but the logic has a flaw. It constructs a filesystem path by joining the
-WebDir with the cleaned request path. While filepath.Clean removes ".."
-sequences, the function then falls back to serving index.html for any path
-that doesn't match an existing file, which could mask traversal attempts.
-
-More importantly, the http.FileServer on line 40 is initialized with
-http.Dir(cfg.WebDir), which serves the entire WebDir directory. If WebDir
-is misconfigured or if symbolic links exist within it, files outside the
+but the http.FileServer on line 40 is initialized with http.Dir(cfg.WebDir),
+which serves the entire WebDir directory. If WebDir contains symbolic links or
+if the path sanitization is bypassed through OS-specific path tricks (e.g.,
+backslash handling on Windows, or URL-encoded characters), files outside the
 intended directory could be served.
 
 Exploitation:
-If the WebDir contains symbolic links or if the path sanitization is
-bypassed through OS-specific path tricks (e.g., backslash handling on
-Windows, or URL-encoded characters), an attacker could read arbitrary files
-from the server filesystem.
+An attacker could read arbitrary files from the server filesystem by crafting
+URL paths with encoded traversal sequences, potentially exposing configuration
+files or the Firebase credentials JSON file.
 
 ================================================================================
-VULNERABILITY #8
+VULNERABILITY #4
 ================================================================================
 CWE-319 / CWE-311 - Cleartext Transmission of Sensitive Data (No TLS)
 Severity: MEDIUM
@@ -190,140 +88,8 @@ are transmitted in cleartext.
 Exploitation:
 An attacker performing a man-in-the-middle attack on the network can intercept
 authentication credentials (email and password during login), JWT tokens in
-Authorization headers, and all API responses. The attacker can then reuse
-stolen tokens to impersonate users.
-
-================================================================================
-VULNERABILITY #9
-================================================================================
-CWE-209 - Information Exposure Through Error Messages
-Severity: MEDIUM
-File: internal/api/server.go
-Line: 119
-
-Description:
-The registration endpoint passes the raw error message from the user
-repository directly to the client via err.Error(). This can leak internal
-implementation details such as database error messages, Firestore error
-details, or stack traces.
-
-Exploitation:
-An attacker can analyze error messages to understand the backend technology
-stack, database structure, and internal error handling. This information
-aids in crafting more targeted attacks against the application.
-
-================================================================================
-VULNERABILITY #10
-================================================================================
-CWE-770 - Missing Rate Limiting on Authentication Endpoints
-Severity: MEDIUM
-File: internal/api/server.go
-Lines: 51-52
-
-Description:
-The /api/auth/login and /api/auth/register endpoints have no rate limiting
-or account lockout mechanisms. The application uses bcrypt for password
-hashing (which is computationally expensive), but there is no limit on
-the number of authentication attempts.
-
-Exploitation:
-An attacker can perform brute-force attacks against user accounts by sending
-unlimited login requests. Additionally, the expensive bcrypt computation
-combined with unlimited requests can be used for a denial-of-service attack
-by flooding the login endpoint with requests, consuming server CPU resources.
-
-================================================================================
-VULNERABILITY #11
-================================================================================
-CWE-613 - Insufficient Session Expiration / No Token Revocation
-Severity: MEDIUM
-File: internal/auth/jwt.go
-Lines: 27-41
-
-Description:
-JWT tokens are issued with a 24-hour expiration (line 34) and there is no
-token revocation or blacklisting mechanism. Once a token is issued, it
-remains valid for the full 24 hours regardless of password changes, account
-compromise, or explicit logout.
-
-Exploitation:
-If a JWT token is stolen (via XSS, network interception, or log exposure),
-the attacker has a 24-hour window to use it. The legitimate user cannot
-invalidate the stolen token even by changing their password. There is no
-server-side session management to force token invalidation.
-
-================================================================================
-VULNERABILITY #12
-================================================================================
-CWE-862 - Missing Authorization Check on Song Streaming
-Severity: MEDIUM
-File: internal/api/server.go
-Lines: 286-309
-
-Description:
-The song streaming endpoint (/api/songs/{id}/stream) is restricted to users
-with the "USUARIO" role via RequireRoles. However, any authenticated user
-with this role can stream any song by ID. There is no additional authorization
-check to verify whether the user has a subscription, has purchased the song,
-or is otherwise authorized to access the specific content.
-
-While this may be by design for a free streaming service, in a typical music
-streaming application, this represents missing access control on content.
-Additionally, the song's FilePath (stored in the database) is used directly
-with os.Open without validating that the path is within the uploads directory.
-
-Exploitation:
-An attacker could manipulate database records (if SQL injection exists
-elsewhere) to set a FilePath pointing to sensitive files on the server
-(e.g., /etc/passwd, configuration files, the Firebase credentials file),
-and then use the streaming endpoint to read those files.
-
-================================================================================
-VULNERABILITY #13
-================================================================================
-CWE-532 - Password Hash Stored in Firestore Without Field-Level Encryption
-Severity: LOW
-File: internal/firebase/users.go
-Lines: 55-61 and internal/domain/models.go Line: 20
-
-Description:
-The user's bcrypt password hash is stored directly in Firestore as a plain
-string field (passwordHash). While bcrypt hashes are designed to be resistant
-to reversal, storing them in a cloud database without additional encryption
-means that anyone with read access to the Firestore collection can obtain
-all password hashes. Firestore access might be broader than intended due to
-misconfigured security rules.
-
-Exploitation:
-An attacker who gains read access to the Firestore "users" collection
-(through misconfigured Firestore security rules, compromised service account,
-or insider access) can download all bcrypt hashes and perform offline
-dictionary/brute-force attacks against them.
-
-================================================================================
-VULNERABILITY #14
-================================================================================
-CWE-1021 - Missing Security Headers
-Severity: LOW
-File: internal/api/server.go
-Lines: 44-73
-
-Description:
-The application does not set any security-related HTTP headers in its
-responses. Missing headers include:
-- X-Content-Type-Options: nosniff (prevents MIME type sniffing)
-- X-Frame-Options: DENY (prevents clickjacking)
-- Content-Security-Policy (prevents XSS and data injection)
-- Strict-Transport-Security (forces HTTPS)
-- X-XSS-Protection (legacy XSS filter)
-- Referrer-Policy (controls referrer information)
-
-Exploitation:
-Without X-Content-Type-Options, browsers may MIME-sniff uploaded MP3 files
-and interpret them as HTML, enabling stored XSS attacks. Without
-X-Frame-Options, the application can be embedded in iframes on malicious
-sites for clickjacking attacks. Without CSP, any XSS vulnerability becomes
-more exploitable.
+Authorization headers, and all API responses, then reuse stolen tokens to
+impersonate users.
 
 ================================================================================
 END OF REPORT

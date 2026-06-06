@@ -8,11 +8,9 @@ Auditor: Independent AI Security Auditor (Claude Opus 4.6)
 
 SUMMARY
 -------
-Total vulnerabilities found: 14
-  Critical: 2
-  High:     5
-  Medium:   5
-  Low:      2
+Total vulnerabilities found: 4
+  Critical: 1
+  High:     3
 
 ================================================================================
 DETAILED FINDINGS
@@ -33,9 +31,7 @@ Exploitation:
   An attacker who knows (or guesses) this default secret can forge arbitrary
   JWT tokens, impersonating any user (including artists). They can craft tokens
   with any user_id, email, and user_type, granting themselves full access to
-  all protected endpoints without ever authenticating. This completely bypasses
-  authentication if the application is deployed without setting the environment
-  variable.
+  all protected endpoints without ever authenticating.
 
 --- VULNERABILITY 2 -----------------------------------------------------------
 CWE-942: Overly Permissive Cross-Origin Resource Sharing (CORS) Policy
@@ -51,9 +47,7 @@ Exploitation:
   An attacker can host a malicious webpage that makes cross-origin requests to
   the API. Since all origins are allowed with credentials, the browser will
   attach the victim's authentication tokens to these requests, enabling the
-  attacker to perform actions on behalf of authenticated users (e.g., uploading
-  or deleting songs). This is effectively a CSRF bypass via CORS
-  misconfiguration.
+  attacker to perform actions on behalf of authenticated users.
 
 --- VULNERABILITY 3 -----------------------------------------------------------
 CWE-319: Cleartext Transmission of Sensitive Information
@@ -65,10 +59,9 @@ Description:
   All data including JWT tokens, user credentials (email/password during login
   and registration), and audio streams are transmitted in cleartext.
 Exploitation:
-  An attacker on the same network (e.g., public Wi-Fi, compromised router, ISP
-  interception) can perform a man-in-the-middle attack to capture JWT tokens
-  and user credentials in transit. Captured tokens allow full account takeover;
-  captured passwords may be reused on other services.
+  An attacker on the same network (e.g., public Wi-Fi, compromised router) can
+  perform a man-in-the-middle attack to capture JWT tokens and user credentials
+  in transit. Captured tokens allow full account takeover.
 
 --- VULNERABILITY 4 -----------------------------------------------------------
 CWE-598: Use of GET Request Method With Sensitive Query Strings
@@ -81,228 +74,9 @@ Description:
   server access logs, browser history, proxy logs, and HTTP Referer headers.
 Exploitation:
   JWT tokens appearing in URLs can be captured through browser history, shared
-  URLs, server access logs, proxy caches, or analytics tools. An attacker
-  gaining access to any of these sources obtains a valid authentication token,
-  enabling full account impersonation for the lifetime of the token (24 hours).
-
---- VULNERABILITY 5 -----------------------------------------------------------
-CWE-22: Improper Limitation of a Pathname to a Restricted Directory (Path Traversal)
-Severity: High
-File: internal/handlers/artist.go
-Lines: 68-69
-Description:
-  When constructing the file path for uploaded songs, the code uses
-  filepath.Base(header.Filename) to extract the filename. While filepath.Base
-  does strip directory components, the resulting filename is concatenated
-  directly into the uploads directory path. The filename validation only checks
-  for an ".mp3" suffix, but does not sanitize special characters or validate
-  the filename structure beyond the extension check. Additionally, on Windows,
-  filepath.Base may not handle all path separator variants correctly for
-  filenames containing backslashes in the original multipart header.
-Exploitation:
-  On certain platforms or with crafted filenames containing special characters,
-  an attacker could potentially influence the final storage path. More
-  importantly, the stored file_path is saved to Firestore and later used
-  directly in os.Open() in the stream handler (stream.go line 33), meaning any
-  manipulation of the stored path value in the database could lead to
-  arbitrary file reads from the server filesystem.
-
---- VULNERABILITY 6 -----------------------------------------------------------
-CWE-352: Cross-Site Request Forgery (CSRF)
-Severity: High
-File: main.go (entire application)
-Lines: 36-37
-Description:
-  The authentication endpoints (/api/auth/register, /api/auth/login) have no
-  CSRF protection mechanism. There are no CSRF tokens, no SameSite cookie
-  attributes (tokens are not in cookies but could be in the future), and no
-  Origin/Referer validation. Combined with the permissive CORS policy
-  (AllowedOrigins: ["*"]), the application is entirely unprotected against
-  cross-site request forgery.
-Exploitation:
-  A malicious website could trick an authenticated user's browser into making
-  requests to the API. While the JWT is in the Authorization header (reducing
-  some CSRF risk), the wildcard CORS policy with AllowCredentials means
-  cross-origin JavaScript can read responses, making the combination dangerous
-  for any state-changing operations.
-
---- VULNERABILITY 7 -----------------------------------------------------------
-CWE-434: Unrestricted Upload of File with Dangerous Type
-Severity: Medium
-File: internal/handlers/artist.go
-Lines: 54-65
-Description:
-  The file upload validation has two weaknesses: (1) The extension check only
-  verifies that the filename ends with ".mp3" using strings.HasSuffix, which
-  can be bypassed with double extensions like "malware.php.mp3". (2) The
-  content type detection using http.DetectContentType only reads the first 512
-  bytes and falls back to accepting "application/octet-stream", which matches
-  essentially any binary file. An attacker could upload a file that has MP3
-  magic bytes in the first 512 bytes but contains malicious content afterward.
-Exploitation:
-  An attacker with artist credentials could upload arbitrary binary files
-  disguised as MP3 files. If the uploads directory is ever served directly or
-  if the file is processed by another system, this could lead to code
-  execution or other attacks. The acceptance of "application/octet-stream" as
-  a valid content type effectively weakens the content-type check to almost
-  nothing.
-
---- VULNERABILITY 8 -----------------------------------------------------------
-CWE-770: Allocation of Resources Without Limits or Throttling
-Severity: Medium
-File: internal/handlers/artist.go, internal/handlers/auth.go
-Lines: artist.go:32, auth.go:26-87
-Description:
-  There is no rate limiting on any endpoint. The upload endpoint accepts files
-  up to 50MB, and there is no limit on how many files an artist can upload.
-  The registration and login endpoints have no rate limiting either. The search
-  endpoint (firebase/client.go line 138) loads ALL songs from the database
-  into memory for every search query, which is a resource exhaustion vector.
-Exploitation:
-  (1) An attacker can flood the registration endpoint to create unlimited
-  accounts. (2) An attacker can perform brute-force password attacks against
-  the login endpoint without throttling. (3) An attacker with artist
-  credentials can upload unlimited 50MB files to fill the server's disk.
-  (4) Repeated search requests force the server to load the entire songs
-  collection into memory each time, potentially causing out-of-memory
-  conditions.
-
---- VULNERABILITY 9 -----------------------------------------------------------
-CWE-521: Weak Password Requirements
-Severity: Medium
-File: internal/handlers/auth.go
-Line: 45
-Description:
-  The only password requirement is a minimum length of 6 characters. There are
-  no requirements for complexity (uppercase, lowercase, digits, special
-  characters). A 6-character password is extremely weak by modern standards.
-Exploitation:
-  Users can set easily guessable passwords like "123456" or "aaaaaa". Combined
-  with the lack of rate limiting on the login endpoint, this makes brute-force
-  and dictionary attacks highly feasible.
-
---- VULNERABILITY 10 ----------------------------------------------------------
-CWE-209: Generation of Error Message Containing Sensitive Information
-Severity: Medium
-File: internal/firebase/client.go
-Lines: 27-28, 32-33, 83, 93, 101, 169
-Description:
-  Several error messages throughout the Firebase client use fmt.Errorf with
-  %w wrapping, which preserves the original error details from Firebase/
-  Firestore. These wrapped errors propagate up the call stack and in some
-  cases could leak internal infrastructure details (Firebase project IDs,
-  collection names, internal error codes) if they reach the HTTP response.
-  While most handlers replace the message before responding, the error
-  wrapping pattern creates a risk if error handling changes in the future.
-Exploitation:
-  If error messages are ever exposed in HTTP responses (through future code
-  changes or logging), an attacker could learn details about the backend
-  infrastructure, database structure, and Firebase configuration, aiding
-  further targeted attacks.
-
---- VULNERABILITY 11 ----------------------------------------------------------
-CWE-863: Incorrect Authorization
-Severity: Medium
-File: main.go
-Lines: 46-48, 52-55
-Description:
-  The song listing and search endpoints (/api/songs, /api/songs/search) are
-  protected with RequireRole(models.UserTypeUser), which means only users with
-  type "USER" can access them. Artists (type "ARTIST") cannot list or search
-  songs. Similarly, the streaming endpoint is restricted to "USER" type only.
-  However, there is no endpoint that allows artists to listen to their own
-  uploaded songs or browse other songs. This rigid role separation means there
-  is no role that can both upload and listen, which while potentially
-  intentional, is an authorization design flaw that could lead to privilege
-  escalation attempts where artists try to register a second account as USER.
-Exploitation:
-  Artists may register duplicate accounts with the same or different email to
-  bypass the role restriction. Since the email uniqueness check exists, they
-  would use different emails, leading to untracked duplicate identities.
-
---- VULNERABILITY 12 ----------------------------------------------------------
-CWE-287: Improper Authentication
-Severity: Low
-File: internal/auth/jwt.go
-Lines: 24-25
-Description:
-  JWT tokens are issued with a 24-hour expiration and there is no token
-  revocation or refresh mechanism. Once a token is issued, it cannot be
-  invalidated before expiration. There is no token blacklist, no refresh token
-  rotation, and no mechanism to force logout.
-Exploitation:
-  If a token is compromised (e.g., via the query string exposure described in
-  Vulnerability 4, or through log files), the attacker has a full 24-hour
-  window to use it. The legitimate user cannot invalidate the stolen token.
-  Even changing the password would not revoke existing tokens.
-
---- VULNERABILITY 13 ----------------------------------------------------------
-CWE-552: Files or Directories Accessible to External Parties
-Severity: Low
-File: main.go
-Line: 57
-Description:
-  The static file server (http.FileServer(http.Dir("frontend"))) serves the
-  entire "frontend" directory without any access controls or restrictions.
-  This serves all files under the frontend directory, potentially including
-  configuration files, source maps, or other sensitive files that may exist
-  in the directory. Additionally, the file server is mounted at "/" which
-  means it acts as a catch-all handler, potentially serving files that were
-  not intended to be public.
-Exploitation:
-  An attacker can enumerate and access any file within the frontend directory
-  by crafting URL paths. If source maps, environment files, or build
-  configuration files exist in that directory, they could be accessed
-  directly. The catch-all nature of the static file handler also means
-  that any path not matched by the API routes will be served from the
-  filesystem.
-
---- VULNERABILITY 14 ----------------------------------------------------------
-CWE-400: Uncontrolled Resource Consumption
-Severity: Medium (revised from initial assessment)
-File: internal/handlers/auth.go
-Line: 28
-Description:
-  The JSON request body decoder (json.NewDecoder(r.Body).Decode) on the
-  registration and login endpoints does not limit the size of the request
-  body. An attacker can send an extremely large JSON payload, forcing the
-  server to allocate large amounts of memory to parse it before any
-  validation occurs.
-Exploitation:
-  An attacker can send multi-gigabyte POST requests to /api/auth/register or
-  /api/auth/login, consuming server memory and potentially causing
-  denial-of-service. Unlike the upload endpoint which uses MaxBytesReader,
-  the auth endpoints have no body size limit.
-
-================================================================================
-ADDITIONAL SECURITY OBSERVATIONS
-================================================================================
-
-1. POSITIVE: Password hashing uses bcrypt with DefaultCost, which is a
-   reasonable choice for password storage.
-
-2. POSITIVE: The JWT validation function correctly verifies the signing
-   method (HMAC) to prevent algorithm confusion attacks (line 36 of jwt.go).
-
-3. POSITIVE: The User model excludes the password field from JSON
-   serialization (json:"-" tag on line 16 of models.go), preventing
-   accidental password exposure in API responses.
-
-4. POSITIVE: The Song model excludes the FilePath from JSON serialization
-   (json:"-" tag on line 45 of models.go), preventing direct file path
-   disclosure to clients.
-
-5. POSITIVE: The delete song endpoint correctly verifies ownership
-   (artist.go line 138), preventing artists from deleting other artists'
-   songs.
-
-6. NOTE: The application uses Firestore (NoSQL), so traditional SQL injection
-   is not applicable. Firestore queries use parameterized SDK calls which are
-   inherently safe from injection.
-
-7. NOTE: No XSS vulnerabilities were found in the Go backend as all
-   responses are JSON-encoded. However, the frontend (not in scope) should
-   be reviewed separately.
+  URLs, server access logs, or proxy caches. An attacker gaining access to any
+  of these sources obtains a valid authentication token, enabling full account
+  impersonation for the lifetime of the token (24 hours).
 
 ================================================================================
 END OF REPORT

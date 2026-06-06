@@ -7,11 +7,10 @@ Date: 2026-05-06
 
 SUMMARY
 -------
-Total vulnerabilities found: 18
-  Critical: 4
-  High: 6
-  Medium: 6
-  Low: 2
+Total vulnerabilities found: 5
+  Critical: 2
+  High: 2
+  Medium: 1
 
 ==============================================================================
 VULNERABILITY #1
@@ -33,25 +32,6 @@ all API endpoints.
 ==============================================================================
 VULNERABILITY #2
 ==============================================================================
-CWE ID: CWE-798
-Name: Hardcoded Firebase Credentials Path
-Severity: Critical
-File: backend/config.h
-Lines: 11-12
-Description: The absolute path to the Firebase service account credentials
-file is hardcoded in the source code, including the full local filesystem
-path "C:/Users/tonil/Desktop/tcc/lead-manager-54595-firebase-adminsdk-
-fbsvc-375221693a.json". This reveals the Firebase project ID
-("lead-manager-54595") and the credentials filename containing a key
-identifier ("375221693a").
-Exploitation: An attacker with access to the source code learns the exact
-location of the Firebase admin credentials, the project ID, and can target
-the Firebase project directly. If the credentials file is also exposed (e.g.,
-committed to a repository), full Firebase admin access is compromised.
-
-==============================================================================
-VULNERABILITY #3
-==============================================================================
 CWE ID: CWE-22
 Name: Path Traversal in Static File Serving
 Severity: Critical
@@ -59,19 +39,17 @@ File: backend/main.cpp
 Lines: 89-106
 Description: The static file serving routes construct file paths by directly
 concatenating user-supplied URL path segments with the FRONTEND_DIR base
-directory. The regex patterns R"(/([^/].*\.(html|css|js|png|ico|svg)))" and
-R"(/((?:[^/]+/)+[^/]+\.(html|css|js|png|ico|svg)))" do not filter out
-directory traversal sequences such as "..". An attacker can craft a URL like
-"/..%2F..%2Fetc%2Fpasswd.html" or "/../../../etc/passwd.html" (if the server
-decodes the URL before matching) to read arbitrary files from the server's
-filesystem, as long as the filename ends with one of the allowed extensions.
+directory. The regex patterns do not filter out directory traversal sequences
+such as "..". An attacker can craft a URL like "/../../../etc/passwd.html" (if
+the server decodes the URL before matching) to read arbitrary files from the
+server's filesystem, as long as the filename ends with one of the allowed
+extensions.
 Exploitation: An attacker sends a request such as
-GET /../../backend/config.h.html or GET /..%2f..%2fbackend/config.h (depending
-on URL decoding behavior) to read sensitive source files, configuration, or
-the Firebase credentials JSON file from the server filesystem.
+GET /../../backend/config.h.html to read sensitive source files, configuration,
+or the Firebase credentials JSON file from the server filesystem.
 
 ==============================================================================
-VULNERABILITY #4
+VULNERABILITY #3
 ==============================================================================
 CWE ID: CWE-942
 Name: Overly Permissive CORS Policy
@@ -87,24 +65,7 @@ This enables cross-site attacks where an attacker's page makes requests to
 the music streaming API using the victim's session.
 
 ==============================================================================
-VULNERABILITY #5
-==============================================================================
-CWE ID: CWE-326
-Name: Insufficient PBKDF2 Iteration Count
-Severity: High
-File: backend/handlers/auth_handler.cpp
-Line: 42
-Description: The PBKDF2 password hashing uses only 10,000 iterations. Modern
-security guidelines (OWASP 2023) recommend a minimum of 600,000 iterations
-for PBKDF2-SHA256. With 10,000 iterations, password hashes can be brute-forced
-at high speed using commodity GPUs.
-Exploitation: If the database (Firebase Firestore or local SQLite) is
-compromised, an attacker can crack user passwords efficiently using GPU-
-accelerated brute-force attacks. At 10,000 iterations, millions of password
-guesses per second are feasible on modern hardware.
-
-==============================================================================
-VULNERABILITY #6
+VULNERABILITY #4
 ==============================================================================
 CWE ID: CWE-208
 Name: Timing-Vulnerable JWT Signature Comparison
@@ -122,147 +83,7 @@ cause the comparison to take marginally longer before failing, allowing the
 attacker to forge valid JWT tokens without knowing the secret key.
 
 ==============================================================================
-VULNERABILITY #7
-==============================================================================
-CWE ID: CWE-208
-Name: Timing-Vulnerable Password Hash Comparison
-Severity: High
-File: backend/handlers/auth_handler.cpp
-Lines: 50-52
-Description: The verifyPassword function compares password hashes using the
-== operator: "return hashPassword(password, saltHex) == expectedHash;". This
-is a non-constant-time comparison that leaks information through timing
-differences.
-Exploitation: An attacker can use timing analysis to determine individual
-characters of the password hash. While less directly exploitable than the JWT
-timing attack (since the attacker must supply a password to hash), it still
-violates cryptographic best practices and could be combined with other
-information leaks.
-
-==============================================================================
-VULNERABILITY #8
-==============================================================================
-CWE ID: CWE-338
-Name: Weak Pseudo-Random Number Generator for ID Generation
-Severity: High
-File: backend/handlers/music_handler.cpp
-Lines: 30-36
-Description: The generateId() function uses std::mt19937_64 seeded with the
-current system time (std::chrono::system_clock::now().time_since_epoch().count()).
-Mersenne Twister is not a cryptographically secure PRNG, and time-based seeding
-makes the output predictable. An attacker who knows the approximate time a song
-was uploaded can predict or enumerate possible song IDs.
-Exploitation: An attacker can predict song IDs by knowing the approximate
-upload time, then access or manipulate songs they should not have access to.
-The use of only 24 hex characters from a predictable generator further reduces
-the ID space.
-
-==============================================================================
-VULNERABILITY #9
-==============================================================================
-CWE ID: CWE-862
-Name: Missing Authorization on Upload - No Ownership Validation
-Severity: High
-File: backend/handlers/music_handler.cpp
-Lines: 87-90
-Description: When uploading a song, the artistName field is taken directly
-from user input (the multipart form field) rather than being derived from the
-authenticated user's profile. An authenticated artist can set any artistName,
-impersonating another artist.
-Exploitation: An authenticated artist can upload songs with any artistName
-they choose, including the name of other legitimate artists on the platform.
-This enables impersonation and content spoofing.
-
-==============================================================================
-VULNERABILITY #10
-==============================================================================
-CWE ID: CWE-611
-Name: No File Size Limit on Upload
-Severity: Medium
-File: backend/handlers/music_handler.cpp
-Lines: 97-125
-Description: There is no validation of the uploaded file's size. An attacker
-can upload extremely large files to exhaust disk space and memory on the
-server, since the entire file content is held in memory during the upload
-process (mf.content).
-Exploitation: An attacker with artist credentials can repeatedly upload very
-large files (gigabytes) to perform a denial-of-service attack by exhausting
-server disk space or memory.
-
-==============================================================================
-VULNERABILITY #11
-==============================================================================
-CWE ID: CWE-345
-Name: Insufficient File Type Validation (MIME Type Spoofing)
-Severity: Medium
-File: backend/handlers/music_handler.cpp
-Lines: 105-110
-Description: The MP3 validation checks only the Content-Type header or the
-file extension. Both of these are entirely controlled by the client and can
-be trivially spoofed. There is no validation of the actual file content
-(magic bytes/file signatures) to confirm the file is truly an MP3.
-Exploitation: An attacker can upload any type of file (executable, script,
-HTML with embedded JavaScript) by simply naming it with a .mp3 extension or
-setting the Content-Type header to audio/mpeg. This could lead to stored XSS
-if the files are later served with incorrect MIME types, or be used to store
-malicious payloads on the server.
-
-==============================================================================
-VULNERABILITY #12
-==============================================================================
-CWE ID: CWE-476
-Name: Null Pointer Dereference in SQLite Row Parsing
-Severity: Medium
-File: backend/db/local_db.cpp
-Lines: 7-8
-Description: The rowToSong function calls reinterpret_cast<const char*>
-(sqlite3_column_text(stmt, N)) for columns 0, 1, 2, 4, 5, 6, and 7 without
-checking for NULL returns. While column 3 (description) does check for NULL,
-the other columns do not. If any of these columns contain a NULL value (e.g.,
-due to database corruption or a manually modified database), this will result
-in constructing a std::string from a nullptr, causing undefined behavior and
-likely a crash.
-Exploitation: If an attacker can insert a row with a NULL value in a NOT NULL
-column (via direct database access or SQL injection in another path), the
-application will crash when reading that row, causing a denial of service.
-
-==============================================================================
-VULNERABILITY #13
-==============================================================================
-CWE ID: CWE-918
-Name: Potential Server-Side Request Forgery via Firebase Document ID
-Severity: Medium
-File: backend/firebase/firebase_service.cpp
-Lines: 180-181, 196-197
-Description: The emailToDocId function only sanitizes @, ., and + characters
-from email addresses but does not validate the email format or sanitize
-characters that could be meaningful in URL paths (such as / or ?). The
-resulting document ID is directly interpolated into URLs used for Firestore
-REST API calls. An attacker who supplies a specially crafted email could
-potentially manipulate the Firestore API URL path.
-Exploitation: An attacker could register with an email containing URL-
-significant characters (e.g., "user/../../admin" or "user?admin=true@x.com")
-to potentially access or modify different Firestore documents or append
-unexpected query parameters to the Firestore REST API requests.
-
-==============================================================================
-VULNERABILITY #14
-==============================================================================
-CWE ID: CWE-770
-Name: Missing Rate Limiting on Authentication Endpoints
-Severity: Medium
-File: backend/handlers/auth_handler.cpp
-Lines: 63-68
-Description: The login and registration endpoints have no rate limiting or
-account lockout mechanism. An attacker can make unlimited authentication
-attempts against the /api/auth/login endpoint.
-Exploitation: An attacker can perform brute-force password attacks against
-any user account by making rapid, unlimited login attempts. Combined with
-the weak PBKDF2 iteration count (Vulnerability #5), this makes online
-password cracking practical.
-
-==============================================================================
-VULNERABILITY #15
+VULNERABILITY #5
 ==============================================================================
 CWE ID: CWE-319
 Name: No HTTPS/TLS Enforcement
@@ -278,62 +99,6 @@ Exploitation: An attacker on the same network (e.g., public Wi-Fi) can
 intercept all traffic using passive sniffing, capturing JWT tokens,
 plaintext passwords during login, and user data. This enables full account
 takeover via token theft.
-
-==============================================================================
-VULNERABILITY #16
-==============================================================================
-CWE ID: CWE-200
-Name: Sensitive Information Exposure in Error Messages
-Severity: Low
-File: backend/firebase/firebase_service.cpp
-Lines: 75, 109
-Description: Error messages include internal details such as the full
-credentials file path (line 75: "Cannot open Firebase credentials: " +
-credentialsPath) and full OAuth2 token exchange responses (line 109: "Failed
-to obtain access token: " + resp). If these errors propagate to the client,
-they reveal internal server paths and potentially partial authentication
-tokens.
-Exploitation: An attacker triggering error conditions could learn internal
-file paths, server directory structure, or partial OAuth tokens from error
-messages, aiding further attacks.
-
-==============================================================================
-VULNERABILITY #17
-==============================================================================
-CWE ID: CWE-1188
-Name: JWT Expiry Not Configurable / Hardcoded in Token Creation
-Severity: Low
-File: backend/auth/jwt_helper.cpp
-Line: 101
-Description: The JWT token expiry is hardcoded to 86400 seconds (24 hours)
-directly in the createToken function, ignoring the Config::JWT_EXPIRY_SECONDS
-configuration value defined in config.h. This means the configurable expiry
-time is never used and cannot be changed without modifying source code.
-Exploitation: This is primarily a maintenance and operational issue. If an
-administrator wants to reduce token lifetime for security reasons (e.g., to
-1 hour), changing Config::JWT_EXPIRY_SECONDS would have no effect. Long-lived
-tokens increase the window of opportunity for token theft attacks.
-
-==============================================================================
-VULNERABILITY #18
-==============================================================================
-CWE ID: CWE-352
-Name: Missing CSRF Protection
-Severity: Medium (noted, mitigated by JWT)
-File: backend/main.cpp, backend/handlers/auth_handler.cpp
-Lines: main.cpp:62-70, auth_handler.cpp:63-68
-Description: The application has no CSRF protection mechanisms (no CSRF
-tokens, no SameSite cookie attributes, no Origin/Referer validation). While
-the API uses Bearer token authentication via the Authorization header (which
-provides some inherent CSRF protection since browsers do not automatically
-attach custom headers), the wildcard CORS policy (Vulnerability #4)
-undermines this protection by allowing any origin to make requests with
-custom headers.
-Exploitation: Combined with the wildcard CORS policy, a malicious website
-could use JavaScript to make authenticated API requests with the
-Authorization header if the token is accessible (e.g., stored in
-localStorage), effectively performing CSRF attacks to upload malicious
-content or access user data.
 
 ==============================================================================
 END OF REPORT

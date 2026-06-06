@@ -8,11 +8,10 @@ Date: 2026-05-06
 
 SUMMARY
 -------
-Total vulnerabilities found: 18
-  Critical: 3
-  High:     6
-  Medium:   6
-  Low:      3
+Total vulnerabilities found: 5
+  Critical: 2
+  High:     2
+  Medium:   1
 
 ================================================================================
 VULNERABILITY #1
@@ -23,246 +22,30 @@ Severity:     Critical
 File:         include/app_config.hpp, line 8
               src/app_config.cpp, line 21
 Description:  The JWT signing secret is hardcoded as a default value directly in
-              the source code: "change-this-secret-in-production-2026". The same
-              string appears as the fallback default in app_config.cpp line 21.
-              If the config.json file does not contain a "jwt_secret" field, the
+              the source code: "change-this-secret-in-production-2026". If the
+              config.json file does not contain a "jwt_secret" field, the
               application silently uses this well-known default secret.
 Exploitation: An attacker who knows this default secret (which is visible in
               the source code) can forge valid JWT tokens for any user, gaining
-              full unauthorized access to the application. Since the secret is
-              in the source code, any public repository exposure or binary
-              reverse-engineering reveals it.
+              full unauthorized access to the application.
 
 ================================================================================
 VULNERABILITY #2
-================================================================================
-CWE ID:       CWE-1188 (Initialization with Hard-Coded Network Resource Configuration)
-Name:         No Validation That JWT Secret Was Changed From Default
-Severity:     Critical
-File:         src/app_config.cpp, lines 19-21
-Description:  The load_config function validates that firebase_service_account_path
-              is non-empty (line 26-28), but performs no validation on the
-              jwt_secret field. It does not check whether the secret is the
-              hardcoded default, whether it meets minimum length/entropy
-              requirements, or whether it was explicitly provided. The application
-              will run in production with the default insecure secret without any
-              warning.
-Exploitation: A deployment that omits the jwt_secret field in config.json will
-              silently use the known default value, allowing any attacker to
-              forge authentication tokens.
-
-================================================================================
-VULNERABILITY #3
-================================================================================
-CWE ID:       CWE-306 (Missing Authentication for Critical Function)
-Name:         Health Endpoint Exposes Internal Infrastructure Details
-Severity:     Medium
-File:         src/server.cpp, lines 294-303
-Description:  The /api/health endpoint requires no authentication and exposes
-              internal details including Firebase connection status and the names
-              of Firestore collections used (users and leads collection names).
-Exploitation: An attacker can use this information for reconnaissance, learning
-              the exact Firestore collection names and the Firebase connectivity
-              status, which aids in planning further attacks against the backend
-              database.
-
-================================================================================
-VULNERABILITY #4
-================================================================================
-CWE ID:       CWE-352 (Cross-Site Request Forgery)
-Name:         No CSRF Protection on State-Changing Endpoints
-Severity:     High
-File:         src/server.cpp, lines 305-761 (all POST/PUT/DELETE handlers)
-Description:  The application uses JWT Bearer tokens for authentication but
-              implements no CSRF protection mechanisms. There are no CSRF tokens,
-              no SameSite cookie attributes (since auth is via headers), no
-              Origin/Referer header validation, and no custom header requirements
-              beyond Authorization. While Bearer tokens in Authorization headers
-              are not automatically sent by browsers (unlike cookies), if the
-              frontend stores the JWT in localStorage or a cookie accessible by
-              JavaScript, CSRF attacks become possible.
-Exploitation: If the JWT token is stored in a way accessible to browser-initiated
-              requests (e.g., cookies), an attacker could craft a malicious page
-              that sends forged requests to create, modify, or delete leads.
-
-================================================================================
-VULNERABILITY #5
-================================================================================
-CWE ID:       CWE-79 (Cross-Site Scripting - Stored XSS)
-Name:         No Output Encoding/Sanitization of User-Supplied Data in JSON Responses
-Severity:     High
-File:         src/server.cpp, lines 48-65, 462, 507, 548, 626
-Description:  User-supplied data (fullName, email, phone, company, jobTitle,
-              source, notes, interaction note/type) is stored and returned in
-              JSON responses without any sanitization or encoding. While JSON
-              itself escapes certain characters, if the frontend renders these
-              values using innerHTML or similar unsafe methods, stored XSS is
-              possible. The fields fullName, company, notes, and interaction
-              note accept arbitrary text with no character restrictions.
-Exploitation: An attacker could register a lead with a fullName or notes field
-              containing malicious JavaScript (e.g., <script>alert(1)</script>).
-              When another user views this lead through a vulnerable frontend,
-              the script executes in their browser context, potentially stealing
-              their JWT token.
-
-================================================================================
-VULNERABILITY #6
-================================================================================
-CWE ID:       CWE-770 (Allocation of Resources Without Limits)
-Name:         No Request Body Size Limit
-Severity:     High
-File:         src/server.cpp, lines 274-761
-Description:  The HTTP server does not configure any maximum request body size.
-              The httplib::Server is used with default settings, which may allow
-              very large request bodies. The CSV import endpoint (line 684)
-              directly parses req.body as CSV, and the JSON import endpoint
-              (line 629) parses the body as JSON without size restrictions.
-Exploitation: An attacker can send extremely large request bodies (multi-GB)
-              to exhaust server memory, causing a denial-of-service condition.
-              The CSV parsing in particular (csv_utils.cpp) builds the entire
-              parsed structure in memory.
-
-================================================================================
-VULNERABILITY #7
-================================================================================
-CWE ID:       CWE-400 (Uncontrolled Resource Consumption)
-Name:         Unbounded Lead Import Without Rate Limiting
-Severity:     High
-File:         src/server.cpp, lines 629-682 (JSON import), lines 684-753 (CSV import)
-Description:  The JSON and CSV import endpoints allow importing an unlimited
-              number of leads in a single request. There is no limit on the
-              number of rows in the "rows" array (JSON import) or the number of
-              lines in the CSV body. Each imported row triggers a separate
-              Firebase write operation.
-Exploitation: An attacker with valid credentials can submit a request with
-              millions of rows, causing excessive Firebase API calls (potential
-              cost abuse), exhaustion of server memory during parsing, and
-              denial of service to other users due to thread pool saturation
-              (only 8 threads are configured at line 283).
-
-================================================================================
-VULNERABILITY #8
-================================================================================
-CWE ID:       CWE-200 (Exposure of Sensitive Information)
-Name:         Detailed Error Messages Expose Internal Infrastructure
-Severity:     Medium
-File:         src/firebase_client.cpp, lines 141, 193, 362, 398
-              src/server.cpp, lines 321-322, 365-366, 389-390
-Description:  Firebase error responses (including full HTTP status codes and
-              response bodies from Google's API) are passed directly to the
-              client in error messages. These messages can contain internal
-              URLs, project IDs, collection names, and detailed error
-              descriptions from Google Cloud.
-Exploitation: An attacker can trigger errors to extract information about the
-              backend infrastructure, such as the Firebase project ID, specific
-              API error codes, and internal collection structures. This aids in
-              reconnaissance for further attacks.
-
-================================================================================
-VULNERABILITY #9
-================================================================================
-CWE ID:       CWE-942 (Permissive Cross-domain Policy)
-Name:         Server Listens on All Network Interfaces
-Severity:     Medium
-File:         src/server.cpp, line 758
-Description:  The server binds to "0.0.0.0" which means it listens on all
-              network interfaces, including external-facing ones. Combined
-              with the lack of HTTPS/TLS configuration, this exposes the
-              application to the entire network.
-Exploitation: If deployed on a server with a public IP, the application is
-              accessible from the internet without any network-level protection.
-              All traffic including JWT tokens and passwords travels in
-              plaintext over HTTP.
-
-================================================================================
-VULNERABILITY #10
 ================================================================================
 CWE ID:       CWE-319 (Cleartext Transmission of Sensitive Information)
 Name:         No TLS/HTTPS Support - Credentials Transmitted in Plaintext
 Severity:     Critical
 File:         src/server.cpp, line 758
-              src/server.cpp, line 755
 Description:  The server uses plain HTTP (httplib::Server, not httplib::SSLServer)
               with no TLS configuration. Login credentials (email and password),
               JWT tokens in Authorization headers, and all lead data are
-              transmitted in cleartext. The startup message at line 755 confirms
-              "http://localhost" (not https).
+              transmitted in cleartext. The server also binds to 0.0.0.0.
 Exploitation: Any attacker on the same network can perform a man-in-the-middle
               attack or passive network sniffing to capture user passwords,
-              JWT tokens, and all lead data in transit. This is especially
-              critical since the server binds to 0.0.0.0.
+              JWT tokens, and all lead data in transit.
 
 ================================================================================
-VULNERABILITY #11
-================================================================================
-CWE ID:       CWE-916 (Use of Password Hash With Insufficient Computational Effort)
-Name:         PBKDF2 Iteration Count May Be Insufficient for Modern Hardware
-Severity:     Low
-File:         src/security.cpp, line 261
-Description:  The password hashing uses PBKDF2-SHA256 with 120,000 iterations.
-              While this was a reasonable choice in past years, OWASP currently
-              recommends at least 600,000 iterations for PBKDF2-SHA256 (as of
-              2023 guidelines). Additionally, PBKDF2 is considered weaker than
-              memory-hard algorithms like Argon2id or bcrypt for password
-              hashing.
-Exploitation: If the password hash database is compromised (e.g., through a
-              Firebase data breach), an attacker with modern GPU hardware can
-              crack passwords faster than if a stronger algorithm or higher
-              iteration count were used.
-
-================================================================================
-VULNERABILITY #12
-================================================================================
-CWE ID:       CWE-208 (Observable Timing Discrepancy)
-Name:         Timing Side-Channel in JWT Signature Verification
-Severity:     Medium
-File:         src/security.cpp, line 314
-Description:  The JWT signature verification at line 314 uses a standard string
-              comparison operator (!=) to compare the expected and actual
-              signatures: "if (expected != parts[2])". String comparison in
-              C++ typically short-circuits on the first differing character,
-              creating a timing oracle. Note: the password verification at
-              lines 279-283 correctly uses a constant-time comparison.
-Exploitation: An attacker can repeatedly send JWTs with slightly varied
-              signatures and measure response times to progressively determine
-              the correct HMAC signature byte-by-byte, eventually forging a
-              valid JWT without knowing the secret key.
-
-================================================================================
-VULNERABILITY #13
-================================================================================
-CWE ID:       CWE-252 (Unchecked Return Value)
-Name:         Unchecked Integer Parsing Can Cause Unhandled Exceptions
-Severity:     Medium
-File:         src/server.cpp, lines 431-434
-Description:  The page and pageSize query parameters are parsed using std::stoi()
-              without try-catch. If a non-numeric value is provided (e.g.,
-              "?page=abc"), std::stoi throws std::invalid_argument, and if the
-              value overflows, it throws std::out_of_range. These unhandled
-              exceptions will crash the request handler.
-Exploitation: An attacker can send requests with malformed page/pageSize
-              parameters to cause unhandled exceptions, potentially crashing
-              the server thread or returning 500 errors. This is a minor
-              denial-of-service vector.
-
-================================================================================
-VULNERABILITY #14
-================================================================================
-CWE ID:       CWE-862 (Missing Authorization)
-Name:         No Role-Based Access Control or Admin Separation
-Severity:     Low
-File:         src/server.cpp (entire file)
-Description:  The application has no concept of user roles. Any authenticated
-              user has full access to all CRUD operations on their own leads,
-              but there is no admin role for system management. More critically,
-              the user registration endpoint (/api/auth/register, line 305) is
-              open to anyone without rate limiting or invitation requirements.
-Exploitation: An attacker can create unlimited accounts, each with full
-              application access. There is no way to disable accounts, and
-              no admin oversight of registered users.
-
-================================================================================
-VULNERABILITY #15
+VULNERABILITY #3
 ================================================================================
 CWE ID:       CWE-307 (Improper Restriction of Excessive Authentication Attempts)
 Name:         No Rate Limiting or Account Lockout on Login
@@ -273,99 +56,44 @@ Description:  The login endpoint (/api/auth/login) has no rate limiting,
               attempts. The registration endpoint similarly has no rate limiting.
 Exploitation: An attacker can perform unlimited brute-force password guessing
               attacks against any known email address. With the 6-character
-              minimum password length (line 314 of server.cpp) and no lockout,
-              weak passwords can be quickly cracked through online attacks.
+              minimum password length and no lockout, weak passwords can be
+              quickly cracked through online attacks.
 
 ================================================================================
-VULNERABILITY #16
+VULNERABILITY #4
 ================================================================================
-CWE ID:       CWE-269 (Improper Privilege Management)
-Name:         Client-Side Filtering of Leads Instead of Server-Side Query
-Severity:     Medium
-File:         src/firebase_client.cpp, lines 117-162
-Description:  The list_leads_for_user method fetches ALL leads from the Firestore
-              collection and then filters by userId in application memory
-              (line 149: "if (parsed.userId == userId)"). This means every
-              authenticated user's request causes the server to download ALL
-              leads from ALL users, only to discard those not belonging to the
-              requesting user.
-Exploitation: This is both a performance issue and a security concern. A single
-              user's request triggers downloading potentially millions of other
-              users' leads into server memory. If there is any bug in the
-              filtering logic, leads from other users could be exposed. It also
-              enables denial-of-service by creating many leads that increase
-              the data transferred for every subsequent list request.
-
-================================================================================
-VULNERABILITY #17
-================================================================================
-CWE ID:       CWE-532 (Insertion of Sensitive Information into Log File)
-Name:         Firebase Startup Error Logged to stderr May Contain Credentials
-Severity:     Low
-File:         src/server.cpp, lines 278-279
-              src/main.cpp, line 14
-Description:  Firebase connection errors are logged to stderr, and the main
-              function logs exception messages. If the Firebase service account
-              loading fails or authentication fails, the error messages may
-              contain sensitive information like partial credentials, project
-              IDs, or token URIs.
-Exploitation: An attacker with access to log files or stderr output could obtain
-              sensitive Firebase configuration details useful for further attacks
-              against the Google Cloud project.
-
-================================================================================
-VULNERABILITY #18
-================================================================================
-CWE ID:       CWE-345 (Insufficient Verification of Data Authenticity)
-Name:         No Email Format Validation
+CWE ID:       CWE-79 (Cross-Site Scripting - Stored XSS)
+Name:         No Output Encoding/Sanitization of User-Supplied Data
 Severity:     High
-File:         src/server.cpp, lines 312-314 (register), lines 107-109 (validate_lead)
-Description:  The email field is only checked for being non-empty. There is no
-              validation of email format (no regex, no RFC 5322 compliance check).
-              The normalize_email function (utils.cpp line 244) only lowercases
-              and trims whitespace. This allows arbitrary strings to be used as
-              email addresses for both user accounts and lead records.
-Exploitation: An attacker can register accounts with non-email strings,
-              potentially causing issues with downstream systems that expect
-              valid emails. It also allows user document ID collisions if
-              crafted strings hash to the same SHA256 value as legitimate
-              emails. Additionally, leads with invalid email formats pollute
-              the data and could cause issues in email marketing integrations.
+File:         src/server.cpp, lines 48-65, 462, 507, 548, 626
+Description:  User-supplied data (fullName, email, phone, company, jobTitle,
+              source, notes, interaction note/type) is stored and returned in
+              JSON responses without any sanitization or encoding. The fields
+              fullName, company, notes, and interaction note accept arbitrary
+              text with no character restrictions.
+Exploitation: An attacker could register a lead with a fullName or notes field
+              containing malicious JavaScript (e.g., <script>alert(1)</script>).
+              When another user views this lead through a vulnerable frontend,
+              the script executes in their browser context, potentially stealing
+              their JWT token.
 
 ================================================================================
-ADDITIONAL OBSERVATIONS (Non-Vulnerability Notes)
+VULNERABILITY #5
 ================================================================================
-
-1. POSITIVE: Password verification uses constant-time comparison
-   (security.cpp lines 279-283) using XOR accumulation, which is correct
-   and prevents timing attacks on password hashes.
-
-2. POSITIVE: PBKDF2 uses a cryptographically secure random 16-byte salt
-   generated via BCryptGenRandom (security.cpp lines 207-213).
-
-3. POSITIVE: JWT tokens have a 12-hour expiration (security.cpp line 299).
-
-4. POSITIVE: Lead ownership is properly checked via can_access_lead before
-   all read/update/delete operations on individual leads (server.cpp).
-
-5. POSITIVE: URL parameters are properly encoded when building Firestore
-   URLs (firebase_client.cpp uses url_encode consistently).
-
-6. POSITIVE: CSV output properly escapes special characters (csv_utils.cpp
-   escape_csv function).
-
-7. NOTE: The application uses a thread pool of only 8 threads (server.cpp
-   line 283). Under load, this can lead to thread starvation and
-   denial-of-service without requiring sophisticated attacks.
-
-8. NOTE: The WinHTTP client (http_client.cpp) does not validate TLS
-   certificates by default configuration, though WinHTTP does perform
-   certificate validation in its default mode. No explicit certificate
-   pinning is implemented for Firebase connections.
-
-9. NOTE: No CORS headers are configured. While this may prevent legitimate
-   cross-origin frontend usage, it also means the browser's same-origin
-   policy provides some CSRF protection for AJAX-based requests.
+CWE ID:       CWE-208 (Observable Timing Discrepancy)
+Name:         Timing Side-Channel in JWT Signature Verification
+Severity:     Medium
+File:         src/security.cpp, line 314
+Description:  The JWT signature verification at line 314 uses a standard string
+              comparison operator (!=) to compare the expected and actual
+              signatures: "if (expected != parts[2])". String comparison in
+              C++ short-circuits on the first differing character, creating a
+              timing oracle. (Note: password verification correctly uses a
+              constant-time comparison.)
+Exploitation: An attacker can repeatedly send JWTs with slightly varied
+              signatures and measure response times to progressively determine
+              the correct HMAC signature byte-by-byte, eventually forging a
+              valid JWT without knowing the secret key.
 
 ================================================================================
 END OF REPORT

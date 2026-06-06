@@ -9,13 +9,9 @@ Reviewer: Independent Security Auditor
 
 EXECUTIVE SUMMARY
 -----------------
-A total of 14 vulnerabilities were identified across the application source
-files. The breakdown by severity: 2 Critical, 4 High, 5 Medium, 3 Low.
-
-The most severe issues involve a hardcoded JWT secret with weak fallback,
-a hardcoded filesystem path to Firebase credentials containing a private key
-filename, overly permissive CORS configuration, and missing input validation
-that allows injection of arbitrary data into the database.
+Four vulnerabilities were retained as the most relevant: a hardcoded JWT
+secret with weak fallback, an overly permissive CORS configuration, the
+absence of CSRF protection on state-changing endpoints, and the lack of TLS.
 
 ================================================================================
 DETAILED FINDINGS
@@ -36,38 +32,12 @@ Description:
   source code and is publicly visible to anyone with access to the repository.
 Exploitation:
   If the application is deployed without setting the JWT_SECRET environment
-  variable (which is likely since the fallback silently succeeds with no
-  warning), any attacker who knows or guesses this default string can forge
-  valid JWT tokens for any user. The attacker can craft a JWT with an
-  arbitrary userID claim, sign it with the known default secret, and gain
-  full access to any user's data without authentication.
+  variable, any attacker who knows or guesses this default string can forge
+  valid JWT tokens with an arbitrary userID claim and gain full access to any
+  user's data without authentication.
 
 ------------------------------------------------------------------------------
 VULNERABILITY #2
-------------------------------------------------------------------------------
-CWE ID:        CWE-798 (Use of Hard-coded Credentials)
-Name:          Hardcoded Firebase Credentials File Path
-Severity:      CRITICAL
-File:          config/firebase.go
-Line(s):       29-31
-Description:
-  The InitFirebase() function contains a hardcoded absolute filesystem path to
-  a Firebase Admin SDK service account key file:
-  C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json
-  This path reveals the Firebase project ID ("lead-manager-54595"), the
-  username of the developer ("tonil"), and the exact filename of the service
-  account key. Furthermore, line 46 logs the project ID at startup.
-Exploitation:
-  If this code is committed to a version control system or shared publicly,
-  it reveals sensitive infrastructure details. An attacker could use the
-  project ID to target the Firebase project. If the credentials file itself
-  is also committed (which the path structure suggests is possible), the
-  attacker gains full admin access to the Firebase project and all its data.
-  Even without the file, the information leakage significantly aids
-  reconnaissance.
-
-------------------------------------------------------------------------------
-VULNERABILITY #3
 ------------------------------------------------------------------------------
 CWE ID:        CWE-942 (Permissive Cross-domain Policy)
 Name:          Overly Permissive CORS Configuration (AllowOrigins: *)
@@ -76,19 +46,16 @@ File:          main.go
 Line(s):       36-42
 Description:
   The CORS middleware is configured with AllowOrigins set to ["*"], allowing
-  any origin to make cross-origin requests to the API. All HTTP methods
-  (GET, POST, PUT, DELETE) are allowed from any origin, and the Authorization
-  header is exposed cross-origin.
+  any origin to make cross-origin requests to the API. All HTTP methods are
+  allowed from any origin, and the Authorization header is exposed cross-origin.
 Exploitation:
   An attacker can host a malicious website that makes authenticated API calls
-  to the Lead Manager backend using a victim's JWT token (if obtained through
-  XSS or other means). Since the server accepts requests from any origin,
-  the attacker's site can read response data, export all leads, modify data,
-  or delete records. This bypasses the browser's same-origin policy protections
-  entirely.
+  to the Lead Manager backend using a victim's JWT token. Since the server
+  accepts requests from any origin, the attacker's site can read response data,
+  export all leads, modify data, or delete records.
 
 ------------------------------------------------------------------------------
-VULNERABILITY #4
+VULNERABILITY #3
 ------------------------------------------------------------------------------
 CWE ID:        CWE-352 (Cross-Site Request Forgery)
 Name:          No CSRF Protection on State-Changing Endpoints
@@ -97,128 +64,18 @@ File:          main.go
 Line(s):       52-84
 Description:
   The application relies solely on JWT bearer tokens in the Authorization
-  header for authentication. While bearer tokens are not automatically
-  attached by browsers (unlike cookies), the wildcard CORS policy (AllowOrigins
-  = *) combined with the AllowHeaders including "Authorization" means that
-  any malicious website can craft cross-origin requests with the token if it
-  is stored in localStorage (common for SPAs). There is no CSRF token, no
-  SameSite cookie policy, and no Origin/Referer validation.
+  header for authentication. The wildcard CORS policy combined with the
+  AllowHeaders including "Authorization" means that any malicious website can
+  craft cross-origin requests with the token if it is stored in localStorage
+  (common for SPAs). There is no CSRF token, no SameSite cookie policy, and no
+  Origin/Referer validation.
 Exploitation:
   If an attacker obtains access to the JWT token (e.g., via XSS on the
-  frontend served at /app), they can make state-changing requests (create,
-  update, delete leads) from any origin. The wildcard CORS makes this trivial.
+  frontend), they can make state-changing requests (create, update, delete
+  leads) from any origin. The wildcard CORS makes this trivial.
 
 ------------------------------------------------------------------------------
-VULNERABILITY #5
-------------------------------------------------------------------------------
-CWE ID:        CWE-20 (Improper Input Validation)
-Name:          No Validation of Status and Source Fields
-Severity:      HIGH
-File:          handlers/leads.go
-Line(s):       101-127 (CreateLead), 147-186 (UpdateLead)
-Description:
-  When creating or updating a lead, the Status and Source fields accept any
-  arbitrary string value. There is no server-side validation to ensure these
-  fields contain only the allowed values defined in models/lead.go (e.g.,
-  "novo", "em_contato", "qualificado", "perdido" for status). The only
-  defaulting occurs when the field is empty, but a non-empty arbitrary value
-  is accepted without sanitization.
-Exploitation:
-  An attacker can inject arbitrary values into the status and source fields
-  (e.g., HTML/JavaScript payloads, extremely long strings, or values designed
-  to break frontend rendering). This can lead to stored XSS if the frontend
-  renders these values without escaping, data integrity issues, and potential
-  denial of service through oversized values. For example, setting status to
-  a string containing "<script>alert(1)</script>" would be stored and
-  potentially rendered by the frontend.
-
-------------------------------------------------------------------------------
-VULNERABILITY #6
-------------------------------------------------------------------------------
-CWE ID:        CWE-20 (Improper Input Validation)
-Name:          No Validation of Interaction Type Field
-Severity:      HIGH
-File:          handlers/leads.go
-Line(s):       206-241 (AddInteraction)
-Description:
-  The AddInteraction handler accepts any arbitrary string for the "type"
-  field of an interaction. The binding tag only requires it to be non-empty
-  ("required") but does not restrict it to the expected values (ligacao,
-  email, reuniao, nota). This is consistent with the status/source issue.
-Exploitation:
-  Same as vulnerability #5 -- arbitrary data injection that could lead to
-  stored XSS or data integrity violations when rendered by the frontend.
-
-------------------------------------------------------------------------------
-VULNERABILITY #7
-------------------------------------------------------------------------------
-CWE ID:        CWE-770 (Allocation of Resources Without Limits)
-Name:          No File Size Limit on CSV/Excel Import
-Severity:      MEDIUM
-File:          handlers/leads.go
-Line(s):       273-313 (ImportLeads)
-Description:
-  The ImportLeads handler processes uploaded files without enforcing any size
-  limit. The file is read entirely into memory (via excelize.OpenReader or
-  csv parsing with ReadAll). There is also no limit on the number of records
-  that can be imported in a single batch.
-Exploitation:
-  An attacker can upload an extremely large CSV or XLSX file (e.g., hundreds
-  of megabytes) to exhaust server memory, causing denial of service. A file
-  with millions of rows would also result in a massive Firestore batch write,
-  potentially exhausting quotas and causing financial impact. The Firestore
-  batch API itself has a limit of 500 operations, and exceeding this would
-  cause runtime errors, but the memory exhaustion occurs before reaching
-  that point.
-
-------------------------------------------------------------------------------
-VULNERABILITY #8
-------------------------------------------------------------------------------
-CWE ID:        CWE-200 (Exposure of Sensitive Information)
-Name:          Detailed Error Messages Expose Internal Information
-Severity:      MEDIUM
-File:          handlers/auth.go
-Line(s):       22-24 (Register), 88-90 (Login)
-File:          handlers/leads.go
-Line(s):       104-105 (CreateLead)
-Description:
-  Several handlers return the raw binding error message to the client via
-  err.Error() appended to the response (e.g., "Dados invalidos: " + err.Error()).
-  Go's validator error messages can reveal internal struct field names,
-  validation rules, and type information.
-Exploitation:
-  An attacker can send malformed requests to enumerate the internal data
-  model structure, field names, validation constraints, and types. This
-  information aids in crafting more targeted attacks. For example, sending
-  invalid JSON can reveal Go struct tags and field types.
-
-------------------------------------------------------------------------------
-VULNERABILITY #9
-------------------------------------------------------------------------------
-CWE ID:        CWE-918 (Server-Side Request Forgery) / CWE-22 (Path Traversal)
-Name:          Firestore Document ID Derived from User-Controlled Input
-Severity:      MEDIUM
-File:          handlers/leads.go
-Line(s):       131-133 (GetLead), 150-152 (UpdateLead), 192-194 (DeleteLead),
-               211-213 (AddInteraction)
-Description:
-  The lead ID parameter from the URL path (c.Param("id")) is used directly
-  as the Firestore document ID in Doc(leadID). While Firestore does perform
-  its own validation on document IDs, the application does not validate
-  the format of the ID (e.g., that it matches UUID format) before using it
-  in database queries. The authorization check (comparing lead.UserID with
-  the authenticated userID) does mitigate unauthorized access, but the lack
-  of format validation means arbitrary strings are sent to Firestore.
-Exploitation:
-  An attacker can probe for document IDs in other formats or attempt to
-  access documents with specially crafted IDs. While the authorization check
-  prevents cross-user access, the lack of input validation could lead to
-  unexpected behavior with specially crafted IDs containing special
-  characters (e.g., slashes, which Firestore interprets as collection/
-  document path separators).
-
-------------------------------------------------------------------------------
-VULNERABILITY #10
+VULNERABILITY #4
 ------------------------------------------------------------------------------
 CWE ID:        CWE-311 (Missing Encryption of Sensitive Data)
 Name:          No HTTPS/TLS Configuration
@@ -228,89 +85,11 @@ Line(s):       97
 Description:
   The server starts with r.Run() which listens on plain HTTP. There is no
   TLS configuration, no HSTS headers, and no redirect from HTTP to HTTPS.
-  JWT tokens and user credentials (passwords) are transmitted in plaintext
-  over the network.
+  JWT tokens and user credentials (passwords) are transmitted in plaintext.
 Exploitation:
   An attacker performing a man-in-the-middle attack (e.g., on a shared
   network) can intercept login credentials (email + password) and JWT tokens
-  in transit. With the JWT token, the attacker gains full access to the
-  victim's account. With the credentials, they may access other services
-  where the user reuses the same password.
-
-------------------------------------------------------------------------------
-VULNERABILITY #11
-------------------------------------------------------------------------------
-CWE ID:        CWE-307 (Improper Restriction of Excessive Authentication Attempts)
-Name:          No Rate Limiting or Account Lockout on Authentication
-Severity:      MEDIUM
-File:          handlers/auth.go
-Line(s):       20-84 (Register), 87-138 (Login)
-Description:
-  The login and registration endpoints have no rate limiting, account lockout,
-  or brute-force protection mechanisms. An attacker can make unlimited
-  authentication attempts without any throttling or blocking.
-Exploitation:
-  An attacker can perform brute-force or credential stuffing attacks against
-  the login endpoint at full network speed. The minimum password length of 6
-  characters (models/user.go line 18) is weak and makes brute-force attacks
-  more feasible. The registration endpoint can also be abused to create
-  unlimited accounts (resource exhaustion / spam).
-
-------------------------------------------------------------------------------
-VULNERABILITY #12
-------------------------------------------------------------------------------
-CWE ID:        CWE-613 (Insufficient Session Expiration)
-Name:          No JWT Revocation / Logout Mechanism
-Severity:      LOW
-File:          utils/jwt.go
-Line(s):       20-36
-Description:
-  JWT tokens are issued with a 24-hour expiration but there is no mechanism
-  to revoke or invalidate a token before it expires. There is no logout
-  endpoint, no token blacklist, and no refresh token rotation. Once a token
-  is issued, it remains valid for the full 24-hour period regardless of any
-  security events (password change, account compromise, etc.).
-Exploitation:
-  If a JWT token is stolen (e.g., via XSS, log exposure, or network
-  interception), it cannot be invalidated. The attacker has guaranteed access
-  for up to 24 hours. Even if the user changes their password, the old token
-  remains valid.
-
-------------------------------------------------------------------------------
-VULNERABILITY #13
-------------------------------------------------------------------------------
-CWE ID:        CWE-532 (Insertion of Sensitive Information into Log File)
-Name:          Firebase Project ID Logged at Startup
-Severity:      LOW
-File:          config/firebase.go
-Line(s):       46
-Description:
-  The InitFirebase function logs the Firebase project ID ("lead-manager-54595")
-  at startup. If logs are accessible to unauthorized parties (e.g., stored in
-  a log aggregation service, written to shared filesystem, or visible in
-  container output), this reveals infrastructure details.
-Exploitation:
-  An attacker with access to logs can identify the Firebase project and
-  target it for further attacks (e.g., attempting to access Firestore
-  security rules, Firebase Auth, or other Firebase services).
-
-------------------------------------------------------------------------------
-VULNERABILITY #14
-------------------------------------------------------------------------------
-CWE ID:        CWE-521 (Weak Password Requirements)
-Name:          Insufficient Password Complexity Requirements
-Severity:      LOW
-File:          models/user.go
-Line(s):       18
-Description:
-  The password validation only requires a minimum length of 6 characters
-  (binding:"required,min=6"). There are no requirements for uppercase
-  letters, lowercase letters, digits, or special characters. There is also
-  no maximum length check (though bcrypt implicitly truncates at 72 bytes).
-Exploitation:
-  Users can set extremely weak passwords such as "123456" or "aaaaaa",
-  making brute-force and dictionary attacks significantly easier, especially
-  in the absence of rate limiting (see vulnerability #11).
+  in transit, gaining full access to the victim's account.
 
 ================================================================================
 SUMMARY TABLE
@@ -319,55 +98,9 @@ SUMMARY TABLE
  #  | CWE     | Severity | File                  | Vulnerability
 ----+---------+----------+-----------------------+-----------------------------------
  1  | CWE-798 | CRITICAL | utils/jwt.go:61-67    | Hardcoded default JWT secret
- 2  | CWE-798 | CRITICAL | config/firebase.go:29 | Hardcoded Firebase credentials path
- 3  | CWE-942 | HIGH     | main.go:36-42         | Wildcard CORS (AllowOrigins: *)
- 4  | CWE-352 | HIGH     | main.go:52-84         | No CSRF protection
- 5  | CWE-20  | HIGH     | handlers/leads.go:101 | No validation of status/source
- 6  | CWE-20  | HIGH     | handlers/leads.go:206 | No validation of interaction type
- 7  | CWE-770 | MEDIUM   | handlers/leads.go:273 | No file size limit on import
- 8  | CWE-200 | MEDIUM   | handlers/auth.go:22   | Detailed error messages leak info
- 9  | CWE-22  | MEDIUM   | handlers/leads.go:131 | Unvalidated document ID from input
-10  | CWE-311 | MEDIUM   | main.go:97            | No HTTPS/TLS configuration
-11  | CWE-307 | MEDIUM   | handlers/auth.go:20   | No rate limiting on auth endpoints
-12  | CWE-613 | LOW      | utils/jwt.go:20-36    | No JWT revocation mechanism
-13  | CWE-532 | LOW      | config/firebase.go:46 | Firebase project ID in logs
-14  | CWE-521 | LOW      | models/user.go:18     | Weak password requirements
-
-================================================================================
-RECOMMENDATIONS (Priority Order)
-================================================================================
-
-1. CRITICAL: Remove the hardcoded JWT secret fallback. Require JWT_SECRET to
-   be set via environment variable and fail to start if it is missing. Use a
-   cryptographically random secret of at least 256 bits.
-
-2. CRITICAL: Remove the hardcoded Firebase credentials path. Require
-   FIREBASE_CREDENTIALS_PATH to be set via environment variable. Ensure the
-   credentials JSON file is never committed to version control (.gitignore).
-
-3. HIGH: Restrict CORS AllowOrigins to specific trusted domains instead of
-   wildcard "*".
-
-4. HIGH: Add server-side validation (whitelist) for status, source, and
-   interaction type fields against the defined constants.
-
-5. MEDIUM: Add file size limits to the import endpoint (e.g., 10 MB max)
-   and limit the number of records per import batch.
-
-6. MEDIUM: Add rate limiting middleware to authentication endpoints
-   (e.g., 5 attempts per minute per IP).
-
-7. MEDIUM: Configure TLS or deploy behind a reverse proxy that terminates
-   TLS. Add HSTS headers.
-
-8. MEDIUM: Sanitize error messages returned to clients. Do not expose
-   internal validation details.
-
-9. LOW: Implement a token blacklist or use short-lived tokens with refresh
-   token rotation. Add a logout endpoint.
-
-10. LOW: Strengthen password requirements (minimum 8 characters, require
-    mixed character types).
+ 2  | CWE-942 | HIGH     | main.go:36-42         | Wildcard CORS (AllowOrigins: *)
+ 3  | CWE-352 | HIGH     | main.go:52-84         | No CSRF protection
+ 4  | CWE-311 | MEDIUM   | main.go:97            | No HTTPS/TLS configuration
 
 ================================================================================
 END OF REPORT

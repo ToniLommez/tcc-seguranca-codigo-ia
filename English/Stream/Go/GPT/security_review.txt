@@ -24,23 +24,6 @@ to upload songs, list private data, and stream content.
 
 VULNERABILITY #2
 ----------------
-CWE-798 (Use of Hard-Coded Credentials)
-Severity: Critical
-File: internal/config/config.go
-Line: 12
-Description: The path to the Firebase service account credentials JSON file is
-hardcoded as a default constant: `C:\Users\tonil\Desktop\tcc\lead-manager-
-54595-firebase-adminsdk-fbsvc-375221693a.json`. This exposes an absolute local
-file path containing the Firebase project name and a service account key
-identifier. If the credentials file is committed alongside the code (or
-accessible at this path), it grants full Firestore database access.
-Exploitation: An attacker with access to the source code learns the exact
-location of the Firebase admin credentials file, the project name, and the
-service account key ID. This information aids targeted attacks on the Firebase
-project.
-
-VULNERABILITY #3
-----------------
 CWE-614 (Sensitive Cookie Without 'Secure' Flag)
 Severity: High
 File: internal/handlers/auth_handler.go
@@ -55,7 +38,7 @@ Wi-Fi), an attacker can use packet sniffing tools to capture the auth_token
 cookie as it is sent in plaintext HTTP requests, then replay it to
 authenticate as the victim.
 
-VULNERABILITY #4
+VULNERABILITY #3
 ----------------
 CWE-352 (Cross-Site Request Forgery)
 Severity: High
@@ -65,67 +48,30 @@ File: internal/middleware/auth.go
 Lines: 112-114
 Description: The application accepts authentication tokens from cookies
 (auth.go line 112) but implements no CSRF protection. State-changing endpoints
-(POST /api/auth/register, POST /api/auth/login, POST /api/auth/logout,
-POST /api/artist/songs) are all vulnerable. Since cookies are automatically
-sent by the browser, a malicious website can craft forms or XMLHttpRequests
-that trigger these endpoints on behalf of an authenticated user.
+(POST /api/auth/register, /login, /logout, /api/artist/songs) are all
+vulnerable. Since cookies are automatically sent by the browser, a malicious
+website can craft forms or XMLHttpRequests that trigger these endpoints on
+behalf of an authenticated user.
 Exploitation: An attacker hosts a page with an auto-submitting form targeting
-POST /api/auth/logout or POST /api/artist/songs. When a logged-in user visits
-the attacker's page, their browser sends the auth_token cookie automatically,
-and the action is performed without the user's consent. For the song upload
-endpoint, an attacker could upload arbitrary content under the victim artist's
-account.
+POST /api/artist/songs. When a logged-in user visits the attacker's page, their
+browser sends the auth_token cookie automatically, and an attacker could upload
+arbitrary content under the victim artist's account.
+
+VULNERABILITY #4
+----------------
+CWE-307 (Improper Restriction of Excessive Authentication Attempts)
+Severity: Medium
+File: internal/handlers/auth_handler.go
+Lines: 96-126
+Description: The login endpoint has no rate limiting or account lockout
+mechanism. An attacker can make unlimited login attempts against any email
+address without being throttled or blocked.
+Exploitation: An attacker uses automated tools to try thousands of passwords
+against a known email address. With only a 6-character minimum password
+requirement, the search space is small enough for a brute-force attack to
+succeed in a reasonable time.
 
 VULNERABILITY #5
-----------------
-CWE-1004 (Sensitive Cookie Without 'HttpOnly' Flag) / CWE-614
-Severity: Medium
-File: internal/handlers/auth_handler.go
-Line: 168
-Description: While the HttpOnly flag is correctly set to `true` in the
-setTokenCookie method, the Secure flag is `false`. Additionally, the SameSite
-attribute is not explicitly set, which defaults to browser-dependent behavior.
-Modern browsers default to "Lax" which provides some CSRF protection for
-cross-site POST requests, but this is not a reliable defense and varies by
-browser. The absence of an explicit SameSite=Strict or SameSite=Lax setting
-combined with no CSRF tokens leaves the application reliant on inconsistent
-browser defaults.
-Exploitation: Combined with Vulnerability #4, the lack of explicit SameSite
-policy widens the CSRF attack surface depending on which browser the victim
-uses.
-
-VULNERABILITY #6
-----------------
-CWE-331 (Insufficient Entropy) / CWE-521 (Weak Password Requirements)
-Severity: Medium
-File: internal/handlers/auth_handler.go
-Line: 60
-Description: The password policy only enforces a minimum length of 6
-characters. There is no check for maximum length, complexity (uppercase,
-lowercase, digits, special characters), or common/breached passwords. A
-6-character minimum is below modern security recommendations (NIST recommends
-a minimum of 8 characters and checking against known breached passwords).
-Exploitation: Users can set extremely weak passwords like "123456" or
-"aaaaaa", making brute-force and credential-stuffing attacks far more likely
-to succeed.
-
-VULNERABILITY #7
-----------------
-CWE-770 (Allocation of Resources Without Limits)
-Severity: Medium
-File: internal/router/router.go
-Line: 22
-Description: The maximum multipart memory is set to 128 MB
-(128 << 20). Combined with no file size limit on the uploaded MP3 files in the
-UploadSong handler (artist_handler.go), an attacker can upload extremely large
-files. There is no rate limiting on any endpoint, allowing an attacker to
-repeatedly upload large files to exhaust disk space or memory.
-Exploitation: An authenticated artist (or an attacker who forged a token using
-Vulnerability #1) can upload many large files in rapid succession, consuming
-all available disk space and potentially causing a denial-of-service condition
-on the server.
-
-VULNERABILITY #8
 ----------------
 CWE-74 (Improper Neutralization - HTTP Header Injection)
 Severity: Medium
@@ -133,190 +79,23 @@ File: internal/handlers/user_handler.go
 Line: 66
 Description: The Content-Disposition header is constructed by directly
 interpolating `filepath.Base(song.FilePath)` into the header value without
-proper sanitization or quoting. While filepath.Base provides some protection,
-if a song's FilePath in the database contained specially crafted characters
-(e.g., double quotes, newlines), it could lead to HTTP header injection or
-response splitting.
+proper sanitization or quoting. If a song's FilePath in the database contained
+specially crafted characters (e.g., double quotes, newlines), it could lead to
+HTTP header injection or response splitting.
 Exploitation: If an attacker can influence the FilePath stored in the database
-(e.g., through a separate vulnerability or direct database manipulation), they
-could inject malicious headers. In practice, the current code generates
-UUID-based filenames which mitigates this, but the pattern is unsafe and
-fragile.
-
-VULNERABILITY #9
-----------------
-CWE-434 (Unrestricted Upload of File with Dangerous Type)
-Severity: Medium
-File: internal/storage/local_music.go
-Lines: 57-78
-Description: The MP3 validation is superficial. It only checks the file
-extension (line 58) and the first 2-3 bytes for MP3 magic numbers (ID3 tag or
-MPEG sync word). An attacker can prepend valid MP3 header bytes to a malicious
-file (e.g., a web shell, HTML file, or executable) and it will pass
-validation. The file is then stored on disk and can potentially be served via
-the static file server or the streaming endpoint.
-Exploitation: An attacker prepends "ID3" (3 bytes) to a malicious HTML file
-containing JavaScript, renames it to .mp3, and uploads it. If the file is
-accessible through the static endpoint or another path, the browser may
-interpret it as HTML (depending on Content-Type sniffing), enabling stored XSS.
-
-VULNERABILITY #10
------------------
-CWE-22 (Path Traversal)
-Severity: Low
-File: internal/handlers/user_handler.go
-Lines: 41-48
-Description: The StreamSong handler retrieves a song by ID from the database,
-then opens the file at song.FilePath using os.Open (line 49). The FilePath is
-stored in the database at song creation time. While the current upload flow
-generates safe UUID-based filenames, if an attacker could insert arbitrary
-FilePath values into the database (via SQL injection on another endpoint, or
-direct database access), they could read arbitrary files from the server
-filesystem through the streaming endpoint.
-Exploitation: If an attacker can manipulate the file_path column in the songs
-table (e.g., setting it to "/etc/passwd" or "C:\Windows\System32\config\SAM"),
-the StreamSong handler would open and serve that file to the attacker. The
-current code does not validate that the FilePath points to a file within the
-uploads directory.
-
-VULNERABILITY #11
------------------
-CWE-200 (Exposure of Sensitive Information)
-Severity: Low
-File: internal/config/config.go
-Lines: 12-13
-Description: Default configuration values (Firebase credentials path and JWT
-secret) are embedded directly in the source code as constants. If this code is
-pushed to a public repository, these sensitive defaults become publicly
-accessible. The Firebase credentials path reveals the local development
-environment structure and the Firebase project identifier.
-Exploitation: An attacker reviewing a public repository learns the Firebase
-project name ("lead-manager-54595"), the service account structure, and knows
-the JWT secret if it was not overridden. This information enables targeted
-attacks on the Firebase project.
-
-VULNERABILITY #12
------------------
-CWE-942 (Permissive Cross-domain Policy) / Missing CORS Configuration
-Severity: Low
-File: internal/router/router.go
-Lines: 15-69
-Description: The application does not configure any CORS (Cross-Origin
-Resource Sharing) policy. By default, Gin does not add CORS headers, which
-means browsers will block cross-origin requests. However, this also means the
-API cannot be legitimately consumed by a frontend hosted on a different origin.
-If a permissive CORS middleware is added later without careful configuration,
-it could expose the API to cross-origin attacks. The absence of an explicit
-CORS policy indicates that security headers were not considered.
-Exploitation: While the default behavior (no CORS headers) is restrictive, it
-suggests a lack of security header planning. Other important security headers
-are also missing: X-Content-Type-Options, X-Frame-Options, Content-Security-
-Policy, and Strict-Transport-Security.
-
-VULNERABILITY #13
------------------
-CWE-307 (Improper Restriction of Excessive Authentication Attempts)
-Severity: Medium
-File: internal/handlers/auth_handler.go
-Lines: 96-126
-Description: The login endpoint has no rate limiting or account lockout
-mechanism. An attacker can make unlimited login attempts against any email
-address without being throttled or blocked. This enables brute-force password
-attacks and credential stuffing.
-Exploitation: An attacker uses automated tools to try thousands of passwords
-against a known email address. With only a 6-character minimum password
-requirement (Vulnerability #6), the search space is small enough for a
-brute-force attack to succeed in a reasonable time.
-
-VULNERABILITY #14
------------------
-CWE-862 (Missing Authorization)
-Severity: Medium
-File: internal/handlers/user_handler.go
-Lines: 40-68
-Description: The StreamSong handler serves audio files to any authenticated
-user with USER type. There is no check to verify whether the user has
-permission to stream a particular song (e.g., whether the song is published,
-whether there are access restrictions, or whether the user has a valid
-subscription). Any authenticated user can stream any song in the system by
-enumerating song IDs.
-Exploitation: An authenticated user can iterate through song IDs (UUIDs are
-unpredictable, but the ListSongs endpoint returns all songs with their IDs)
-and stream any song. If this is a paid service, this represents unauthorized
-access to paid content.
-
-VULNERABILITY #15
------------------
-CWE-532 (Insertion of Sensitive Information into Log File)
-Severity: Low
-File: cmd/server/main.go
-Lines: 22, 54
-Description: The application logs the server startup address and any fatal
-errors using the standard log package. While the current logging is minimal,
-there is no structured logging or log level control. Error messages from
-database operations, Firebase connections, and JWT operations could
-potentially leak sensitive information (connection strings, internal paths,
-stack traces) into log files.
-Exploitation: If an attacker gains access to log files, they may find
-database paths, Firebase project details, or internal error messages that
-reveal the application architecture and aid further attacks.
-
-VULNERABILITY #16
------------------
-CWE-916 (Use of Password Hash With Insufficient Computational Effort)
-Severity: Low
-File: internal/handlers/auth_handler.go
-Line: 70
-Description: The bcrypt cost factor uses bcrypt.DefaultCost which is 10. While
-this is acceptable for current hardware, it is on the lower end of modern
-recommendations. OWASP recommends a minimum cost factor of 12 for bcrypt. As
-hardware improves, cost 10 becomes increasingly easier to brute-force.
-Exploitation: If the password hashes are ever leaked (through database
-compromise), the relatively low cost factor makes offline brute-force attacks
-faster than they would be with a higher cost factor.
-
-VULNERABILITY #17
------------------
-CWE-1021 (Improper Restriction of Rendered UI Layers) / Clickjacking
-Severity: Low
-File: internal/router/router.go
-Lines: 56-59
-Description: The application serves static HTML content (line 57-58) but does
-not set X-Frame-Options or Content-Security-Policy frame-ancestors headers.
-This allows the application to be embedded in iframes on malicious websites,
-enabling clickjacking attacks.
-Exploitation: An attacker embeds the application in a transparent iframe on
-their website. The victim interacts with what they think is the attacker's
-site, but is actually clicking buttons on the music streaming application
-(e.g., uploading songs, changing settings).
+(e.g., through a separate vulnerability), they could inject malicious headers,
+potentially enabling cache poisoning or XSS via injected headers.
 
 ================================================================================
 SUMMARY
 ================================================================================
 
-Total vulnerabilities found: 17
+Total vulnerabilities found: 5
 
 By severity:
-  Critical: 2  (Hardcoded JWT secret, Hardcoded Firebase credentials path)
-  High:     2  (Insecure cookie, CSRF)
-  Medium:   5  (Weak passwords, No rate limiting, Header injection,
-                Insufficient file validation, No brute-force protection)
-  Low:      6  (Path traversal via DB, Sensitive info exposure, Missing CORS/
-                security headers, Logging concerns, Low bcrypt cost,
-                Clickjacking)
-
-Top recommendations:
-1. Remove all hardcoded secrets and credentials paths; require them via
-   environment variables with no fallback defaults.
-2. Set the Secure flag to true on authentication cookies and enforce HTTPS.
-3. Implement CSRF protection (e.g., CSRF tokens or SameSite=Strict cookies).
-4. Add rate limiting on authentication endpoints.
-5. Strengthen password requirements to at least 8 characters with complexity.
-6. Validate that served files reside within the expected upload directory.
-7. Add security headers: X-Content-Type-Options, X-Frame-Options,
-   Content-Security-Policy, Strict-Transport-Security.
-8. Implement upload size limits and deeper file content validation.
-9. Increase bcrypt cost factor to at least 12.
+  Critical: 1  (Hardcoded JWT secret)
+  High:     2  (Insecure cookie without Secure flag, CSRF)
+  Medium:   2  (No rate limiting, HTTP header injection)
 
 ================================================================================
 END OF REPORT

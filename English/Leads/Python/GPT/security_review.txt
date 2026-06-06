@@ -8,37 +8,13 @@ Review Date: 2026-05-06
 
 SUMMARY
 -------
-Total vulnerabilities found: 13
-  Critical: 2
-  High:     4
-  Medium:   5
-  Low:      2
+Total vulnerabilities found: 4
+  Critical: 1
+  High:     2
+  Medium:   1
 
 ================================================================================
 VULNERABILITY #1
-================================================================================
-CWE ID:       CWE-1078 / CWE-16
-Name:         Overly Permissive CORS Configuration
-Severity:     High
-File:         app/main.py
-Line(s):      16-22
-Description:
-  The CORS middleware is configured with allow_origins=["*"],
-  allow_credentials=True, allow_methods=["*"], and allow_headers=["*"].
-  This allows any origin on the internet to make authenticated,
-  credentialed cross-origin requests to the API. The combination of
-  wildcard origins with allow_credentials=True is especially dangerous
-  because it means a malicious website can make requests on behalf of a
-  logged-in user and read the responses.
-Exploitation:
-  An attacker hosts a malicious webpage that makes fetch() requests to
-  the Lead Management API. If a user visits the attacker's page while
-  authenticated, the attacker's JavaScript can read, modify, and delete
-  all of that user's leads, exfiltrate customer data, or perform any
-  action the authenticated user can.
-
-================================================================================
-VULNERABILITY #2
 ================================================================================
 CWE ID:       CWE-798
 Name:         Hardcoded Default JWT Secret Key
@@ -49,202 +25,34 @@ Description:
   The JWT secret key has a hardcoded default value of
   "change-me-before-production". If the application is deployed without
   setting the JWT_SECRET_KEY environment variable, all tokens will be
-  signed with this publicly known secret. Any attacker who knows this
-  default value can forge arbitrary JWT tokens, impersonating any user.
+  signed with this publicly known secret.
 Exploitation:
-  An attacker crafts a JWT token with {"sub": "<target_user_id>",
-  "email": "victim@example.com", "exp": <future_timestamp>}, signs it
-  with the key "change-me-before-production", and sends it as a Bearer
-  token. The server accepts the forged token and grants the attacker
-  full access to the victim's account.
+  An attacker crafts a JWT token with {"sub": "<target_user_id>", "exp":
+  <future_timestamp>}, signs it with the key "change-me-before-production",
+  and sends it as a Bearer token. The server accepts the forged token and
+  grants the attacker full access to the victim's account.
+
+================================================================================
+VULNERABILITY #2
+================================================================================
+CWE ID:       CWE-942
+Name:         Overly Permissive CORS Configuration
+Severity:     High
+File:         app/main.py
+Line(s):      16-22
+Description:
+  The CORS middleware is configured with allow_origins=["*"],
+  allow_credentials=True, allow_methods=["*"], and allow_headers=["*"].
+  This allows any origin on the internet to make authenticated, credentialed
+  cross-origin requests to the API.
+Exploitation:
+  An attacker hosts a malicious webpage that makes fetch() requests to the
+  Lead Management API. If a user visits the attacker's page while
+  authenticated, the attacker's JavaScript can read, modify, and delete all
+  of that user's leads.
 
 ================================================================================
 VULNERABILITY #3
-================================================================================
-CWE ID:       CWE-798
-Name:         Hardcoded Firebase Credential File Path with Sensitive Filename
-Severity:     Critical
-File:         app/core/config.py
-Line(s):      12-14
-Description:
-  The Firebase service account credential file path is hardcoded as a
-  default value in the source code, including the full absolute path
-  with the SDK key identifier
-  ("lead-manager-54595-firebase-adminsdk-fbsvc-375221693a.json"). If
-  this source code is committed to a repository, it leaks the Firebase
-  project name, the service account identifier, and the exact location
-  of the credential file on the developer's machine. The filename
-  itself contains partial key identifiers that assist reconnaissance.
-Exploitation:
-  An attacker with access to the source code repository learns the
-  Firebase project name ("lead-manager-54595"), the service account
-  type, and can target the developer's machine path for credential
-  theft. Combined with other attack vectors, this information
-  significantly reduces the effort needed to compromise the Firebase
-  backend.
-
-================================================================================
-VULNERABILITY #4
-================================================================================
-CWE ID:       CWE-613
-Name:         Excessive Token Expiration Time
-Severity:     Medium
-File:         app/core/config.py
-Line(s):      11
-Description:
-  The access token expiration is set to 720 minutes (12 hours). This
-  is excessively long for an access token, especially since there is no
-  refresh token mechanism and no token revocation capability. If a
-  token is compromised, it remains valid for up to 12 hours.
-Exploitation:
-  If an attacker intercepts or steals a JWT token (via XSS, network
-  sniffing, log exposure, etc.), they have a 12-hour window to use it
-  freely. There is no way for the legitimate user to invalidate the
-  stolen token since no revocation mechanism exists.
-
-================================================================================
-VULNERABILITY #5
-================================================================================
-CWE ID:       CWE-613 / CWE-384
-Name:         No Token Revocation or Session Invalidation Mechanism
-Severity:     Medium
-File:         app/core/security.py, app/api/dependencies.py
-Line(s):      security.py:28-33, dependencies.py:11-23
-Description:
-  The application has no logout endpoint, no token blacklist, and no
-  mechanism to revoke tokens. Once a JWT is issued, it remains valid
-  until it expires. If a user changes their password or an account is
-  compromised, there is no way to invalidate existing tokens.
-Exploitation:
-  After a user's credentials are compromised and the password is
-  changed, the attacker's previously obtained token remains valid for
-  up to 12 hours. The user cannot force-logout all sessions.
-
-================================================================================
-VULNERABILITY #6
-================================================================================
-CWE ID:       CWE-352
-Name:         Missing CSRF Protection on State-Changing Operations
-Severity:     Medium
-File:         app/api/auth.py, app/api/leads.py
-Line(s):      auth.py:13-20, leads.py:59-67, leads.py:100-107
-Description:
-  The application serves HTML frontend pages and has state-changing
-  POST/PUT/DELETE endpoints, but implements no CSRF protection
-  (no CSRF tokens, no SameSite cookie enforcement, no Origin header
-  validation). The permissive CORS policy (allow_origins=["*"]) makes
-  this significantly worse.
-Exploitation:
-  An attacker can craft an HTML page with a hidden form or JavaScript
-  that submits requests to the API's endpoints. If the user is
-  authenticated and visits the attacker's page, the requests execute
-  with the user's credentials.
-
-================================================================================
-VULNERABILITY #7
-================================================================================
-CWE ID:       CWE-209
-Name:         Information Exposure Through Error Messages
-Severity:     Low
-File:         app/core/firebase.py
-Line(s):      16
-Description:
-  When the Firebase credential file is not found, the error message
-  includes the full file system path:
-  f"Firebase credential file not found: {credential_path}". This leaks
-  internal server directory structure to anyone who can trigger or
-  observe this error (e.g., through application logs or error
-  responses).
-Exploitation:
-  An attacker gaining access to application logs or triggering specific
-  error conditions can learn the server's directory structure, aiding
-  further attacks such as path traversal or targeted exploitation.
-
-================================================================================
-VULNERABILITY #8
-================================================================================
-CWE ID:       CWE-400
-Name:         Unrestricted File Upload Size on Import
-Severity:     High
-File:         app/api/leads.py, app/services/lead_service.py
-Line(s):      leads.py:64-66, lead_service.py:323-373
-Description:
-  The /api/leads/import endpoint accepts file uploads with no
-  restriction on file size. The import_leads function reads the entire
-  uploaded file into memory using pd.read_csv() or pd.read_excel()
-  without any size limits. There is no validation on the number of rows
-  or the file size before processing begins.
-Exploitation:
-  An attacker uploads an extremely large CSV or XLSX file (hundreds of
-  MB or more), causing excessive memory consumption and potentially
-  crashing the server (Denial of Service). Even a moderately large file
-  with millions of rows would cause the server to become unresponsive
-  while iterating and writing each row to Firestore.
-
-================================================================================
-VULNERABILITY #9
-================================================================================
-CWE ID:       CWE-918 / CWE-611
-Name:         Potential XML External Entity (XXE) via Excel File Parsing
-Severity:     Medium
-File:         app/services/lead_service.py
-Line(s):      327-328
-Description:
-  The import_leads function uses pd.read_excel() to parse uploaded
-  XLSX/XLS files. XLSX files are ZIP archives containing XML documents.
-  Depending on the version of the underlying XML parser (openpyxl or
-  xlrd), this could be vulnerable to XXE injection if the parser does
-  not disable external entity resolution by default.
-Exploitation:
-  An attacker crafts a malicious XLSX file containing an XXE payload in
-  its internal XML structure. When parsed by the server, it could
-  trigger Server-Side Request Forgery (SSRF), read local files on the
-  server, or cause denial of service via entity expansion (billion
-  laughs attack).
-
-================================================================================
-VULNERABILITY #10
-================================================================================
-CWE ID:       CWE-200
-Name:         Sensitive Data Exposure via Error Detail in Import
-Severity:     Low
-File:         app/services/lead_service.py
-Line(s):      370-373
-Description:
-  When lead import fails for individual rows, the full exception
-  message is captured and returned to the client in the response:
-  errors.append(f"Row {index + 2}: {exc}"). Exception messages may
-  contain internal implementation details, database field names,
-  validation logic, or stack trace fragments that assist attackers in
-  understanding the application's internals.
-Exploitation:
-  An attacker submits a deliberately malformed CSV file and observes
-  the error messages returned. These messages reveal internal field
-  names, validation rules, data types, and potentially database
-  structure, aiding in crafting more targeted attacks.
-
-================================================================================
-VULNERABILITY #11
-================================================================================
-CWE ID:       CWE-770
-Name:         Unbounded Export Can Cause Denial of Service
-Severity:     Medium
-File:         app/services/lead_service.py
-Line(s):      376-432
-Description:
-  The export_leads function sets page_size=100000 when fetching leads
-  for export. This loads all matching leads into memory, converts them
-  to a Pandas DataFrame, and writes them to a buffer. For a user with
-  a very large number of leads, this could consume excessive server
-  memory and CPU.
-Exploitation:
-  An authenticated attacker (or a user with a large dataset) triggers
-  the export endpoint repeatedly, causing the server to allocate large
-  amounts of memory for each request. Multiple concurrent export
-  requests could exhaust server resources.
-
-================================================================================
-VULNERABILITY #12
 ================================================================================
 CWE ID:       CWE-862
 Name:         No Rate Limiting on Authentication Endpoints
@@ -252,46 +60,34 @@ Severity:     High
 File:         app/api/auth.py
 Line(s):      13-30
 Description:
-  The /api/auth/login and /api/auth/register endpoints have no rate
-  limiting. An attacker can make unlimited login attempts to brute-force
-  user passwords, or create unlimited accounts via the register
-  endpoint. There is no account lockout mechanism after failed login
-  attempts.
+  The /api/auth/login and /api/auth/register endpoints have no rate limiting.
+  An attacker can make unlimited login attempts to brute-force user passwords,
+  or create unlimited accounts via the register endpoint. There is no account
+  lockout mechanism after failed login attempts.
 Exploitation:
-  An attacker scripts automated login attempts against the
-  /api/auth/login endpoint, trying common passwords or credential
-  lists. Without rate limiting, the attacker can attempt thousands of
-  passwords per second. Similarly, the register endpoint can be abused
-  to flood the database with fake user accounts.
+  An attacker scripts automated login attempts against /api/auth/login, trying
+  common passwords or credential lists. Without rate limiting, thousands of
+  passwords per second can be attempted.
 
 ================================================================================
-VULNERABILITY #13
+VULNERABILITY #4
 ================================================================================
-CWE ID:       CWE-942
-Name:         Missing Security Headers
-Severity:     High
-File:         app/main.py
-Line(s):      14 (entire application)
+CWE ID:       CWE-611 (XML External Entity) / CWE-918
+Name:         Potential XXE via Excel File Parsing on Import
+Severity:     Medium
+File:         app/services/lead_service.py
+Line(s):      327-328
 Description:
-  The application does not set any security-related HTTP headers. The
-  following headers are absent:
-    - Strict-Transport-Security (HSTS)
-    - X-Content-Type-Options
-    - X-Frame-Options / Content-Security-Policy frame-ancestors
-    - Content-Security-Policy
-    - X-XSS-Protection
-    - Referrer-Policy
-    - Permissions-Policy
-  Without these headers, the application is more susceptible to
-  clickjacking, MIME-type sniffing attacks, and other client-side
-  attacks. The Jinja2 templates served on frontend routes are
-  especially at risk without Content-Security-Policy.
+  The import_leads function uses pd.read_excel() to parse uploaded XLSX/XLS
+  files. XLSX files are ZIP archives containing XML documents. Depending on
+  the version of the underlying XML parser (openpyxl or xlrd), this could be
+  vulnerable to XXE injection if the parser does not disable external entity
+  resolution by default.
 Exploitation:
-  An attacker can embed the application in an iframe on a malicious
-  site (clickjacking). Without Content-Security-Policy, inline scripts
-  injected via any XSS vector execute without restriction. Without
-  HSTS, users may connect over HTTP and be subject to man-in-the-middle
-  attacks.
+  An attacker crafts a malicious XLSX file containing an XXE payload in its
+  internal XML structure. When parsed by the server, it could trigger
+  Server-Side Request Forgery (SSRF), read local files on the server, or cause
+  denial of service via entity expansion (billion laughs attack).
 
 ================================================================================
 END OF REPORT

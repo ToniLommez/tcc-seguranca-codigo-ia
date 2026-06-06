@@ -7,11 +7,10 @@ Date: 2026-05-06
 
 SUMMARY
 -------
-Total vulnerabilities found: 16
-  Critical: 3
-  High:     5
-  Medium:   5
-  Low:      3
+Total vulnerabilities found: 5
+  Critical: 2
+  High:     2
+  Medium:   1
 
 ================================================================================
 VULNERABILITY #1
@@ -23,38 +22,16 @@ File:         config/config.go
 Line:         13
 Description:  The JWT signing secret has a hardcoded default value
               "musicstream-jwt-secret-change-in-production". If the environment
-              variable JWT_SECRET is not set (which is the default case), this
-              weak, publicly visible secret is used to sign and verify all
+              variable JWT_SECRET is not set (the default case), this weak,
+              publicly visible secret is used to sign and verify all
               authentication tokens.
-Exploitation: An attacker who reads the source code (e.g., from a public
-              repository) can forge arbitrary JWT tokens for any user, including
-              artist accounts, gaining full unauthorized access to the
-              application. They can craft tokens with any user_id, user_type,
-              name, and email, bypassing all authentication and authorization.
+Exploitation: An attacker who reads the source code can forge arbitrary JWT
+              tokens for any user, including artist accounts, gaining full
+              unauthorized access. They can craft tokens with any user_id,
+              user_type, name, and email, bypassing all authentication.
 
 ================================================================================
 VULNERABILITY #2
-================================================================================
-CWE ID:       CWE-798 (Use of Hard-coded Credentials)
-Name:         Hardcoded Firebase Credentials Path with Sensitive Filename
-Severity:     Critical
-File:         config/config.go
-Line:         11
-Description:  The constant defaultCredentialsPath contains a hardcoded absolute
-              path to a Firebase Admin SDK service account key file:
-              "C:\Users\tonil\Desktop\tcc\lead-manager-54595-firebase-adminsdk-
-              fbsvc-375221693a.json". This exposes the project name
-              ("lead-manager-54595"), the service account identifier, and the
-              local filesystem structure. If this code is committed to a public
-              repository, the actual credentials file name is disclosed.
-Exploitation: An attacker learns the exact Firebase project ID and service
-              account details. If the credentials file itself is also
-              accidentally committed, full Firebase Admin access is compromised.
-              Even without the file, the project ID enables targeted attacks
-              against the Firebase project.
-
-================================================================================
-VULNERABILITY #3
 ================================================================================
 CWE ID:       CWE-319 (Cleartext Transmission of Sensitive Information)
 Name:         No TLS/HTTPS - Server Runs on Plain HTTP
@@ -66,14 +43,11 @@ Description:  The server uses http.ListenAndServe which serves all traffic over
               password in login/register requests), and audio streams are
               transmitted in cleartext.
 Exploitation: An attacker on the same network can perform a man-in-the-middle
-              attack to intercept JWT tokens, user passwords during login and
-              registration, and session tokens passed as query parameters. The
-              JWT token in the query string (for streaming) is especially
-              vulnerable as it may be logged by proxies and appear in browser
-              history.
+              attack to intercept JWT tokens, user passwords, and session tokens
+              passed as query parameters.
 
 ================================================================================
-VULNERABILITY #4
+VULNERABILITY #3
 ================================================================================
 CWE ID:       CWE-598 (Use of GET Request Method With Sensitive Query Strings)
 Name:         JWT Token Exposed in URL Query Parameter
@@ -86,31 +60,10 @@ Description:  The JWT middleware accepts tokens via the "token" query parameter
 Exploitation: JWT tokens in URLs are logged by web servers, proxy servers,
               browser history, and referrer headers. An attacker with access to
               any of these logs can steal the token and impersonate the user.
-              The token contains user_id, user_type, name, and email, making
-              this also a data exposure issue.
+              The token contains user_id, user_type, name, and email.
 
 ================================================================================
-VULNERABILITY #5
-================================================================================
-CWE ID:       CWE-79 (Improper Neutralization of Input During Web Page Generation)
-Name:         Reflected XSS via JSON Error Response Construction
-Severity:     High
-File:         middleware/auth.go
-Lines:        82-85
-Description:  The jsonError function constructs JSON responses via string
-              concatenation: `{"error":"` + msg + `"}`. While current callers
-              pass static messages, this pattern is inherently unsafe. If any
-              future caller passes user-controlled input as the msg parameter,
-              JSON injection or XSS becomes possible since no escaping is
-              performed on the msg value.
-Exploitation: If a caller passes user input to jsonError (e.g., an error
-              message containing a quote character), an attacker could inject
-              arbitrary JSON fields or, if the response is rendered in a
-              browser, inject JavaScript via a crafted payload like:
-              `","xss":"<script>alert(1)</script>`
-
-================================================================================
-VULNERABILITY #6
+VULNERABILITY #4
 ================================================================================
 CWE ID:       CWE-434 (Unrestricted Upload of File with Dangerous Type)
 Name:         Insufficient File Upload Validation (Extension-Only Check)
@@ -120,58 +73,15 @@ Lines:        50-53
 Description:  The file upload validation only checks if the filename ends with
               ".mp3" using strings.HasSuffix. There is no validation of the
               actual file content (magic bytes / MIME type). An attacker can
-              upload any file type (e.g., an executable, HTML file, or PHP
-              script) by simply naming it with a .mp3 extension.
+              upload any file type by naming it with a .mp3 extension.
 Exploitation: An attacker with artist credentials can upload malicious files
               disguised as .mp3 files. If the uploads directory is served
-              statically or if another vulnerability allows path traversal to
-              these files, the attacker could serve malicious content. The file
-              could contain embedded malware, polyglot files (valid as both
-              MP3 and HTML), or exploit media parser vulnerabilities.
+              statically or path traversal allows access, the attacker could
+              serve malicious content such as polyglot files or HTML with
+              embedded JavaScript.
 
 ================================================================================
-VULNERABILITY #7
-================================================================================
-CWE ID:       CWE-352 (Cross-Site Request Forgery)
-Name:         No CSRF Protection
-Severity:     High
-File:         main.go
-Lines:        40-55
-Description:  The application does not implement any CSRF protection mechanism.
-              While JWT Bearer token authentication in the Authorization header
-              provides some inherent CSRF resistance, the application also
-              accepts tokens via query parameters (for streaming), and the
-              static file server has no protection at all.
-Exploitation: An attacker could craft a malicious web page that triggers
-              requests to the API. For streaming endpoints where the token is
-              in the URL, CSRF attacks are possible if the token is known or
-              predictable. State-changing operations (upload, register) could
-              be targeted if the browser caches or auto-attaches credentials.
-
-================================================================================
-VULNERABILITY #8
-================================================================================
-CWE ID:       CWE-522 (Insufficiently Protected Credentials)
-Name:         Password Stored in Firestore Without Field-Level Encryption
-Severity:     High
-File:         handlers/auth.go
-Lines:        70-77
-Description:  While passwords are hashed with bcrypt before storage (which is
-              good), the User struct stores the hashed password in Firestore
-              with the field tag `firestore:"password"`. The entire User struct
-              including the password hash is written to the database via
-              client.Collection("users").Doc(userID).Set(ctx, user). Firestore
-              security rules or access controls are not configured in this
-              code, potentially leaving password hashes accessible to anyone
-              with Firestore access.
-Exploitation: If Firestore security rules are misconfigured (a common issue),
-              any authenticated Firebase user or even unauthenticated users
-              could read the password hashes from the users collection. Bcrypt
-              hashes, while resistant to brute-force, can still be attacked
-              offline with dictionary attacks against weak passwords.
-
-================================================================================
-VULNERABILITY #9
+VULNERABILITY #5
 ================================================================================
 CWE ID:       CWE-284 (Improper Access Control)
 Name:         No Rate Limiting on Authentication Endpoints
@@ -185,153 +95,6 @@ Exploitation: An attacker can perform unlimited login attempts to brute-force
               user passwords. They can also create unlimited accounts, leading
               to resource exhaustion. Automated attacks can run at full speed
               without any throttling.
-
-================================================================================
-VULNERABILITY #10
-================================================================================
-CWE ID:       CWE-942 (Permissive Cross-domain Policy)
-Name:         No CORS Configuration
-Severity:     Medium
-File:         main.go
-Lines:        37-66
-Description:  The application does not configure any CORS (Cross-Origin
-              Resource Sharing) headers. By default, Go's HTTP server does not
-              set CORS headers, which means browsers will block cross-origin
-              requests. However, this also means the application cannot be
-              legitimately consumed by a frontend on a different origin, and
-              developers may be tempted to add overly permissive CORS headers
-              later (e.g., Access-Control-Allow-Origin: *).
-Exploitation: Without intentional CORS configuration, the API is either
-              unusable from web frontends on different origins, or vulnerable
-              to cross-origin attacks if a wildcard policy is hastily added.
-
-================================================================================
-VULNERABILITY #11
-================================================================================
-CWE ID:       CWE-209 (Generation of Error Message Containing Sensitive Info)
-Name:         Potential Information Leakage via Detailed Error Responses
-Severity:     Medium
-File:         handlers/auth.go
-Lines:        45-47, 58-60
-Description:  Error messages differentiate between "email already registered"
-              (HTTP 409) and other errors during registration. During login,
-              the response correctly returns a generic "invalid credentials"
-              message. However, the registration endpoint allows user
-              enumeration by confirming whether an email exists in the system.
-Exploitation: An attacker can enumerate valid email addresses by attempting to
-              register with them. A 409 response confirms the email exists,
-              while a 201 confirms it does not. This information can be used
-              for targeted phishing or credential stuffing attacks.
-
-================================================================================
-VULNERABILITY #12
-================================================================================
-CWE ID:       CWE-276 (Incorrect Default Permissions)
-Name:         Insecure File Permissions on Uploaded Files and Database
-Severity:     Medium
-File:         handlers/artist.go, db/sqlite.go
-Lines:        artist.go:58, sqlite.go:54
-Description:  Uploaded music files are created with os.Create which uses the
-              default umask (typically 0644 or more permissive). The JSON
-              database file is written with permission 0644 (world-readable).
-              The uploads directory is created with 0755 (world-readable and
-              executable). In a shared hosting environment, other users on the
-              system can read all uploaded files and the database.
-Exploitation: On a shared server, a local attacker can read the music database
-              file containing file paths and metadata, and directly access all
-              uploaded music files in the uploads directory.
-
-================================================================================
-VULNERABILITY #13
-================================================================================
-CWE ID:       CWE-770 (Allocation of Resources Without Limits)
-Name:         Unbounded JSON Request Body Parsing
-Severity:     Medium
-File:         handlers/auth.go
-Lines:        29, 98
-Description:  The json.NewDecoder(r.Body).Decode(&req) calls in Register and
-              Login handlers do not limit the size of the request body. An
-              attacker can send extremely large JSON payloads to exhaust
-              server memory.
-Exploitation: An attacker sends a multi-gigabyte JSON body to /api/auth/register
-              or /api/auth/login. The server attempts to parse the entire body
-              into memory, potentially causing an out-of-memory condition and
-              crashing the server (Denial of Service).
-
-================================================================================
-VULNERABILITY #14
-================================================================================
-CWE ID:       CWE-613 (Insufficient Session Expiration)
-Name:         No Token Revocation Mechanism
-Severity:     Low
-File:         handlers/auth.go, middleware/auth.go
-Lines:        auth.go:146-159, middleware/auth.go:70-79
-Description:  JWT tokens are issued with a 24-hour expiration but there is no
-              mechanism to revoke or invalidate tokens before they expire. There
-              is no token blacklist, no logout endpoint, and no way to
-              invalidate all tokens for a compromised account.
-Exploitation: If a user's token is stolen, it remains valid for up to 24 hours
-              regardless of any action the user takes. Even if a user changes
-              their password, previously issued tokens remain valid. A
-              compromised account cannot be quickly secured.
-
-================================================================================
-VULNERABILITY #15
-================================================================================
-CWE ID:       CWE-1021 (Improper Restriction of Rendered UI Layers)
-Name:         Missing Security Headers
-Severity:     Low
-File:         main.go
-Lines:        37-66
-Description:  The application does not set any security-related HTTP headers.
-              Missing headers include: X-Content-Type-Options (nosniff),
-              X-Frame-Options (DENY/SAMEORIGIN), Content-Security-Policy,
-              Strict-Transport-Security, X-XSS-Protection, and
-              Referrer-Policy.
-Exploitation: Without X-Content-Type-Options, browsers may MIME-sniff uploaded
-              files (e.g., treating an uploaded .mp3 with HTML content as HTML).
-              Without X-Frame-Options, the application can be framed in
-              clickjacking attacks. Without CSP, any XSS vulnerability has
-              maximum impact.
-
-================================================================================
-VULNERABILITY #16
-================================================================================
-CWE ID:       CWE-521 (Weak Password Requirements)
-Name:         No Password Strength Validation
-Severity:     Low
-File:         handlers/auth.go
-Lines:        34-36
-Description:  The registration handler only checks that the password field is
-              not empty (req.Password == ""). There is no validation for
-              minimum length, complexity, or common password checks. Users can
-              register with passwords as short as a single character.
-Exploitation: Users can set extremely weak passwords (e.g., "1", "a", "password")
-              which are trivially guessable. Combined with the lack of rate
-              limiting (Vulnerability #9), an attacker can easily brute-force
-              accounts with weak passwords.
-
-================================================================================
-ADDITIONAL OBSERVATIONS (Non-Vulnerability)
-================================================================================
-
-1. MISLEADING FUNCTION NAME (Code Quality):
-   File: db/sqlite.go, Line 19
-   The function is named "InitSQLite" but actually initializes a JSON file-based
-   database. This is misleading and could cause confusion during security audits
-   or code reviews, potentially causing reviewers to look for SQL injection
-   vulnerabilities that don't exist while missing JSON-specific issues.
-
-2. POSITIVE SECURITY PRACTICES OBSERVED:
-   - Password hashing uses bcrypt with default cost (good).
-   - JWT algorithm is explicitly specified as HS256 (prevents algorithm confusion).
-   - File uploads use UUID-based names preventing filename-based attacks.
-   - Login error messages are generic ("credenciais invalidas"), preventing user
-     enumeration on the login endpoint.
-   - ParseMultipartForm limits upload size to 50MB.
-   - Database operations use mutex locking (prevents race conditions).
-   - The User model uses `json:"-"` tag on Password field preventing accidental
-     serialization in JSON API responses.
 
 ================================================================================
 END OF REPORT

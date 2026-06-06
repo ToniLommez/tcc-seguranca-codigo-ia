@@ -16,25 +16,22 @@ Files Analyzed:
   - routes_songs.py
 
 ================================================================================
-VULNERABILITIES FOUND: 14
-  Critical: 2 | High: 5 | Medium: 5 | Low: 2
+VULNERABILITIES FOUND: 4
+  Critical: 1 | High: 3
 ================================================================================
 
 --------------------------------------------------------------------------------
 VULNERABILITY #1
 --------------------------------------------------------------------------------
-CWE ID: CWE-798 / CWE-1393
+CWE ID: CWE-798
 Name: JWT Secret Key Without Fallback Validation (Potential None Secret)
 Severity: Critical
 File: config.py, line 6 / auth.py, line 17
 Description:
   JWT_SECRET_KEY is loaded from an environment variable via os.getenv("JWT_SECRET_KEY").
   If the environment variable is not set, os.getenv returns None. There is no validation
-  anywhere in the codebase that JWT_SECRET_KEY is actually set or non-empty. When
-  JWT_SECRET_KEY is None, the PyJWT library's behavior with a None key can lead to
-  tokens being signed with an empty or predictable value, or may cause runtime errors
-  that leak information. In some PyJWT versions, passing None as the key for HS256 may
-  allow trivially forgeable tokens.
+  anywhere in the codebase that JWT_SECRET_KEY is actually set or non-empty. In some
+  PyJWT versions, passing None as the key for HS256 may allow trivially forgeable tokens.
 Exploitation:
   An attacker who discovers or guesses that the secret key is None/empty can forge
   arbitrary JWT tokens, impersonate any user (including artists), and gain full access
@@ -42,24 +39,6 @@ Exploitation:
 
 --------------------------------------------------------------------------------
 VULNERABILITY #2
---------------------------------------------------------------------------------
-CWE ID: CWE-352
-Name: Cross-Site Request Forgery (CSRF) - No CSRF Protection
-Severity: High
-File: app.py, line 11; routes_auth.py (all POST endpoints)
-Description:
-  The application uses CORS(app) with no origin restrictions (allows all origins by
-  default) and has no CSRF protection mechanism. While the API uses JWT Bearer tokens
-  for most endpoints, the registration and login endpoints at /api/auth/register and
-  /api/auth/login have no CSRF protection and accept POST requests from any origin.
-Exploitation:
-  A malicious website could craft requests to the registration or login endpoints.
-  Combined with the permissive CORS policy, an attacker could potentially perform
-  login CSRF attacks to associate a victim's session with an attacker-controlled
-  account, or perform mass account registration.
-
---------------------------------------------------------------------------------
-VULNERABILITY #3
 --------------------------------------------------------------------------------
 CWE ID: CWE-942
 Name: Overly Permissive CORS Configuration
@@ -72,8 +51,24 @@ Description:
 Exploitation:
   Any malicious website can make authenticated requests to the API if it obtains a
   user's JWT token (e.g., via XSS on any domain). The permissive CORS policy allows
-  the attacker's site to read the API responses, enabling data exfiltration of song
-  listings, user information, and other sensitive data.
+  the attacker's site to read API responses, enabling data exfiltration.
+
+--------------------------------------------------------------------------------
+VULNERABILITY #3
+--------------------------------------------------------------------------------
+CWE ID: CWE-215
+Name: Debug Mode Enabled in Production
+Severity: High
+File: app.py, line 26
+Description:
+  The application runs with debug=True (app.run(debug=True, port=5000)). Flask's
+  debug mode enables the interactive Werkzeug debugger, which provides a Python
+  console in the browser when an exception occurs, plus detailed stack traces.
+Exploitation:
+  If an attacker can trigger an exception (e.g., by sending malformed input), they
+  gain access to an interactive Python shell in the browser, allowing arbitrary
+  code execution on the server, including reading environment variables (such as
+  JWT_SECRET_KEY and Firebase credentials) and executing system commands.
 
 --------------------------------------------------------------------------------
 VULNERABILITY #4
@@ -85,217 +80,23 @@ File: routes_songs.py, lines 59-63
 Description:
   The stream_song endpoint accepts JWT tokens via the URL query parameter
   (?token=...). Tokens passed in URLs are logged in web server access logs,
-  browser history, HTTP Referer headers, and potentially proxy/CDN logs. This
-  significantly increases the attack surface for token theft.
+  browser history, HTTP Referer headers, and potentially proxy/CDN logs.
 Exploitation:
   An attacker with access to server logs, proxy logs, browser history, or network
   monitoring can extract valid JWT tokens from URLs. These tokens can then be used
   to impersonate users and access the full API for the token's validity period (24h).
 
---------------------------------------------------------------------------------
-VULNERABILITY #5
---------------------------------------------------------------------------------
-CWE ID: CWE-215
-Name: Debug Mode Enabled in Production
-Severity: High
-File: app.py, line 26
-Description:
-  The application runs with debug=True (app.run(debug=True, port=5000)). Flask's
-  debug mode enables the interactive Werkzeug debugger, which provides a Python
-  console in the browser when an exception occurs. This also enables automatic code
-  reloading and exposes detailed stack traces.
-Exploitation:
-  If an attacker can trigger an exception (e.g., by sending malformed input), they
-  gain access to an interactive Python shell in the browser. This allows arbitrary
-  code execution on the server, including reading files, environment variables
-  (such as JWT_SECRET_KEY and Firebase credentials), and executing system commands.
-  Even without the PIN, detailed stack traces leak source code, file paths, and
-  internal application structure.
-
---------------------------------------------------------------------------------
-VULNERABILITY #6
---------------------------------------------------------------------------------
-CWE ID: CWE-770
-Name: No Rate Limiting on Authentication Endpoints
-Severity: High
-File: routes_auth.py, lines 26 and 64
-Description:
-  The /api/auth/login and /api/auth/register endpoints have no rate limiting.
-  An attacker can make unlimited login attempts or registration requests.
-Exploitation:
-  An attacker can perform brute-force attacks against user accounts by trying
-  thousands of password combinations per second. They can also perform credential
-  stuffing attacks using leaked credential databases. The lack of rate limiting on
-  registration enables mass account creation for spam or abuse.
-
---------------------------------------------------------------------------------
-VULNERABILITY #7
---------------------------------------------------------------------------------
-CWE ID: CWE-521
-Name: Weak Password Policy
-Severity: Medium
-File: routes_auth.py, line 43
-Description:
-  The only password requirement is a minimum length of 6 characters (len(password) < 6).
-  There are no requirements for complexity (uppercase, lowercase, digits, special
-  characters), no check against common/breached passwords, and no maximum length limit.
-Exploitation:
-  Users can set trivially guessable passwords like "123456" or "aaaaaa". Combined
-  with the lack of rate limiting (Vulnerability #6), this makes brute-force and
-  dictionary attacks highly effective.
-
---------------------------------------------------------------------------------
-VULNERABILITY #8
---------------------------------------------------------------------------------
-CWE ID: CWE-285
-Name: Authorization Bypass via JWT Claim Manipulation (Role in Token)
-Severity: Medium
-File: auth.py, lines 31 and 42; routes_auth.py, lines 89-95
-Description:
-  The user's role (user_type) is embedded directly in the JWT token at login time
-  (line 93 of routes_auth.py) and trusted without re-verification against the
-  database on subsequent requests (auth.py lines 31, 42). If a user's role is
-  changed in the database (e.g., an artist account is downgraded), the JWT token
-  remains valid with the old role for up to 24 hours. There is no token revocation
-  mechanism.
-Exploitation:
-  A user whose privileges are revoked retains full access until their token expires.
-  If the JWT_SECRET_KEY is compromised (see Vulnerability #1), an attacker can
-  craft tokens with arbitrary roles. Additionally, there is no admin role or
-  mechanism to invalidate compromised tokens.
-
---------------------------------------------------------------------------------
-VULNERABILITY #9
---------------------------------------------------------------------------------
-CWE ID: CWE-434
-Name: Insufficient File Upload Validation
-Severity: Medium
-File: routes_artist.py, lines 12-13 and 26
-Description:
-  The file upload validation only checks the file extension (filename.rsplit(".", 1)[1]).
-  It does not validate the actual file content (magic bytes / MIME type). An attacker
-  can upload any file type by simply naming it with a .mp3 extension.
-Exploitation:
-  An attacker with artist credentials can upload malicious files (executables, scripts,
-  HTML files with embedded JavaScript) disguised as .mp3 files. If the uploads
-  directory is ever served directly or if file_path values are manipulated, these
-  files could be executed or used for stored XSS attacks.
-
---------------------------------------------------------------------------------
-VULNERABILITY #10
---------------------------------------------------------------------------------
-CWE ID: CWE-400
-Name: Denial of Service via Unvalidated Range Header
-Severity: Medium
-File: routes_songs.py, lines 85-92
-Description:
-  The Range header parsing in the stream_song endpoint does not validate that
-  byte_start is less than byte_end, that byte_end is less than file_size, or that
-  byte_start is non-negative. Malformed Range headers (e.g., "bytes=999999999-0"
-  or "bytes=-1-") can cause unexpected behavior, integer overflow, or excessive
-  memory consumption.
-Exploitation:
-  An attacker can send crafted Range headers to cause the server to attempt reading
-  invalid byte ranges, potentially causing crashes, excessive memory use, or
-  information leakage through error messages. A Range header with a very large
-  byte_start could cause the server to seek past the end of the file.
-
---------------------------------------------------------------------------------
-VULNERABILITY #11
---------------------------------------------------------------------------------
-CWE ID: CWE-209
-Name: Information Exposure Through Error Messages
-Severity: Medium
-File: app.py, line 26 (debug=True); routes_songs.py, lines 86-92
-Description:
-  With debug mode enabled, unhandled exceptions expose full stack traces including
-  source code, file paths, and variable values. The Range header parsing (lines 86-92
-  in routes_songs.py) can raise ValueError or IndexError on malformed input, which
-  in debug mode would expose internal details. No global exception handler is defined.
-Exploitation:
-  An attacker can intentionally trigger errors to learn about the application's
-  internal structure, file paths, library versions, and configuration. This
-  information aids in crafting more targeted attacks.
-
---------------------------------------------------------------------------------
-VULNERABILITY #12
---------------------------------------------------------------------------------
-CWE ID: CWE-613
-Name: Long Token Expiration Without Revocation Mechanism
-Severity: Low
-File: routes_auth.py, line 94
-Description:
-  JWT tokens are issued with a 24-hour expiration time and there is no token
-  revocation or blacklist mechanism. Once a token is issued, it cannot be
-  invalidated before it expires.
-Exploitation:
-  If a token is stolen (e.g., via Vulnerability #4's URL exposure), the attacker
-  has a 24-hour window to use it. The legitimate user has no way to invalidate
-  the compromised token. There is no logout mechanism that actually revokes
-  server-side token validity.
-
---------------------------------------------------------------------------------
-VULNERABILITY #13
---------------------------------------------------------------------------------
-CWE ID: CWE-331
-Name: Insufficient Password Hashing Iterations
-Severity: Low
-File: routes_auth.py, lines 12-16
-Description:
-  The password hashing uses PBKDF2-HMAC-SHA256 with 100,000 iterations. While
-  this was acceptable in earlier years, current OWASP recommendations suggest
-  at least 600,000 iterations for PBKDF2-SHA256 (as of 2023). More importantly,
-  PBKDF2 is less resistant to GPU-based attacks compared to modern alternatives
-  like bcrypt, scrypt, or Argon2.
-Exploitation:
-  If the database is compromised, an attacker with GPU resources can crack
-  passwords faster than with a properly configured modern hashing algorithm.
-  The 100,000 iteration count is below current best-practice thresholds.
-
---------------------------------------------------------------------------------
-VULNERABILITY #14
---------------------------------------------------------------------------------
-CWE ID: CWE-918
-Name: Potential SSRF via Unvalidated Firebase Document ID
-Severity: Medium
-File: routes_artist.py, line 75; routes_songs.py, line 72
-Description:
-  The song_id parameter in delete_song and stream_song endpoints is taken directly
-  from the URL path and used in Firestore document lookups without sanitization.
-  While Firestore itself is not directly vulnerable to injection, specially crafted
-  document IDs containing path separators (e.g., "../other_collection/doc") could
-  potentially access unintended Firestore document paths depending on the Firestore
-  SDK's handling of path components.
-Exploitation:
-  An attacker could attempt to craft song_id values with path traversal characters
-  to access or reference documents outside the intended "songs" collection. The
-  impact depends on Firestore SDK behavior with path-like characters in document IDs.
-
 ================================================================================
 SUMMARY OF FINDINGS
 ================================================================================
 
-CRITICAL (2):
-  #1  CWE-798/1393  JWT Secret Key Without Fallback Validation   config.py:6
+CRITICAL (1):
+  #1  CWE-798       JWT Secret Key Without Fallback Validation     config.py:6
 
-HIGH (5):
-  #2  CWE-352       No CSRF Protection                           app.py:11
-  #3  CWE-942       Overly Permissive CORS Configuration          app.py:11
-  #4  CWE-200       Token Exposure in URL Query Parameter          routes_songs.py:59
-  #5  CWE-215       Debug Mode Enabled in Production              app.py:26
-  #6  CWE-770       No Rate Limiting on Authentication            routes_auth.py:26,64
-
-MEDIUM (5):
-  #7  CWE-521       Weak Password Policy                          routes_auth.py:43
-  #8  CWE-285       Authorization Bypass via JWT Claim             auth.py:31
-  #9  CWE-434       Insufficient File Upload Validation            routes_artist.py:12
-  #10 CWE-400       DoS via Unvalidated Range Header               routes_songs.py:85
-  #14 CWE-918       Unvalidated Document ID Path                   routes_artist.py:75
-
-LOW (2):
-  #11 CWE-209       Information Exposure Through Errors            app.py:26
-  #12 CWE-613       Long Token Expiration Without Revocation       routes_auth.py:94
-  #13 CWE-331       Insufficient Password Hashing Iterations       routes_auth.py:12
+HIGH (3):
+  #2  CWE-942       Overly Permissive CORS Configuration           app.py:11
+  #3  CWE-215       Debug Mode Enabled in Production                app.py:26
+  #4  CWE-200       Token Exposure in URL Query Parameter           routes_songs.py:59
 
 ================================================================================
 END OF SECURITY REVIEW
