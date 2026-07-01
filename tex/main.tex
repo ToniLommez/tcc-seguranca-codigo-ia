@@ -42,7 +42,7 @@
 
 \sloppy
 
-\title{Identificação e Análise de Vulnerabilidades em Código Gerado por IA: Uma Comparação entre Português e Inglês}
+\title{Identificação e Análise de Vulnerabilidades em Código Gerado por LLMs: Uma Comparação entre Português e Inglês}
 
 \author{Marcos Antônio Lommez Cândido Ribeiro\inst{1}, Matheus Alcântara Souza\inst{2} }
 
@@ -121,7 +121,7 @@ Security and Quality in LLM-Generated Code & Analisa segurança e qualidade de c
 \section{Metodologia}
 \label{sec:metodologia}
 
-Para a execução do estudo, foram definidas métricas, condições experimentais e ferramentas de análise. O fluxo experimental seguiu as seguintes etapas: elaboração dos prompts equivalentes em PT-BR e EN-US para cada cenário; geração do código pelos dois modelos selecionados; obtenção das implementações independentes; aplicação da análise estática e da revisão manual de segurança; classificação das vulnerabilidades por CWE e severidade; e, por fim, consolidação e comparação dos resultados por idioma, modelo e linguagem de programação. A Figura~\ref{fig:metodologia-consolidada} sintetiza esse encadeamento, incorporando tanto a composição das implementações quanto as etapas de avaliação adotadas no estudo.
+Para a execução do estudo, foram definidas métricas, condições experimentais e ferramentas de análise. O fluxo experimental seguiu as seguintes etapas: elaboração dos prompts equivalentes em PT-BR e EN-US para cada cenário; geração do código pelos dois modelos selecionados; obtenção das implementações independentes; aplicação da análise estática e da revisão manual de segurança; classificação das vulnerabilidades pelo CWE; e, por fim, consolidação e comparação dos resultados por idioma, modelo e linguagem de programação. A Figura~\ref{fig:metodologia-consolidada} sintetiza esse encadeamento, incorporando tanto a composição das implementações quanto as etapas de avaliação adotadas no estudo.
 
 \begin{figure}[ht]
 \centering
@@ -142,7 +142,7 @@ Para a execução do estudo, foram definidas métricas, condições experimentai
   \node[anl]  (p5) at (-3.2, 1.55) {Análise estática\\Cppcheck (C++) $\cdot$ Gosec (Go)\\Bandit (Python)};
   \node[anl]  (p6) at ( 3.2, 1.55) {Revisão manual\\de segurança};
 
-  \node[proc] (p7) at (0, -0.55) {Classificação por CWE e severidade};
+  \node[proc] (p7) at (0, -0.55) {Classificação pelo CWE};
   \node[result]  (p8) at (0, -2.0) {Consolidação e comparação por idioma, modelo e linguagem};
 
   \draw[fl] (p1) -- (p2);
@@ -178,7 +178,14 @@ Cada artefato produzido foi submetido às ferramentas de análise estática corr
 % ============================
 \subsection{Implementações}
 
-As implementações e os artefatos auxiliares da análise foram organizados em repositório público para fins de reprodutibilidade\footnote{\url{https://github.com/ToniLommez/tcc-seguranca-codigo-ia}}. Em todos os casos, os sistemas gerados apresentaram uma estrutura funcional comum, com backend em API REST, autenticação via JWT e integração com Firebase Firestore. Essa organização experimental, bem como o encadeamento entre geração, análise estática e revisão manual, encontra-se sintetizada na Figura~\ref{fig:metodologia-consolidada}. Exemplos dos prompts utilizados em português e inglês são apresentados nos Apêndices~\ref{apendice:prompt-pt} e~\ref{apendice:prompt-en}.
+As implementações e os artefatos auxiliares da análise foram organizados em repositório público para fins de reprodutibilidade\footnote{\url{https://github.com/ToniLommez/tcc-seguranca-codigo-ia}}. Em todos os casos, os sistemas gerados apresentaram uma estrutura funcional comum, com backend em API REST, autenticação via JWT e integração com Firebase Firestore. Essa organização experimental, bem como o encadeamento entre geração, análise estática e revisão manual, encontra-se sintetizada na Figura~\ref{fig:metodologia-consolidada}. A Figura~\ref{fig:programa} apresenta a tela principal de uma dessas implementações, o \textit{dashboard} do cenário de Gestão de Leads gerado em Go pelo Claude Sonnet 4.6. Exemplos dos prompts utilizados em português e inglês são apresentados nos Apêndices~\ref{apendice:prompt-pt} e~\ref{apendice:prompt-en}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.8\textwidth]{programa.png}
+\caption{Tela principal (\textit{dashboard}) de uma das implementações geradas: cenário de Gestão de Leads (Go, Claude Sonnet 4.6), executada localmente com dados de exemplo.}
+\label{fig:programa}
+\end{figure}
 
 % ============================
 \section{Análise de Vulnerabilidades}
@@ -217,7 +224,7 @@ O Gosec apresentou sensibilidade consideravelmente maior que Cppcheck e Bandit, 
 % ============================
 \subsection{Revisão Manual de Segurança}
 
-Complementando a análise estática, foi realizada uma revisão manual de segurança de cada uma das 24 implementações, com leitura e análise de todos os arquivos de código-fonte de forma independente, sem consulta prévia aos relatórios de análise estática ou a revisões de outros projetos, evitando assim viés na identificação de vulnerabilidades. Foram inspecionados aspectos como gestão de credenciais e segredos, configuração de autenticação e autorização, exposição de dados sensíveis, validação de entradas, políticas de CORS e cabeçalhos de segurança, transmissão de tokens, configuração de TLS e padrões de uso de criptografia. As vulnerabilidades identificadas foram classificadas conforme o CWE e categorizadas por severidade (Crítica, Alta, Média e Baixa), seguindo critérios alinhados ao OWASP.
+Complementando a análise estática, foi realizada uma revisão manual de segurança de cada uma das 24 implementações, com leitura e análise de todos os arquivos de código-fonte de forma independente, sem consulta prévia aos relatórios de análise estática ou a revisões de outros projetos, evitando assim viés na identificação de vulnerabilidades. Foram inspecionados aspectos como gestão de credenciais e segredos, configuração de autenticação e autorização, exposição de dados sensíveis, validação de entradas, políticas de CORS e cabeçalhos de segurança, transmissão de tokens, configuração de TLS e padrões de uso de criptografia. As vulnerabilidades identificadas foram classificadas conforme o CWE.
 
 A Tabela~\ref{tab:manual} apresenta o total de vulnerabilidades identificadas por grupo.
 
@@ -294,7 +301,14 @@ O resultado de C++ com a maior média é consistente com a hipótese de que ling
 
 \subsection{Padrões de CWE Mais Frequentes}
 
-A análise manual revelou vulnerabilidades sistêmicas que se repetiram de forma consistente em praticamente todas as 24 implementações, independentemente do modelo, idioma ou linguagem de programação. A CWE-798 (credenciais embutidas) foi identificada em todos os 24 projetos: todos os modelos incluíram o segredo JWT e o caminho para credenciais do Firebase diretamente no código-fonte, com valores padrão previsíveis como \texttt{"change-me-in-production"} ou \texttt{"troque-esta-chave-em-producao"}. Esse comportamento reflete uma priorização da conveniência de desenvolvimento, gerar código que funciona imediatamente, em detrimento da segurança. A CWE-319/CWE-311 (ausência de TLS configurado na aplicação) foi identificada em 17 dos 24 projetos, predominantemente em C++ e Go, onde configurar HTTPS é responsabilidade explícita do desenvolvedor. A CWE-942 (política de CORS com origem curinga) apareceu em 16 projetos. A universalidade da CWE-798 e a alta frequência das demais confirmam que as limitações de segurança no código gerado por LLMs são estruturais, relacionadas aos dados de treinamento e à ausência de restrições de segurança nos modelos, e não ao idioma de instrução.
+A análise manual revelou vulnerabilidades sistêmicas que se repetiram de forma consistente em praticamente todas as 24 implementações, independentemente do modelo, idioma ou linguagem de programação. A CWE-798 (credenciais embutidas) foi identificada em todos os 24 projetos: todos os modelos incluíram o segredo JWT e o caminho para credenciais do Firebase diretamente no código-fonte, com valores padrão previsíveis como \texttt{"change-me-in-production"} ou \texttt{"troque-esta-chave-em-producao"}, como ilustra a Figura~\ref{fig:credencial}. Esse comportamento reflete uma priorização da conveniência de desenvolvimento, gerar código que funciona imediatamente, em detrimento da segurança. A CWE-319/CWE-311 (ausência de TLS configurado na aplicação) foi identificada em 17 dos 24 projetos, predominantemente em C++ e Go, onde configurar HTTPS é responsabilidade explícita do desenvolvedor. A CWE-942 (política de CORS com origem curinga) apareceu em 16 projetos. A universalidade da CWE-798 e a alta frequência das demais confirmam que as limitações de segurança no código gerado por LLMs são estruturais, relacionadas aos dados de treinamento e à ausência de restrições de segurança nos modelos, e não ao idioma de instrução.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.9\textwidth]{credencial.png}
+\caption{Exemplo de credenciais embutidas no código-fonte (CWE-798) identificado na implementação do cenário de Streaming de Áudio gerada em C++ pelo Claude Sonnet 4.6 a partir de prompt em português, no arquivo \texttt{config.h} do backend}
+\label{fig:credencial}
+\end{figure}
 
 \subsection{Tipos de Vulnerabilidades por Idioma do Prompt}
 
@@ -322,7 +336,7 @@ Este trabalho buscou responder se o idioma natural do prompt influencia a segura
 
 O achado de maior peso prático é a universalidade das falhas sistêmicas: CWE-798 apareceu em todos os 24 projetos, e CWE-319/CWE-311 e CWE-942 em mais de dois terços deles, independentemente de modelo, idioma ou linguagem. Nenhuma combinação de prompt ou ferramenta eliminou essas vulnerabilidades. Isso posiciona a revisão humana não como uma etapa opcional, mas como um requisito inegociável ao se adotar geração automática de código em ambientes reais, e sugere que o esforço de pesquisa e uso de ferramentas deveria se concentrar justamente nesses padrões recorrentes, que os modelos atuais sistematicamente falham em tratar.
 
-Como direções para trabalhos futuros, destacam-se a ampliação do conjunto de modelos avaliados para verificar se os padrões observados são específicos dos modelos analisados ou representam comportamento universal; a diversificação dos cenários de aplicação, contemplando paradigmas arquiteturais e tecnológicos distintos; a investigação do efeito de instruções explícitas de segurança nos prompts, como a inclusão de requisitos de hardening, para verificar se isso reduz a incidência das vulnerabilidades sistêmicas identificadas; a incorporação de análise dinâmica em ambientes controlados de execução, permitindo avaliar o comportamento das aplicações em tempo de execução; a realização de testes de penetração ativos sobre as implementações geradas; e a condução de análise estatística formal com maior volume de amostras para determinar a significância das diferenças observadas entre idiomas e modelos.
+Como direções para trabalhos futuros, destacam-se a ampliação do conjunto de modelos avaliados para verificar se os padrões observados são específicos dos modelos analisados ou representam comportamento universal; a diversificação dos cenários de aplicação, contemplando paradigmas arquiteturais e tecnológicos distintos; a investigação do efeito de instruções explícitas de segurança nos prompts, como a inclusão de requisitos de hardening, para verificar se isso reduz a incidência das vulnerabilidades sistêmicas identificadas; a incorporação de análise dinâmica em ambientes controlados de execução, permitindo avaliar o comportamento das aplicações em tempo de execução; a realização de testes de penetração ativos sobre as implementações geradas; a repetição de cada configuração de prompt, modelo, idioma, cenário e linguagem em múltiplas gerações independentes, de modo a atenuar o viés introduzido pela natureza estocástica da geração e obter resultados mais determinísticos.
 
 \section*{Agradecimentos}
 

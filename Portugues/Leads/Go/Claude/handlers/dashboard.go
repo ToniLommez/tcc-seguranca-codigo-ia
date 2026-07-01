@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"lead-manager/config"
 	"lead-manager/models"
 	"net/http"
@@ -14,24 +13,8 @@ import (
 // GetDashboard retorna as estatísticas do dashboard
 func GetDashboard(c *gin.Context) {
 	userID := c.GetString("userID")
-	ctx := context.Background()
 
-	docs, err := config.FirestoreClient.Collection(config.CollectionLeads).
-		Where("userId", "==", userID).
-		Documents(ctx).
-		GetAll()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar dados do dashboard"})
-		return
-	}
-
-	var allLeads []models.Lead
-	for _, doc := range docs {
-		var lead models.Lead
-		if doc.DataTo(&lead) == nil {
-			allLeads = append(allLeads, lead)
-		}
-	}
+	allLeads := config.DB.LeadsByUser(userID)
 
 	// ── Leads por status ─────────────────────────────────────────
 	byStatus := map[string]int{
